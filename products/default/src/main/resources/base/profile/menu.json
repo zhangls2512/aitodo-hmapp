@@ -1,0 +1,34 @@
+{
+  "fileContextMenu": [
+    {
+      "abilityName": "EntryAbility",
+      "menuItem": "$string:importTodo",
+      "menuHandler": "clickMenu1",
+      "menuContext": [
+        {
+          "menuKind": 1,
+          "menuRule": "single",
+          "fileSupportType": [
+            ".txt",
+            ".vcs",
+            ".ics"
+          ]
+        }
+      ]
+    },
+    {
+      "abilityName": "EntryAbility",
+      "menuItem": "$string:importTodoExtraFile",
+      "menuHandler": "clickMenu2",
+      "menuContext": [
+        {
+          "menuKind": 1,
+          "menuRule": "single",
+          "fileSupportType": [
+            ".zip"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "shortcuts": [
+    {
+      "shortcutId": "newTodo",
+      "label": "$string:newTodo",
+      "icon": "$media:new",
+      "wants": [
+        {
+          "bundleName": "com.zhangxm.aitodo",
+          "abilityName": "EntryAbility",
+          "parameters": {
+            "shortcutId": "newTodo"
+          }
+        }
+      ]
+    }
+  ]
+}

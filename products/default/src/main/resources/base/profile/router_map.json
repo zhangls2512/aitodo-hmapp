@@ -1,0 +1,159 @@
+{
+  "routerMap": [
+    {
+      "name": "About",
+      "pageSourceFile": "src/main/ets/pages/About.ets",
+      "buildFunction": "AboutBuilder"
+    },
+    {
+      "name": "Clearpreferencekey",
+      "pageSourceFile": "src/main/ets/pages/Clearpreferencekey.ets",
+      "buildFunction": "ClearpreferencekeyBuilder"
+    },
+    {
+      "name": "License",
+      "pageSourceFile": "src/main/ets/pages/License.ets",
+      "buildFunction": "LicenseBuilder"
+    },
+    {
+      "name": "Debugsetting",
+      "pageSourceFile": "src/main/ets/pages/Debugsetting.ets",
+      "buildFunction": "DebugsettingBuilder"
+    },
+    {
+      "name": "Debuginfo",
+      "pageSourceFile": "src/main/ets/pages/Debuginfo.ets",
+      "buildFunction": "DebuginfoBuilder"
+    },
+    {
+      "name": "ReportQoe",
+      "pageSourceFile": "src/main/ets/pages/ReportQoe.ets",
+      "buildFunction": "ReportQoeBuilder"
+    },
+    {
+      "name": "Networktest",
+      "pageSourceFile": "src/main/ets/pages/Networktest.ets",
+      "buildFunction": "NetworktestBuilder"
+    },
+    {
+      "name": "Commonsetting",
+      "pageSourceFile": "src/main/ets/pages/Commonsetting.ets",
+      "buildFunction": "CommonsettingBuilder"
+    },
+    {
+      "name": "Permissionsetting",
+      "pageSourceFile": "src/main/ets/pages/Permissionsetting.ets",
+      "buildFunction": "PermissionsettingBuilder"
+    },
+    {
+      "name": "Servicemode",
+      "pageSourceFile": "src/main/ets/pages/Servicemode.ets",
+      "buildFunction": "ServicemodeBuilder"
+    },
+    {
+      "name": "Moresetting",
+      "pageSourceFile": "src/main/ets/pages/Moresetting.ets",
+      "buildFunction": "MoresettingBuilder"
+    },
+    {
+      "name": "Agreements",
+      "pageSourceFile": "src/main/ets/pages/Agreements.ets",
+      "buildFunction": "AgreementsBuilder"
+    },
+    {
+      "name": "Huaweiaccount",
+      "pageSourceFile": "src/main/ets/pages/Huaweiaccount.ets",
+      "buildFunction": "HuaweiaccountBuilder"
+    },
+    {
+      "name": "Feedback",
+      "pageSourceFile": "src/main/ets/pages/Feedback.ets",
+      "buildFunction": "FeedbackBuilder"
+    },
+    {
+      "name": "Recoverysetting",
+      "pageSourceFile": "src/main/ets/pages/Recoverysetting.ets",
+      "buildFunction": "RecoverysettingBuilder"
+    },
+    {
+      "name": "Vipcode",
+      "pageSourceFile": "src/main/ets/pages/Vipcode.ets",
+      "buildFunction": "VipcodeBuilder"
+    },
+    {
+      "name": "Viplog",
+      "pageSourceFile": "src/main/ets/pages/Viplog.ets",
+      "buildFunction": "ViplogBuilder"
+    },
+    {
+      "name": "Key",
+      "pageSourceFile": "src/main/ets/pages/Key.ets",
+      "buildFunction": "KeyBuilder"
+    },
+    {
+      "name": "Tablesync",
+      "pageSourceFile": "src/main/ets/pages/Tablesync.ets",
+      "buildFunction": "TablesyncBuilder"
+    },
+    {
+      "name": "DataBackupRecovery",
+      "pageSourceFile": "src/main/ets/pages/DataBackupRecovery.ets",
+      "buildFunction": "DataBackupRecoveryBuilder"
+    },
+    {
+      "name": "DataInOut",
+      "pageSourceFile": "src/main/ets/pages/DataInOut.ets",
+      "buildFunction": "DataInOutBuilder"
+    },
+    {
+      "name": "Infolist",
+      "pageSourceFile": "src/main/ets/pages/Infolist.ets",
+      "buildFunction": "InfolistBuilder"
+    },
+    {
+      "name": "Invite",
+      "pageSourceFile": "src/main/ets/pages/Invite.ets",
+      "buildFunction": "InviteBuilder"
+    },
+    {
+      "name": "Webview",
+      "pageSourceFile": "src/main/ets/pages/Webview.ets",
+      "buildFunction": "WebviewBuilder"
+    },
+    {
+      "name": "Autouploaderrorlogtype",
+      "pageSourceFile": "src/main/ets/pages/Autouploaderrorlogtype.ets",
+      "buildFunction": "AutouploaderrorlogtypeBuilder"
+    },
+    {
+      "name": "Errorlog",
+      "pageSourceFile": "src/main/ets/pages/Errorlog.ets",
+      "buildFunction": "ErrorlogBuilder"
+    },
+    {
+      "name": "Sandboxfilelist",
+      "pageSourceFile": "src/main/ets/pages/Sandboxfilelist.ets",
+      "buildFunction": "SandboxfilelistBuilder"
+    },
+    {
+      "name": "Newpasskey",
+      "pageSourceFile": "src/main/ets/pages/Newpasskey.ets",
+      "buildFunction": "NewpasskeyBuilder"
+    },
+    {
+      "name": "Email",
+      "pageSourceFile": "src/main/ets/pages/Email.ets",
+      "buildFunction": "EmailBuilder"
+    },
+    {
+      "name": "Webdavserver",
+      "pageSourceFile": "src/main/ets/pages/Webdavserver.ets",
+      "buildFunction": "WebdavserverBuilder"
+    },
+    {
+      "name": "Caldavserver",
+      "pageSourceFile": "src/main/ets/pages/Caldavserver.ets",
+      "buildFunction": "CaldavserverBuilder"
+    }
+  ]
+}

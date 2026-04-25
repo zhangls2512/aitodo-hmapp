@@ -1,0 +1,32 @@
+{
+  "string": [
+    {
+      "name": "EntryAbility_label",
+      "value": "轩铭智能待办"
+    },
+    {
+      "name": "importTodo",
+      "value": "导入待办"
+    },
+    {
+      "name": "importTodoExtraFile",
+      "value": "导入待办附件"
+    },
+    {
+      "name": "DISTRIBUTED_DATASYNC_reason",
+      "value": "用于获取可信设备列表、在可信设备间同步数据。"
+    },
+    {
+      "name": "WRITE_PASTEBOARD_reason",
+      "value": "用于写入数据到剪贴板，便于在外部环境使用。"
+    },
+    {
+      "name": "newTodo",
+      "value": "新增待办"
+    },
+    {
+      "name": "card_displayname",
+      "value": "推荐待办"
+    }
+  ]
+}

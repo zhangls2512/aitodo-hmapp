@@ -1,0 +1,28 @@
+{
+  "insightIntents": [
+    {
+      "intentName": "NewTodo",
+      "domain": "",
+      "intentVersion": "1.0.0",
+      "srcEntry": "./ets/entryability/InsightIntentExecutorImpl.ets",
+      "uiAbility": {
+        "ability": "EntryAbility",
+        "executeMode": [
+          "foreground"
+        ]
+      }
+    },
+    {
+      "intentName": "GetRecommendTodo",
+      "domain": "",
+      "intentVersion": "1.0.0",
+      "srcEntry": "./ets/entryability/InsightIntentExecutorImpl.ets",
+      "uiAbility": {
+        "ability": "EntryAbility",
+        "executeMode": [
+          "foreground"
+        ]
+      }
+    }
+  ]
+}

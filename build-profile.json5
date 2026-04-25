@@ -1,0 +1,78 @@
+{
+  "app": {
+    "signingConfigs": [
+      {
+        "name": "release",
+        "material": {
+          "storeFile": "D:/code/harmonyproject/内部文件/发布签名材料/keystore.p12",
+          "storePassword": "0000001950FDDADD1F60392AAA8B0A125A6EC2BB0B18075B7DB386B3B2A50102CC2336DA7FCBDB8739",
+          "keyAlias": "release",
+          "keyPassword": "000000196D93879C6B3E51616D3E99523FA7A67D6C4832FBF5EF213DE74F2E41369AE3E4AC186A5F25",
+          "certpath": "D:/code/harmonyproject/内部文件/发布签名材料/zhangxm.cer",
+          "profile": "D:/code/harmonyproject/内部文件/发布签名材料/aitodo.p7b",
+          "signAlg": "SHA256withECDSA"
+        }
+      },
+      {
+        "name": "debug",
+        "material": {
+          "storeFile": "D:/code/harmonyproject/内部文件/调试签名材料/keystore.p12",
+          "storePassword": "00000019781F466FDFBB2E81D846E0D034E417F94D5AE1DAEBEA409B12E6EB6BDB185336572C90C123",
+          "keyAlias": "debug",
+          "keyPassword": "000000190902E5E754FD29172497FD207D5069C1FD571CE09EC19A4346C0CE2D84C3FD9764A644D6A7",
+          "certpath": "D:/code/harmonyproject/内部文件/调试签名材料/zhangxm.cer",
+          "profile": "D:/code/harmonyproject/内部文件/调试签名材料/aitodo.p7b",
+          "signAlg": "SHA256withECDSA"
+        }
+      }
+    ],
+    "products": [
+      {
+        "name": "default",
+        "signingConfig": "debug",
+        "compatibleSdkVersion": "6.1.0(23)",
+        "buildOption": {
+          "packOptions": {
+            "fastBuildApp": true,
+            "appWithSignedPkg": true,
+            "enableIncrementalSoCompress": true
+          },
+          "resOptions": {
+            "resCompileThreads": 32
+          },
+          "arkOptions": {
+            "autoLazyImport": true,
+            "reExportCheckMode": "strict",
+            "branchElimination": true,
+            "expandImportPath": {
+              "enable": true
+            }
+          },
+          "strictMode": {
+            "noExternalImportByPath": true,
+            "useNormalizedOHMUrl": true,
+            "caseSensitiveCheck": true,
+            "harLocalDependencyCheck": true,
+            "enableStrictCheckOHModule": true
+          },
+          "preloadSystemSo": true
+        },
+        "runtimeOS": "HarmonyOS"
+      }
+    ]
+  },
+  "modules": [
+    {
+      "name": "default",
+      "srcPath": "./products/default",
+      "targets": [
+        {
+          "name": "default",
+          "applyToProducts": [
+            "default"
+          ]
+        }
+      ]
+    }
+  ]
+}

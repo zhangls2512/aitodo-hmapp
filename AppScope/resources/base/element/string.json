@@ -1,0 +1,12 @@
+{
+  "string": [
+    {
+      "name": "app_name",
+      "value": "轩铭智能待办"
+    },
+    {
+      "name": "app_version",
+      "value": "1.0.0.0"
+    }
+  ]
+}
