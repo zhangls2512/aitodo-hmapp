@@ -33,11 +33,11 @@ export async function getQuickBarTodoIdList(context: Context) {
 
 export async function setQuickBarTodo(context: Context, todoId: string, todoName: string) {
   try {
-    await quickBarManager.addCustomCategory(context, '常用密码')
+    await quickBarManager.addCustomCategory(context, '常用待办')
   } catch {
   }
   const customCategories = await quickBarManager.getCustomCategories(context)
-  const todoCustomCategory = customCategories.find(item => item.categoryName === '常用密码')
+  const todoCustomCategory = customCategories.find(item => item.categoryName === '常用待办')
   if (todoCustomCategory) {
     try {
       const todoTaskArray = await quickBarManager.getTasksFromCategory(context, todoCustomCategory.categoryId)
