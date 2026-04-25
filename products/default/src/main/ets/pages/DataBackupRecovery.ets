@@ -11,7 +11,7 @@ import { importTodo } from '../common/Dataimport'
 import { read } from '../common/File'
 import { checkPermission } from '../common/Permission'
 import { getFlushPreference, setFlushPreference } from '../common/Preference'
-import { backupTable, fileBackupTable, recoveryTable, webdavBackupTable } from '../common/Table'
+import { backupTable, caldavBackupTable, fileBackupTable, recoveryTable, webdavBackupTable } from '../common/Table'
 import { getWebdavServerInfo } from '../common/Webdavserver'
 
 @Builder
@@ -26,6 +26,8 @@ struct DataBackupRecovery {
   @Local value: string = '保留'
   @Local webdavAccountDataSyncEnabled: boolean = false
   @Local caldavAccountDataSyncEnabled: boolean = false
+  @Local webdavAccountDataSync: boolean = false
+  @Local caldavAccountDataSync: boolean = false
   @Local hoverId: number = -1
   UIContext = this.getUIContext()
   context = this.UIContext.getHostContext() as common.UIAbilityContext
@@ -33,8 +35,6 @@ struct DataBackupRecovery {
   autoBackup = false
   encryptFileBackup = true
   autoFileBackup = false
-  webdavAccountDataSync = false
-  caldavAccountDataSync = false
   encryptWebdavBackup = true
   autoWebdavBackup = false
   autoCaldavBackup = false
@@ -60,13 +60,14 @@ struct DataBackupRecovery {
       getFlushPreference(this.context, 'dataSetting', 'pauseAutoBackupWhenLowBatteryCapacityLevel', false) as boolean
     this.pauseAutoBackupWhenPowerSave =
       getFlushPreference(this.context, 'dataSetting', 'pauseAutoBackupWhenPowerSave', false) as boolean
+    const res = await checkPermission(this.context, this.UIContext, 'ohos.permission.DISTRIBUTED_DATASYNC')
+    this.webdavAccountDataSyncEnabled = res
+    this.caldavAccountDataSyncEnabled = res
     const webdavServerInfo = await getWebdavServerInfo()
     if (!webdavServerInfo.path) {
       this.webdavAccountDataSyncEnabled = false
     }
     if (webdavServerInfo.path) {
-      const res = await checkPermission(this.context, this.UIContext, 'ohos.permission.DISTRIBUTED_DATASYNC')
-      this.webdavAccountDataSyncEnabled = res
       if (res) {
         const appAccountManager = appAccount.createAppAccountManager()
         this.webdavAccountDataSync = await appAccountManager.checkDataSyncEnabled('webdavserver')
@@ -77,8 +78,6 @@ struct DataBackupRecovery {
       this.caldavAccountDataSyncEnabled = false
     }
     if (caldavServerInfo.path) {
-      const res = await checkPermission(this.context, this.UIContext, 'ohos.permission.DISTRIBUTED_DATASYNC')
-      this.caldavAccountDataSyncEnabled = res
       if (res) {
         const appAccountManager = appAccount.createAppAccountManager()
         this.caldavAccountDataSync = await appAccountManager.checkDataSyncEnabled('caldavserver')
@@ -1222,14 +1221,14 @@ struct DataBackupRecovery {
                   })
                   return
                 }
-                /*this.dialogControllerProgress.open()
-                const res = await webdavBackupTable(this.context)
+                this.dialogControllerProgress.open()
+                const res = await caldavBackupTable(this.context)
                 this.dialogControllerProgress.close()
                 if (res !== 'fail') {
                   await promptAction.openToast({
                     message: '备份成功'
                   })
-                }*/
+                }
               })
 
               Divider()
@@ -1276,6 +1275,9 @@ struct DataBackupRecovery {
                   })
                   return
                 }
+                await promptAction.openToast({
+                  message: '敬请期待'
+                })
                 /*this.dialogControllerProgress.open()
                 const filestring = await this.getWebdavBackup()
                 this.dialogControllerProgress.close()

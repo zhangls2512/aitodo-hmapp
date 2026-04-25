@@ -8,6 +8,7 @@ import { Action, Location } from '../common/Datachange'
 import { getTodoList } from '../common/Dataget'
 import { importTodo } from '../common/Dataimport'
 import { readUri, writeUri } from '../common/File'
+import { icsstringify } from '../common/Ics'
 
 export interface TodoOutItem {
   id: string,
@@ -377,6 +378,16 @@ struct DataInOut {
                   }
                 }
                 if (data.index === 1) {
+                  documentSaveOptions.fileSuffixChoices = ['.ics']
+                  const documentViewPicker = new picker.DocumentViewPicker(this.context)
+                  const uris = await documentViewPicker.save(documentSaveOptions)
+                  if (uris.length === 1) {
+                    const filePath = uris[0]
+                    await writeUri(filePath, icsstringify(arrayOut))
+                    await promptAction.openToast({
+                      message: '导出成功'
+                    })
+                  }
                 }
               })
 
