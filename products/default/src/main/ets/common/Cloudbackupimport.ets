@@ -25,7 +25,7 @@ interface TodoCloudBackup {
   location: Location,
   action: Action[],
   bz: string,
-  recentFinishedTime: number,
+  recentCompletedTime: number,
   updateTime: number,
   cloudBackupTime: CloudBackupTimeItem[]
 }
@@ -68,7 +68,7 @@ export async function importCloudBackupTodo(context: Context, conflict: relation
                 location: itemobject.location,
                 action: itemobject.action,
                 bz: itemobject.bz,
-                recentFinishedTime: itemobject.recentFinishedTime,
+                recentCompletedTime: itemobject.recentCompletedTime,
                 updateTime: itemobject.updateTime,
                 cloudBackupTime: itemobject.cloudBackupTime
               })

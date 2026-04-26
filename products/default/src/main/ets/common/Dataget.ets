@@ -24,7 +24,7 @@ export interface Todo {
   location: Location,
   action: Action[],
   bz: string,
-  recentFinishedTime: number,
+  recentCompletedTime: number,
   updateTime: number,
   cloudBackupTime: CloudBackupTimeItem[],
   isCloudBackup: boolean
@@ -54,7 +54,7 @@ export async function getTodoInfo(context: Context, id: string) {
   const locationIndex = resultSet.getColumnIndex('location')
   const actionIndex = resultSet.getColumnIndex('action')
   const bzIndex = resultSet.getColumnIndex('bz')
-  const recentFinishedTimeIndex = resultSet.getColumnIndex('recentFinishedTime')
+  const recentCompletedTimeIndex = resultSet.getColumnIndex('recentCompletedTime')
   const updateTimeIndex = resultSet.getColumnIndex('updateTime')
   const cloudBackupTimeIndex = resultSet.getColumnIndex('cloudBackupTime')
   if (resultSet.goToNextRow()) {
@@ -73,7 +73,7 @@ export async function getTodoInfo(context: Context, id: string) {
       location: JSON.parse(resultSet.getValue(locationIndex) as string) as Location,
       action: JSON.parse(resultSet.getValue(actionIndex) as string) as Action[],
       bz: resultSet.getValue(bzIndex) as string,
-      recentFinishedTime: resultSet.getValue(recentFinishedTimeIndex) as number,
+      recentCompletedTime: resultSet.getValue(recentCompletedTimeIndex) as number,
       updateTime: resultSet.getValue(updateTimeIndex) as number,
       cloudBackupTime: JSON.parse(resultSet.getValue(cloudBackupTimeIndex) as string) as CloudBackupTimeItem[],
       isCloudBackup: false
@@ -116,7 +116,7 @@ export async function getTodoList(context: Context) {
     const locationIndex = resultSet.getColumnIndex('location')
     const actionIndex = resultSet.getColumnIndex('action')
     const bzIndex = resultSet.getColumnIndex('bz')
-    const recentFinishedTimeIndex = resultSet.getColumnIndex('recentFinishedTime')
+    const recentCompletedTimeIndex = resultSet.getColumnIndex('recentCompletedTime')
     const updateTimeIndex = resultSet.getColumnIndex('updateTime')
     const cloudBackupTimeIndex = resultSet.getColumnIndex('cloudBackupTime')
     const array: Todo[] = []
@@ -136,7 +136,7 @@ export async function getTodoList(context: Context) {
         location: JSON.parse(resultSet.getValue(locationIndex) as string) as Location,
         action: JSON.parse(resultSet.getValue(actionIndex) as string) as Action[],
         bz: resultSet.getValue(bzIndex) as string,
-        recentFinishedTime: resultSet.getValue(recentFinishedTimeIndex) as number,
+        recentCompletedTime: resultSet.getValue(recentCompletedTimeIndex) as number,
         updateTime: resultSet.getValue(updateTimeIndex) as number,
         cloudBackupTime: JSON.parse(resultSet.getValue(cloudBackupTimeIndex) as string) as CloudBackupTimeItem[],
         isCloudBackup: false
@@ -184,7 +184,7 @@ export async function getPersonalTodoList(context: Context) {
     const locationIndex = resultSet.getColumnIndex('location')
     const actionIndex = resultSet.getColumnIndex('action')
     const bzIndex = resultSet.getColumnIndex('bz')
-    const recentFinishedTimeIndex = resultSet.getColumnIndex('recentFinishedTime')
+    const recentCompletedTimeIndex = resultSet.getColumnIndex('recentCompletedTime')
     const updateTimeIndex = resultSet.getColumnIndex('updateTime')
     const cloudBackupTimeIndex = resultSet.getColumnIndex('cloudBackupTime')
     const array: TodoItem[] = []
@@ -203,7 +203,7 @@ export async function getPersonalTodoList(context: Context) {
         location: JSON.parse(resultSet.getValue(locationIndex) as string) as Location,
         action: JSON.parse(resultSet.getValue(actionIndex) as string) as Action[],
         bz: resultSet.getValue(bzIndex) as string,
-        recentFinishedTime: resultSet.getValue(recentFinishedTimeIndex) as number,
+        recentCompletedTime: resultSet.getValue(recentCompletedTimeIndex) as number,
         updateTime: resultSet.getValue(updateTimeIndex) as number,
         cloudBackupTime: JSON.parse(resultSet.getValue(cloudBackupTimeIndex) as string) as CloudBackupTimeItem[]
       })
@@ -245,7 +245,7 @@ export async function getFilterTodoList(context: Context, contentKeyword: string
     const locationIndex = resultSet.getColumnIndex('location')
     const actionIndex = resultSet.getColumnIndex('action')
     const bzIndex = resultSet.getColumnIndex('bz')
-    const recentFinishedTimeIndex = resultSet.getColumnIndex('recentFinishedTime')
+    const recentCompletedTimeIndex = resultSet.getColumnIndex('recentCompletedTime')
     const updateTimeIndex = resultSet.getColumnIndex('updateTime')
     const cloudBackupTimeIndex = resultSet.getColumnIndex('cloudBackupTime')
     const array: Todo[] = []
@@ -271,7 +271,7 @@ export async function getFilterTodoList(context: Context, contentKeyword: string
           location: JSON.parse(resultSet.getValue(locationIndex) as string) as Location,
           action: JSON.parse(resultSet.getValue(actionIndex) as string) as Action[],
           bz: resultSet.getValue(bzIndex) as string,
-          recentFinishedTime: resultSet.getValue(recentFinishedTimeIndex) as number,
+          recentCompletedTime: resultSet.getValue(recentCompletedTimeIndex) as number,
           updateTime: resultSet.getValue(updateTimeIndex) as number,
           cloudBackupTime: JSON.parse(resultSet.getValue(cloudBackupTimeIndex) as string) as CloudBackupTimeItem[],
           isCloudBackup: false

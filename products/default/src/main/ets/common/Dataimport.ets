@@ -19,7 +19,7 @@ export interface TodoItem {
   location: Location,
   action: Action[],
   bz: string,
-  recentFinishedTime: number,
+  recentCompletedTime: number,
   updateTime: number,
   cloudBackupTime: CloudBackupTimeItem[]
 }
@@ -30,27 +30,31 @@ interface FileBackupObject {
 }
 
 async function getImportString(filestring: string) {
-  try {
-    const fileBackupObject = JSON.parse(filestring) as FileBackupObject
-    if (!fileBackupObject.encrypted) {
-      return JSON.stringify(fileBackupObject.data)
-    } else {
-      if (!getKeyAlg()) {
-        await promptAction.openToast({
-          message: '未导入密钥，无法解密加密数据'
+  if (filestring.startsWith('[')) {
+    return filestring
+  } else {
+    try {
+      const fileBackupObject = JSON.parse(filestring) as FileBackupObject
+      if (!fileBackupObject.encrypted) {
+        return JSON.stringify(fileBackupObject.data)
+      } else {
+        if (!getKeyAlg()) {
+          await promptAction.openToast({
+            message: '未导入密钥，无法解密加密数据'
+          })
+          return 'unabledecrypt'
+        }
+        const decryptedArray: object[] = []
+        const promises = fileBackupObject.data.map(async (item) => {
+          const res = await decrypt(item)
+          decryptedArray.push(JSON.parse(res))
         })
-        return 'unabledecrypt'
+        await Promise.all(promises)
+        return JSON.stringify(decryptedArray)
       }
-      const decryptedArray: object[] = []
-      const promises = fileBackupObject.data.map(async (item) => {
-        const res = await decrypt(item)
-        decryptedArray.push(JSON.parse(res))
-      })
-      await Promise.all(promises)
-      return JSON.stringify(decryptedArray)
+    } catch {
+      return 'fail'
     }
-  } catch {
-    return 'fail'
   }
 }
 
@@ -87,7 +91,7 @@ export async function importTodo(context: Context, data: string, conflict: relat
           location: JSON.stringify(item.location),
           action: JSON.stringify(item.action),
           bz: item.bz,
-          recentFinishedTime: item.recentFinishedTime,
+          recentCompletedTime: item.recentCompletedTime,
           updateTime: item.updateTime,
           cloudBackupTime: JSON.stringify(item.cloudBackupTime)
         }, conflict)
@@ -105,7 +109,7 @@ export async function importTodo(context: Context, data: string, conflict: relat
           location: JSON.stringify(item.location),
           action: JSON.stringify(item.action),
           bz: item.bz,
-          recentFinishedTime: item.recentFinishedTime,
+          recentCompletedTime: item.recentCompletedTime,
           updateTime: item.updateTime,
           cloudBackupTime: JSON.stringify(item.cloudBackupTime)
         }, conflict)

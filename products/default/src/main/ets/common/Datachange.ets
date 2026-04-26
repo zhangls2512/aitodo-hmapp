@@ -74,7 +74,7 @@ export async function newTodo(context: Context, data: TodoInput) {
     location: JSON.stringify(data.location),
     action: JSON.stringify(data.action),
     bz: data.bz,
-    recentFinishedTime: -1,
+    recentCompletedTime: -1,
     updateTime: updateTime,
     cloudBackupTime: JSON.stringify([])
   })
@@ -96,7 +96,7 @@ export async function newTodo(context: Context, data: TodoInput) {
       location: JSON.stringify(data.location),
       action: JSON.stringify(data.action),
       bz: data.bz,
-      recentFinishedTime: -1,
+      recentCompletedTime: -1,
       updateTime: updateTime,
       cloudBackupTime: JSON.stringify([])
     })
@@ -119,7 +119,7 @@ export async function newTodo(context: Context, data: TodoInput) {
           location: data.location,
           action: data.action,
           bz: data.bz,
-          recentFinishedTime: -1,
+          recentCompletedTime: -1,
           updateTime: updateTime,
           cloudBackupTime: []
         })
@@ -145,12 +145,12 @@ export async function updateTodo(context: Context, id: string, data: TodoInput) 
   predicates.equalTo('id', id)
   const resultSet = await rdbStore.query(predicates)
   let teamId = ''
-  let recentFinishedTime = -1
+  let recentCompletedTime = -1
   const updateTime = Date.now()
   let cloudBackupTime: CloudBackupTimeItem[] = []
   if (resultSet.goToNextRow()) {
     teamId = resultSet.getValue(resultSet.getColumnIndex('teamId')) as string
-    recentFinishedTime = resultSet.getValue(resultSet.getColumnIndex('recentFinishedTime')) as number
+    recentCompletedTime = resultSet.getValue(resultSet.getColumnIndex('recentCompletedTime')) as number
     cloudBackupTime =
       JSON.parse(resultSet.getValue(resultSet.getColumnIndex('cloudBackupTime')) as string) as CloudBackupTimeItem[]
     resultSet.close()
@@ -208,7 +208,7 @@ export async function updateTodo(context: Context, id: string, data: TodoInput) 
           location: data.location,
           action: data.action,
           bz: data.bz,
-          recentFinishedTime: recentFinishedTime,
+          recentCompletedTime: recentCompletedTime,
           updateTime: updateTime,
           cloudBackupTime: cloudBackupTime
         })

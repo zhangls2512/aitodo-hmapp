@@ -9,8 +9,10 @@ function timeStampToIcsTimeString(timeStamp: number) {
 }
 
 function icsTimeStringToTimeStamp(icsTimeString: string) {
-  if (!icsTimeString) {
-    return -1
+  if (icsTimeString[15] === 'Z') {
+    return new Date(Date.UTC(Number(icsTimeString.substring(0, 4)), Number(icsTimeString.substring(4, 6)) - 1,
+      Number(icsTimeString.substring(6, 8)), Number(icsTimeString.substring(9, 11)),
+      Number(icsTimeString.substring(11, 13)), Number(icsTimeString.substring(13, 15)))).getTime()
   }
   return new Date(Number(icsTimeString.substring(0, 4)), Number(icsTimeString.substring(4, 6)) - 1,
     Number(icsTimeString.substring(6, 8)), Number(icsTimeString.substring(9, 11)),
@@ -47,8 +49,8 @@ export function icsstringify(todoArray: TodoItem[]) {
     if (item.bz) {
       result += 'DESCRIPTION:' + item.bz + '\r\n'
     }
-    if (item.recentFinishedTime !== -1) {
-      result += 'COMPLETED:' + timeStampToIcsTimeString(item.recentFinishedTime) + '\r\n'
+    if (item.recentCompletedTime !== -1) {
+      result += 'COMPLETED:' + timeStampToIcsTimeString(item.recentCompletedTime) + '\r\n'
     }
     result += 'LAST-MODIFIED:' + timeStampToIcsTimeString(item.updateTime) + '\r\n'
     result += 'END:VEVENT\r\n'
@@ -78,7 +80,7 @@ export function icsparse(icsString: string) {
     },
     action: [],
     bz: '',
-    recentFinishedTime: -1,
+    recentCompletedTime: -1,
     updateTime: Date.now(),
     cloudBackupTime: []
   }
@@ -104,7 +106,7 @@ export function icsparse(icsString: string) {
         },
         action: [],
         bz: '',
-        recentFinishedTime: -1,
+        recentCompletedTime: -1,
         updateTime: Date.now(),
         cloudBackupTime: []
       }
@@ -153,8 +155,8 @@ export function icsparse(icsString: string) {
         if (key === 'DESCRIPTION') {
           todo.bz = value
         }
-        if (key === 'COMPLETED') {
-          todo.recentFinishedTime = icsTimeStringToTimeStamp(value)
+        if (key === 'COMPLETED' && value) {
+          todo.recentCompletedTime = icsTimeStringToTimeStamp(value)
         }
         if (key === 'LAST-MODIFIED') {
           todo.updateTime = icsTimeStringToTimeStamp(value)
