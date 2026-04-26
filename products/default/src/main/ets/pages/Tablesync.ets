@@ -11,7 +11,7 @@ import { write } from '../common/File'
 import { checkPermission } from '../common/Permission'
 import { getFlushPreference, setFlushPreference } from '../common/Preference'
 import { getSizeString } from '../common/Stringformat'
-import { syncTable } from '../common/Table'
+import { syncTable, systemCalendarSyncTable } from '../common/Table'
 
 interface Item {
   deviceId: string,
@@ -39,6 +39,7 @@ struct Tablesync {
   value = '始终'
   autoSync = false
   autoHuaweiCloudSync = false
+  autoSystemCalendarSync = false
   pauseAutoSyncWhenLowBatteryCapacityLevel = false
   pauseAutoSyncWhenPowerSave = false
   dialogControllerProgress = new CustomDialogController({
@@ -61,6 +62,8 @@ struct Tablesync {
     }
     this.huaweiCloudSyncOn = getFlushPreference(this.context, 'dataSetting', 'huaweiCloudSyncOn', false) as boolean
     this.autoHuaweiCloudSync = getFlushPreference(this.context, 'dataSetting', 'autoHuaweiCloudSync', false) as boolean
+    this.autoSystemCalendarSync =
+      getFlushPreference(this.context, 'dataSetting', 'autoSystemCalendarSync', false) as boolean
     this.pauseAutoSyncWhenLowBatteryCapacityLevel =
       getFlushPreference(this.context, 'dataSetting', 'pauseAutoSyncWhenLowBatteryCapacityLevel', false) as boolean
     this.pauseAutoSyncWhenPowerSave =
@@ -867,6 +870,96 @@ struct Tablesync {
 
         ListItem() {
           Column() {
+            Text('系统日历')
+              .fontColor($r('sys.color.font_secondary'))
+              .fontSize($r('sys.float.ohos_id_text_size_body2'))
+              .fontWeight(FontWeight.Medium)
+              .margin({
+                bottom: 6,
+                left: 12,
+                right: 12
+              })
+            Column() {
+              Row() {
+                Text('自动同步')
+                  .fontWeight(FontWeight.Medium)
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
+                Toggle({
+                  type: ToggleType.Switch,
+                  isOn: this.autoSystemCalendarSync!!
+                })
+                  .onChange(isOn => {
+                    setFlushPreference(this.context, 'dataSetting', 'autoSystemCalendarSync', isOn)
+                  })
+              }
+              .borderRadius(12)
+              .padding(12)
+
+              Divider()
+                .padding({
+                  left: 12,
+                  right: 12
+                })
+              Row() {
+                Text('手动同步')
+                  .fontWeight(FontWeight.Medium)
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
+                Image($r('app.media.right'))
+                  .fillColor($r('sys.color.icon_fourth'))
+                  .height(12)
+                  .width(12)
+              }
+              .borderRadius(12)
+              .padding(12)
+              .stateStyles({
+                normal: {
+                  .backgroundColor(this.hoverId === 2 ? $r('sys.color.interactive_hover') :
+                    $r('sys.color.ohos_id_color_card_bg'))
+                },
+                pressed: {
+                  .backgroundColor($r('sys.color.interactive_pressed'))
+                }
+              })
+              .onHover(isHover => {
+                if (!isHover) {
+                  this.hoverId = -1
+                }
+                if (isHover) {
+                  this.hoverId = 2
+                }
+              })
+              .onClick(async () => {
+                const res = await systemCalendarSyncTable(this.context)
+                if (res === 'success') {
+                  await promptAction.openToast({
+                    message: '同步成功'
+                  })
+                }
+                if (res === 'fail') {
+                  await promptAction.openToast({
+                    message: '同步失败'
+                  })
+                }
+              })
+            }
+            .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+            .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
+            .padding($r('sys.float.ohos_id_corner_radius_mark'))
+          }
+          .alignItems(HorizontalAlign.Start)
+        }
+        .margin({
+          top: $r('sys.float.ohos_id_elements_margin_vertical_l')
+        })
+
+        ListItem() {
+          Column() {
             Text('暂停自动同步')
               .fontColor($r('sys.color.font_secondary'))
               .fontSize($r('sys.float.ohos_id_text_size_body2'))
@@ -1150,6 +1243,8 @@ struct Tablesync {
         this.availableDeviceArray = distributedDeviceManager.createDeviceManager('com.zhangxm.aitodo')
           .getAvailableDeviceListSync() as Item[]
       }
+      await checkPermission(this.context, this.UIContext, 'ohos.permission.READ_CALENDAR')
+      await checkPermission(this.context, this.UIContext, 'ohos.permission.WRITE_CALENDAR')
     })
   }
 }

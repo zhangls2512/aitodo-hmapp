@@ -3,7 +3,7 @@ import { promptAction } from '@kit.ArkUI'
 import { decrypt, EncryptData, getKeyAlg } from './Crypto'
 import { Action, Location } from './Datachange'
 import { CloudBackupTimeItem } from './Dataget'
-import { autoBackupTable, autoHuaweiCloudSyncTable, autoSyncTable } from './Table'
+import { autoBackupTable, autoSyncTable } from './Table'
 
 export interface TodoItem {
   id: string,
@@ -116,7 +116,6 @@ export async function importTodo(context: Context, data: string, conflict: relat
       })
       await autoSyncTable(context)
       await autoBackupTable(context)
-      await autoHuaweiCloudSyncTable(context)
       return 'success'
     } catch {
       await promptAction.openToast({

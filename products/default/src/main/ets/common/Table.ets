@@ -2,6 +2,7 @@ import { relationalStore } from '@kit.ArkData'
 import { util } from '@kit.ArkTS'
 import { promptAction } from '@kit.ArkUI'
 import { batteryInfo, power } from '@kit.BasicServicesKit'
+import { calendarManager } from '@kit.CalendarKit'
 import { distributedDeviceManager } from '@kit.DistributedServiceKit'
 import { rcp } from '@kit.RemoteCommunicationKit'
 import { getCaldavServerInfo } from './Caldavserver'
@@ -9,7 +10,9 @@ import { encrypt, EncryptData, getKeyAlg } from './Crypto'
 import { getPersonalTodoList } from './Dataget'
 import { write } from './File'
 import { icsstringify } from './Ics'
+import { getPermission } from './Permission'
 import { getFlushPreference } from './Preference'
+import { parseRRule } from './Rrule'
 import { getWebdavServerInfo } from './Webdavserver'
 
 interface Item {
@@ -17,6 +20,35 @@ interface Item {
   deviceName: string,
   deviceType: string,
   networkId: string
+}
+
+export async function autoSyncTable(context: Context, fromDeviceId?: string) {
+  const pauseAutoSyncWhenLowBatteryCapacityLevel =
+    getFlushPreference(context, 'dataSetting', 'pauseAutoSyncWhenLowBatteryCapacityLevel', false)
+  const pauseAutoSyncWhenPowerSave = getFlushPreference(context, 'dataSetting', 'pauseAutoSyncWhenPowerSave', false)
+  const lowBatteryCapacityLevel =
+    getFlushPreference(context, 'debugSetting', 'lowBatteryCapacityLevel', batteryInfo.BatteryCapacityLevel.LEVEL_LOW)
+  if (pauseAutoSyncWhenLowBatteryCapacityLevel && batteryInfo.batteryCapacityLevel >= lowBatteryCapacityLevel) {
+    return
+  }
+  const currentPowerMode = power.getPowerMode()
+  if (pauseAutoSyncWhenPowerSave && currentPowerMode !== power.DevicePowerMode.MODE_NORMAL &&
+    currentPowerMode !== power.DevicePowerMode.MODE_PERFORMANCE) {
+    return
+  }
+  const autoSync = getFlushPreference(context, 'dataSetting', 'autoSync', false)
+  if (autoSync) {
+    const autoSyncDevices: Item[] = getFlushPreference(context, 'dataSetting', 'autoSyncDevices', []) as Item[]
+    const devices = distributedDeviceManager.createDeviceManager('com.zhangxm.aitodo').getAvailableDeviceListSync()
+    const promises = autoSyncDevices.map(async (item) => {
+      if (!devices.find(item => item.deviceId === fromDeviceId)) {
+        await syncTable(context, item.networkId, relationalStore.SyncMode.SYNC_MODE_PUSH)
+      }
+    })
+    await Promise.all(promises)
+  }
+  await huaweiCloudSyncTable(context)
+  await systemCalendarSyncTable(context)
 }
 
 export async function syncTable(context: Context, networkId: string, syncMode: relationalStore.SyncMode) {
@@ -47,47 +79,7 @@ export async function syncTable(context: Context, networkId: string, syncMode: r
   }
 }
 
-export async function autoSyncTable(context: Context, fromDeviceId?: string) {
-  const pauseAutoSyncWhenLowBatteryCapacityLevel =
-    getFlushPreference(context, 'dataSetting', 'pauseAutoSyncWhenLowBatteryCapacityLevel', false)
-  const pauseAutoSyncWhenPowerSave = getFlushPreference(context, 'dataSetting', 'pauseAutoSyncWhenPowerSave', false)
-  const lowBatteryCapacityLevel =
-    getFlushPreference(context, 'debugSetting', 'lowBatteryCapacityLevel', batteryInfo.BatteryCapacityLevel.LEVEL_LOW)
-  if (pauseAutoSyncWhenLowBatteryCapacityLevel && batteryInfo.batteryCapacityLevel >= lowBatteryCapacityLevel) {
-    return
-  }
-  const currentPowerMode = power.getPowerMode()
-  if (pauseAutoSyncWhenPowerSave && currentPowerMode !== power.DevicePowerMode.MODE_NORMAL &&
-    currentPowerMode !== power.DevicePowerMode.MODE_PERFORMANCE) {
-    return
-  }
-  const autoSync = getFlushPreference(context, 'dataSetting', 'autoSync', false)
-  if (autoSync) {
-    const autoSyncDevices: Item[] = getFlushPreference(context, 'dataSetting', 'autoSyncDevices', []) as Item[]
-    const devices = distributedDeviceManager.createDeviceManager('com.zhangxm.aitodo').getAvailableDeviceListSync()
-    const promises = autoSyncDevices.map(async (item) => {
-      if (!devices.find(item => item.deviceId === fromDeviceId)) {
-        await syncTable(context, item.networkId, relationalStore.SyncMode.SYNC_MODE_PUSH)
-      }
-    })
-    await Promise.all(promises)
-  }
-}
-
-export async function autoHuaweiCloudSyncTable(context: Context) {
-  const pauseAutoSyncWhenLowBatteryCapacityLevel =
-    getFlushPreference(context, 'dataSetting', 'pauseAutoSyncWhenLowBatteryCapacityLevel', false)
-  const pauseAutoSyncWhenPowerSave = getFlushPreference(context, 'dataSetting', 'pauseAutoSyncWhenPowerSave', false)
-  const lowBatteryCapacityLevel =
-    getFlushPreference(context, 'debugSetting', 'lowBatteryCapacityLevel', batteryInfo.BatteryCapacityLevel.LEVEL_LOW)
-  if (pauseAutoSyncWhenLowBatteryCapacityLevel && batteryInfo.batteryCapacityLevel >= lowBatteryCapacityLevel) {
-    return
-  }
-  const currentPowerMode = power.getPowerMode()
-  if (pauseAutoSyncWhenPowerSave && currentPowerMode !== power.DevicePowerMode.MODE_NORMAL &&
-    currentPowerMode !== power.DevicePowerMode.MODE_PERFORMANCE) {
-    return
-  }
+async function huaweiCloudSyncTable(context: Context) {
   const autoHuaweiCloudSync = getFlushPreference(context, 'dataSetting', 'autoHuaweiCloudSync', false)
   if (autoHuaweiCloudSync) {
     const huaweiCloudSyncRdbStore = await relationalStore.getRdbStore(context, {
@@ -98,6 +90,104 @@ export async function autoHuaweiCloudSyncTable(context: Context) {
     })
     await huaweiCloudSyncRdbStore.cloudSync(relationalStore.SyncMode.SYNC_MODE_TIME_FIRST, ['todo'], () => {
     })
+  }
+}
+
+export async function systemCalendarSyncTable(context: Context) {
+  if (getPermission('ohos.permission.READ_CALENDAR') && getPermission('ohos.permission.WRITE_CALENDAR')) {
+    const systemCalendarManager = calendarManager.getCalendarManager(context)
+    const allCalendars = await systemCalendarManager.getAllCalendars()
+    const calendars = allCalendars.map(item => item.getAccount())
+    if (!calendars.find(item => item.name === 'com.zhangxm.aitodo')) {
+      await systemCalendarManager.createCalendar({
+        name: 'com.zhangxm.aitodo',
+        type: calendarManager.CalendarType.LOCAL,
+        displayName: '轩铭智能待办'
+      })
+    }
+    const calendar = await systemCalendarManager.getCalendar({
+      name: 'com.zhangxm.aitodo',
+      type: calendarManager.CalendarType.LOCAL,
+      displayName: '轩铭智能待办'
+    })
+    const events = await calendar.getEvents(undefined,
+      ['id', 'title', 'location', 'startTime', 'endTime', 'recurrenceRule', 'description', 'identifier'])
+    const todos = await getPersonalTodoList(context)
+    const promisesa = todos.map(async (item) => {
+      const eventItem = events.find(eventItem => eventItem.identifier === item.id)
+      const event: calendarManager.Event = {
+        type: calendarManager.EventType.NORMAL,
+        title: item.content,
+        location: {
+          latitude: item.location.latitude,
+          longitude: item.location.longitude,
+          location: item.location.location
+        },
+        startTime: item.startTime,
+        endTime: item.endTime,
+        description: item.bz,
+        identifier: item.id
+      }
+      if (item.recurrenceRule) {
+        event.recurrenceRule = {
+          recurrenceFrequency: parseRRule(item.recurrenceRule).recurrenceFrequency,
+          expire: parseRRule(item.recurrenceRule).expire,
+          count: parseRRule(item.recurrenceRule).count,
+          interval: parseRRule(item.recurrenceRule).interval,
+          excludedDates: item.excludeTime,
+          daysOfWeek: parseRRule(item.recurrenceRule).daysOfWeek,
+          daysOfMonth: parseRRule(item.recurrenceRule).daysOfMonth,
+          monthsOfYear: parseRRule(item.recurrenceRule).monthsOfYear
+        }
+      }
+      if (!eventItem) {
+        await calendar.addEvent(event)
+      } else {
+        event.id = eventItem.id
+        await calendar.updateEvent(event)
+      }
+    })
+    await Promise.all(promisesa)
+    const promisesb = events.map(async (item) => {
+      if (!todos.find(todoItem => todoItem.id === item.identifier)) {
+        await calendar.deleteEvent(item.id)
+      }
+    })
+    await Promise.all(promisesb)
+    return 'success'
+  }
+  return 'fail'
+}
+
+export async function autoBackupTable(context: Context) {
+  const pauseAutoBackupWhenLowBatteryCapacityLevel =
+    getFlushPreference(context, 'dataSetting', 'pauseAutoSyncWhenLowBatteryCapacityLevel', false)
+  const pauseAutoBackupWhenPowerSave = getFlushPreference(context, 'dataSetting', 'pauseAutoSyncWhenPowerSave', false)
+  const lowBatteryCapacityLevel =
+    getFlushPreference(context, 'debugSetting', 'lowBatteryCapacityLevel', batteryInfo.BatteryCapacityLevel.LEVEL_LOW)
+  if (pauseAutoBackupWhenLowBatteryCapacityLevel && batteryInfo.batteryCapacityLevel >= lowBatteryCapacityLevel) {
+    return
+  }
+  const currentPowerMode = power.getPowerMode()
+  if (pauseAutoBackupWhenPowerSave && currentPowerMode !== power.DevicePowerMode.MODE_NORMAL &&
+    currentPowerMode !== power.DevicePowerMode.MODE_PERFORMANCE) {
+    return
+  }
+  const autoBackup = getFlushPreference(context, 'dataSetting', 'autoBackup', true)
+  if (autoBackup) {
+    await backupTable(context)
+  }
+  const autoFileBackup = getFlushPreference(context, 'dataSetting', 'autoFileBackup', true)
+  if (autoFileBackup) {
+    await fileBackupTable(context)
+  }
+  const autoWebdavBackup = getFlushPreference(context, 'dataSetting', 'autoWebdavBackup', true)
+  if (autoWebdavBackup) {
+    await webdavBackupTable(context)
+  }
+  const autoCaldavBackup = getFlushPreference(context, 'dataSetting', 'autoCaldavBackup', true)
+  if (autoCaldavBackup) {
+    await caldavBackupTable(context)
   }
 }
 
@@ -264,38 +354,6 @@ export async function caldavBackupTable(context: Context) {
     }
   }
   return 'success'
-}
-
-export async function autoBackupTable(context: Context) {
-  const pauseAutoBackupWhenLowBatteryCapacityLevel =
-    getFlushPreference(context, 'dataSetting', 'pauseAutoSyncWhenLowBatteryCapacityLevel', false)
-  const pauseAutoBackupWhenPowerSave = getFlushPreference(context, 'dataSetting', 'pauseAutoSyncWhenPowerSave', false)
-  const lowBatteryCapacityLevel =
-    getFlushPreference(context, 'debugSetting', 'lowBatteryCapacityLevel', batteryInfo.BatteryCapacityLevel.LEVEL_LOW)
-  if (pauseAutoBackupWhenLowBatteryCapacityLevel && batteryInfo.batteryCapacityLevel >= lowBatteryCapacityLevel) {
-    return
-  }
-  const currentPowerMode = power.getPowerMode()
-  if (pauseAutoBackupWhenPowerSave && currentPowerMode !== power.DevicePowerMode.MODE_NORMAL &&
-    currentPowerMode !== power.DevicePowerMode.MODE_PERFORMANCE) {
-    return
-  }
-  const autoBackup = getFlushPreference(context, 'dataSetting', 'autoBackup', true)
-  if (autoBackup) {
-    await backupTable(context)
-  }
-  const autoFileBackup = getFlushPreference(context, 'dataSetting', 'autoFileBackup', true)
-  if (autoFileBackup) {
-    await fileBackupTable(context)
-  }
-  const autoWebdavBackup = getFlushPreference(context, 'dataSetting', 'autoWebdavBackup', true)
-  if (autoWebdavBackup) {
-    await webdavBackupTable(context)
-  }
-  const autoCaldavBackup = getFlushPreference(context, 'dataSetting', 'autoCaldavBackup', true)
-  if (autoCaldavBackup) {
-    await caldavBackupTable(context)
-  }
 }
 
 export async function recoveryTable(context: Context) {

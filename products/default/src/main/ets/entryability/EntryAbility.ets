@@ -28,7 +28,7 @@ import { deleteTodo } from '../common/Datachange'
 import { write } from '../common/File'
 import openLink from '../common/Openlink'
 import { getFlushPreference, getTempPreference, setTempPreference } from '../common/Preference'
-import { autoBackupTable, autoHuaweiCloudSyncTable, autoSyncTable } from '../common/Table'
+import { autoBackupTable, autoSyncTable } from '../common/Table'
 
 interface JsErrorObject {
   name: string,
@@ -455,7 +455,6 @@ export default class EntryAbility extends UIAbility {
       await Promise.all(promises)
       this.context.eventHub.emit('refreshTodo')
       await autoBackupTable(this.context)
-      await autoHuaweiCloudSyncTable(this.context)
     })
     huaweiCloudSyncRdbStore.on('dataChange', relationalStore.SubscribeType.SUBSCRIBE_TYPE_CLOUD_DETAILS,
       (changeInfo: relationalStore.ChangeInfo[]) => {

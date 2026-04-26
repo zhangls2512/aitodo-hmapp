@@ -8,7 +8,7 @@ function timeStampToIcsTimeString(timeStamp: number) {
     String(date.getUTCMinutes()).padStart(2, '0') + String(date.getUTCSeconds()).padStart(2, '0') + 'Z'
 }
 
-function icsTimeStringToTimeStamp(icsTimeString: string) {
+export function icsTimeStringToTimeStamp(icsTimeString: string) {
   if (icsTimeString[15] === 'Z') {
     return new Date(Date.UTC(Number(icsTimeString.substring(0, 4)), Number(icsTimeString.substring(4, 6)) - 1,
       Number(icsTimeString.substring(6, 8)), Number(icsTimeString.substring(9, 11)),
@@ -43,8 +43,8 @@ export function icsstringify(todoArray: TodoItem[]) {
     if (item.location.latitude !== -1 && item.location.longitude !== -1) {
       result += 'GEO:' + item.location.latitude + ';' + item.location.longitude + '\r\n'
     }
-    if (item.location.desc) {
-      result += 'LOCATION:' + item.location.desc + '\r\n'
+    if (item.location.location) {
+      result += 'LOCATION:' + item.location.location + '\r\n'
     }
     if (item.bz) {
       result += 'DESCRIPTION:' + item.bz + '\r\n'
@@ -76,7 +76,7 @@ export function icsparse(icsString: string) {
     location: {
       latitude: -1,
       longitude: -1,
-      desc: ''
+      location: ''
     },
     action: [],
     bz: '',
@@ -102,7 +102,7 @@ export function icsparse(icsString: string) {
         location: {
           latitude: -1,
           longitude: -1,
-          desc: ''
+          location: ''
         },
         action: [],
         bz: '',
@@ -150,7 +150,7 @@ export function icsparse(icsString: string) {
           todo.location.longitude = Number(geo[1])
         }
         if (key === 'LOCATION') {
-          todo.location.desc = value
+          todo.location.location = value
         }
         if (key === 'DESCRIPTION') {
           todo.bz = value

@@ -17,6 +17,14 @@
       "value": "用于获取可信设备列表、在可信设备间同步数据。"
     },
     {
+      "name": "READ_CALENDAR_reason",
+      "value": "用于同步系统日历到本应用待办。"
+    },
+    {
+      "name": "WRITE_CALENDAR_reason",
+      "value": "用于同步本应用待办到系统日历。"
+    },
+    {
       "name": "WRITE_PASTEBOARD_reason",
       "value": "用于写入数据到剪贴板，便于在外部环境使用。"
     },

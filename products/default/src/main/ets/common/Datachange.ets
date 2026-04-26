@@ -5,12 +5,12 @@ import { getPersonalAccountAccessToken, getPersonalAccountInfo } from './Account
 import { encrypt } from './Crypto'
 import { CloudBackupTimeItem } from './Dataget'
 import request from './Request'
-import { autoBackupTable, autoHuaweiCloudSyncTable, autoSyncTable } from './Table'
+import { autoBackupTable, autoSyncTable } from './Table'
 
 export interface Location {
   latitude: number,
   longitude: number,
-  desc: string
+  location: string
 }
 
 export interface Action {
@@ -102,7 +102,6 @@ export async function newTodo(context: Context, data: TodoInput) {
     })
     await autoSyncTable(context)
     await autoBackupTable(context)
-    await autoHuaweiCloudSyncTable(context)
     if (data.cloudBackup) {
       await setCloudBackup(context, {
         id: id,
@@ -191,7 +190,6 @@ export async function updateTodo(context: Context, id: string, data: TodoInput) 
     }, predicates)
     await autoSyncTable(context)
     await autoBackupTable(context)
-    await autoHuaweiCloudSyncTable(context)
     if (data.cloudBackup) {
       await setCloudBackup(context, {
         id: id,
@@ -239,7 +237,6 @@ export async function deleteTodo(context: Context, id: string) {
   })
   await autoSyncTable(context)
   await autoBackupTable(context)
-  await autoHuaweiCloudSyncTable(context)
 }
 
 export async function setCloudBackup(context: Context, data: CloudBackupItem) {
@@ -290,7 +287,6 @@ export async function setCloudBackup(context: Context, data: CloudBackupItem) {
       })
       await autoSyncTable(context)
       await autoBackupTable(context)
-      await autoHuaweiCloudSyncTable(context)
     }
   }
 }
@@ -341,7 +337,6 @@ export async function deleteCloudBackup(context: Context, data: CloudBackupItem)
       })
       await autoSyncTable(context)
       await autoBackupTable(context)
-      await autoHuaweiCloudSyncTable(context)
     }
   }
 }
