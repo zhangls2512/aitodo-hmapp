@@ -1,10 +1,11 @@
 import { relationalStore } from '@kit.ArkData'
 import { promptAction } from '@kit.ArkUI'
-import { getKeyAlg, EncryptData, decrypt } from './Crypto'
+import { decrypt, EncryptData, getKeyAlg } from './Crypto'
 import { Action, Location } from './Datachange'
+import { CloudBackupTimeItem } from './Dataget'
 import { autoBackupTable, autoHuaweiCloudSyncTable, autoSyncTable } from './Table'
 
-export interface TodoInItem {
+export interface TodoItem {
   id: string,
   content: string,
   priority: number,
@@ -20,7 +21,7 @@ export interface TodoInItem {
   bz: string,
   recentFinishedTime: number,
   updateTime: number,
-  cloudBackupTime: string
+  cloudBackupTime: CloudBackupTimeItem[]
 }
 
 interface FileBackupObject {
@@ -41,7 +42,7 @@ async function getImportString(filestring: string) {
         return 'unabledecrypt'
       }
       const decryptedArray: object[] = []
-      const promises = fileBackupObject.data.map(async (item: EncryptData) => {
+      const promises = fileBackupObject.data.map(async (item) => {
         const res = await decrypt(item)
         decryptedArray.push(JSON.parse(res))
       })
@@ -57,7 +58,7 @@ export async function importTodo(context: Context, data: string, conflict: relat
   const importstring = await getImportString(data)
   if (importstring !== 'fail' && importstring !== 'unabledecrypt') {
     try {
-      const array = JSON.parse(importstring) as TodoInItem[]
+      const array = JSON.parse(importstring) as TodoItem[]
       const rdbStore = await relationalStore.getRdbStore(context, {
         name: 'todo',
         securityLevel: relationalStore.SecurityLevel.S1,
@@ -88,7 +89,7 @@ export async function importTodo(context: Context, data: string, conflict: relat
           bz: item.bz,
           recentFinishedTime: item.recentFinishedTime,
           updateTime: item.updateTime,
-          cloudBackupTime: item.cloudBackupTime
+          cloudBackupTime: JSON.stringify(item.cloudBackupTime)
         }, conflict)
         huaweiCloudSyncRdbStore.insertSync('todo', {
           id: item.id,
@@ -106,7 +107,7 @@ export async function importTodo(context: Context, data: string, conflict: relat
           bz: item.bz,
           recentFinishedTime: item.recentFinishedTime,
           updateTime: item.updateTime,
-          cloudBackupTime: item.cloudBackupTime
+          cloudBackupTime: JSON.stringify(item.cloudBackupTime)
         }, conflict)
       })
       await autoSyncTable(context)

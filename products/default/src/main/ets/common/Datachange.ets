@@ -37,7 +37,11 @@ export interface TodoInput {
 
 interface CloudBackupItem {
   id: string,
-  content?: string
+  content: string
+}
+
+interface Content {
+  cloudBackupTime: CloudBackupTimeItem[]
 }
 
 export async function newTodo(context: Context, data: TodoInput) {
@@ -100,11 +104,6 @@ export async function newTodo(context: Context, data: TodoInput) {
     await autoBackupTable(context)
     await autoHuaweiCloudSyncTable(context)
     if (data.cloudBackup) {
-      const accountInfo = await getPersonalAccountInfo()
-      const cloudBackupTime: CloudBackupTimeItem[] = [{
-        uid: accountInfo.uid,
-        time: updateTime
-      }]
       await setCloudBackup(context, {
         id: id,
         content: JSON.stringify({
@@ -114,15 +113,15 @@ export async function newTodo(context: Context, data: TodoInput) {
           endTime: data.endTime,
           duration: data.duration,
           recurrenceRule: data.recurrenceRule,
-          excludeTime: JSON.stringify(data.excludeTime),
-          tag: JSON.stringify(data.tag),
-          dependency: JSON.stringify(data.dependency),
-          location: JSON.stringify(data.location),
-          action: JSON.stringify(data.action),
+          excludeTime: data.excludeTime,
+          tag: data.tag,
+          dependency: data.dependency,
+          location: data.location,
+          action: data.action,
           bz: data.bz,
           recentFinishedTime: -1,
           updateTime: updateTime,
-          cloudBackupTime: cloudBackupTime
+          cloudBackupTime: []
         })
       })
     }
@@ -144,15 +143,16 @@ export async function updateTodo(context: Context, id: string, data: TodoInput) 
   })
   const predicates = new relationalStore.RdbPredicates('todo')
   predicates.equalTo('id', id)
-  const updateTime = Date.now()
   const resultSet = await rdbStore.query(predicates)
   let teamId = ''
   let recentFinishedTime = -1
-  let cloudBackupTime = JSON.stringify([])
+  const updateTime = Date.now()
+  let cloudBackupTime: CloudBackupTimeItem[] = []
   if (resultSet.goToNextRow()) {
     teamId = resultSet.getValue(resultSet.getColumnIndex('teamId')) as string
     recentFinishedTime = resultSet.getValue(resultSet.getColumnIndex('recentFinishedTime')) as number
-    cloudBackupTime = resultSet.getValue(resultSet.getColumnIndex('cloudBackupTime')) as string
+    cloudBackupTime =
+      JSON.parse(resultSet.getValue(resultSet.getColumnIndex('cloudBackupTime')) as string) as CloudBackupTimeItem[]
     resultSet.close()
   }
   rdbStore.updateSync({
@@ -193,17 +193,6 @@ export async function updateTodo(context: Context, id: string, data: TodoInput) 
     await autoBackupTable(context)
     await autoHuaweiCloudSyncTable(context)
     if (data.cloudBackup) {
-      const cloudBackupTimeArray = JSON.parse(cloudBackupTime) as CloudBackupTimeItem[]
-      const accountInfo = await getPersonalAccountInfo()
-      const cloudBackupTimeItem = cloudBackupTimeArray.find(item => item.uid === accountInfo.uid)
-      if (!cloudBackupTimeItem) {
-        cloudBackupTimeArray.push({
-          uid: accountInfo.uid,
-          time: Date.now()
-        })
-      } else {
-        cloudBackupTimeItem.time = Date.now()
-      }
       await setCloudBackup(context, {
         id: id,
         content: JSON.stringify({
@@ -213,15 +202,15 @@ export async function updateTodo(context: Context, id: string, data: TodoInput) 
           endTime: data.endTime,
           duration: data.duration,
           recurrenceRule: data.recurrenceRule,
-          excludeTime: JSON.stringify(data.excludeTime),
-          tag: JSON.stringify(data.tag),
-          dependency: JSON.stringify(data.dependency),
-          location: JSON.stringify(data.location),
-          action: JSON.stringify(data.action),
+          excludeTime: data.excludeTime,
+          tag: data.tag,
+          dependency: data.dependency,
+          location: data.location,
+          action: data.action,
           bz: data.bz,
           recentFinishedTime: recentFinishedTime,
           updateTime: updateTime,
-          cloudBackupTime: JSON.stringify(cloudBackupTimeArray)
+          cloudBackupTime: cloudBackupTime
         })
       })
     }
@@ -254,10 +243,20 @@ export async function deleteTodo(context: Context, id: string) {
 }
 
 export async function setCloudBackup(context: Context, data: CloudBackupItem) {
-  const content = data.content as string
-  const encryptres = await encrypt(content)
-  const accessToken = await getPersonalAccountAccessToken()
+  const content = JSON.parse(data.content as string) as Content
   const accountInfo = await getPersonalAccountInfo()
+  const cloudBackupTimeItem = content.cloudBackupTime.find(item => item.uid === accountInfo.uid)
+  if (cloudBackupTimeItem) {
+    cloudBackupTimeItem.time = Date.now()
+  }
+  if (!cloudBackupTimeItem) {
+    content.cloudBackupTime.push({
+      uid: accountInfo.uid,
+      time: Date.now()
+    })
+  }
+  const encryptres = await encrypt(JSON.stringify(content))
+  const accessToken = await getPersonalAccountAccessToken()
   if (accessToken) {
     const res = await request(context, '/todo/setBackup', {
       accessToken: accessToken,
@@ -280,29 +279,11 @@ export async function setCloudBackup(context: Context, data: CloudBackupItem) {
       })
       const predicates = new relationalStore.RdbPredicates('todo')
       predicates.equalTo('id', data.id)
-      const resultSet = await rdbStore.query(predicates)
-      let cloudBackupTime: CloudBackupTimeItem[] = []
-      if (resultSet.goToNextRow()) {
-        const oldCloudBackupTime = resultSet.getValue(resultSet.getColumnIndex('cloudBackupTime')) as string
-        resultSet.close()
-        const oldCloudBackupTimeArray = JSON.parse(oldCloudBackupTime) as CloudBackupTimeItem[]
-        const oldCloudBackupTimeItem = oldCloudBackupTimeArray.find(item => item.uid === accountInfo.uid)
-        if (oldCloudBackupTimeItem) {
-          oldCloudBackupTimeItem.time = Date.now()
-        }
-        if (!oldCloudBackupTimeItem) {
-          oldCloudBackupTimeArray.push({
-            uid: accountInfo.uid,
-            time: Date.now()
-          })
-        }
-        cloudBackupTime = oldCloudBackupTimeArray
-      }
       rdbStore.updateSync({
-        cloudBackupTime: JSON.stringify(cloudBackupTime)
+        cloudBackupTime: JSON.stringify(content.cloudBackupTime)
       }, predicates)
       huaweiCloudSyncRdbStore.updateSync({
-        cloudBackupTime: JSON.stringify(cloudBackupTime)
+        cloudBackupTime: JSON.stringify(content.cloudBackupTime)
       }, predicates)
       await promptAction.openToast({
         message: '云备份成功'

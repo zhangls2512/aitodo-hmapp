@@ -6,12 +6,11 @@ import { distributedDeviceManager } from '@kit.DistributedServiceKit'
 import { rcp } from '@kit.RemoteCommunicationKit'
 import { getCaldavServerInfo } from './Caldavserver'
 import { encrypt, EncryptData, getKeyAlg } from './Crypto'
-import { getTodoList } from './Dataget'
+import { getPersonalTodoList } from './Dataget'
 import { write } from './File'
 import { icsstringify } from './Ics'
 import { getFlushPreference } from './Preference'
 import { getWebdavServerInfo } from './Webdavserver'
-import { TodoOutItem } from '../pages/DataInOut'
 
 interface Item {
   deviceId: string,
@@ -113,18 +112,17 @@ export async function backupTable(context: Context) {
 }
 
 async function getFileBackupString(context: Context, encrypted: boolean): Promise<string> {
-  const array = await getTodoList(context)
+  const array = await getPersonalTodoList(context)
   if (array.length > 0) {
-    const arrayOut = array.filter(item => !item.teamId)
     if (!encrypted) {
       return JSON.stringify({
         encrypted: false,
-        data: arrayOut
+        data: array
       })
     }
     if (encrypted) {
       const encryptedArray: EncryptData[] = []
-      const promises = arrayOut.map(async (item: TodoOutItem) => {
+      const promises = array.map(async (item) => {
         const res = await encrypt(JSON.stringify(item))
         encryptedArray.push({
           content: res.content,
@@ -151,63 +149,6 @@ export async function fileBackupTable(context: Context) {
   if (datastring !== 'fail') {
     await write(context.filesDir + '/backup/todo.txt', datastring)
   }
-}
-
-export async function caldavBackupTable(context: Context) {
-  const caldavServerInfo = await getCaldavServerInfo()
-  if (!caldavServerInfo.path) {
-    return 'fail'
-  }
-  const array = await getTodoList(context)
-  const arrayOut = array.filter(item => !item.teamId)
-  if (arrayOut.length > 0) {
-    const icsstring = icsstringify(arrayOut)
-    const session = rcp.createSession({
-      requestConfiguration: {
-        security: {
-          tlsRange: {
-            min: 'TlsV1.2'
-          }
-        }
-      },
-      headers: {
-        'content-type': 'text/calendar',
-        Authorization: 'Basic ' +
-          new util.Base64Helper().encodeToStringSync(new util.TextEncoder().encodeInto(caldavServerInfo.username + ':' +
-            caldavServerInfo.password))
-      }
-    })
-    try {
-      const response = await session.put(caldavServerInfo.path + '/todo.ics', icsstring)
-      session.close()
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        return 'success'
-      } else {
-        const statusCodeMap: Record<number, string> = {
-          401: '账号密码错误',
-          403: '备份不存在或无权限'
-        }
-        const reason = statusCodeMap[response.statusCode]
-        if (reason) {
-          await promptAction.openToast({
-            message: '备份失败，原因：' + reason
-          })
-          return 'fail'
-        }
-        await promptAction.openToast({
-          message: '请求失败，错误码：' + response.statusCode
-        })
-        return 'fail'
-      }
-    } catch (err) {
-      session.close()
-      await promptAction.openToast({
-        message: '发生错误，错误码：' + err.code
-      })
-      return 'fail'
-    }
-  }
-  return 'success'
 }
 
 export async function webdavBackupTable(context: Context) {
@@ -245,6 +186,62 @@ export async function webdavBackupTable(context: Context) {
         const statusCodeMap: Record<number, string> = {
           401: '账号密码错误',
           405: '目录不存在或无权限'
+        }
+        const reason = statusCodeMap[response.statusCode]
+        if (reason) {
+          await promptAction.openToast({
+            message: '备份失败，原因：' + reason
+          })
+          return 'fail'
+        }
+        await promptAction.openToast({
+          message: '请求失败，错误码：' + response.statusCode
+        })
+        return 'fail'
+      }
+    } catch (err) {
+      session.close()
+      await promptAction.openToast({
+        message: '发生错误，错误码：' + err.code
+      })
+      return 'fail'
+    }
+  }
+  return 'success'
+}
+
+export async function caldavBackupTable(context: Context) {
+  const caldavServerInfo = await getCaldavServerInfo()
+  if (!caldavServerInfo.path) {
+    return 'fail'
+  }
+  const array = await getPersonalTodoList(context)
+  if (array.length > 0) {
+    const icsstring = icsstringify(array)
+    const session = rcp.createSession({
+      requestConfiguration: {
+        security: {
+          tlsRange: {
+            min: 'TlsV1.2'
+          }
+        }
+      },
+      headers: {
+        'content-type': 'text/calendar',
+        Authorization: 'Basic ' +
+          new util.Base64Helper().encodeToStringSync(new util.TextEncoder().encodeInto(caldavServerInfo.username + ':' +
+            caldavServerInfo.password))
+      }
+    })
+    try {
+      const response = await session.put(caldavServerInfo.path + '/todo.ics', icsstring)
+      session.close()
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return 'success'
+      } else {
+        const statusCodeMap: Record<number, string> = {
+          401: '账号密码错误',
+          403: '备份不存在或无权限'
         }
         const reason = statusCodeMap[response.statusCode]
         if (reason) {

@@ -76,9 +76,21 @@ export default struct Vip {
         scene: 'transaction',
         sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
       })
-      await promptAction.openToast({
-        message: err.code + ''
-      })
+      if (err.code === 1001860004) {
+        await promptAction.openToast({
+          message: '操作过于频繁，请稍后再试'
+        })
+      }
+      if (err.code === 1001860051) {
+        await promptAction.openToast({
+          message: '您已购买，不能重复购买'
+        })
+      }
+      if (err.code !== 1001860000 && err.code !== 1001860005 && err.code !== 1001860004 && err.code !== 1001860051) {
+        await promptAction.openToast({
+          message: '发生错误，错误码：' + err.code + '，错误信息：' + err.message
+        })
+      }
     }
   }
 

@@ -14,7 +14,7 @@ interface CustomKey {
   alg: string
 }
 
-export function stringToArray(str: string) {
+function stringToArray(str: string) {
   return new util.TextEncoder().encodeInto(str)
 }
 

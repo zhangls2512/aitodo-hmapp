@@ -4,30 +4,10 @@ import { LengthMetrics, promptAction } from '@kit.ArkUI'
 import { zlib } from '@kit.BasicServicesKit'
 import { fileIo, picker } from '@kit.CoreFileKit'
 import { hdsMaterial, HdsNavDestination, HdsNavDestinationTitleMode, ScrollEffectType } from '@kit.UIDesignKit'
-import { Action, Location } from '../common/Datachange'
-import { getTodoList } from '../common/Dataget'
+import { getPersonalTodoList } from '../common/Dataget'
 import { importTodo } from '../common/Dataimport'
 import { readUri, writeUri } from '../common/File'
-import { icsstringify } from '../common/Ics'
-
-export interface TodoOutItem {
-  id: string,
-  content: string,
-  priority: number,
-  startTime: number,
-  endTime: number,
-  duration: number,
-  recurrenceRule: string,
-  excludeTime: number[],
-  tag: string[],
-  dependency: string[],
-  location: Location,
-  action: Action[],
-  bz: string,
-  recentFinishedTime: number,
-  updateTime: number,
-  cloudBackupTime: string
-}
+import { icsparse, icsstringify } from '../common/Ics'
 
 @Builder
 export function DataInOutBuilder() {
@@ -282,13 +262,16 @@ struct DataInOut {
               const documentViewPicker = new picker.DocumentViewPicker(this.context)
               const uris = await documentViewPicker.select(documentSelectOptions)
               if (uris.length === 1) {
-                /*const filePath = uris[0]
+                const filePath = uris[0]
                 const filestring = await readUri(filePath)
                 let conflictResolution = 0
                 if (this.index === 1) {
                   conflictResolution = 5
                 }
-                await importTodo(this.context, JSON.stringify(), conflictResolution)*/
+                await importTodo(this.context, JSON.stringify({
+                  encrypted: false,
+                  data: icsparse(filestring)
+                }), conflictResolution)
                 await promptAction.openToast({
                   message: '导入成功'
                 })
@@ -347,8 +330,7 @@ struct DataInOut {
                 }
               })
               .onClick(async () => {
-                const array = await getTodoList(this.context)
-                const arrayOut = array.filter(item => !item.teamId)
+                const array = await getPersonalTodoList(this.context)
                 const documentSaveOptions = new picker.DocumentSaveOptions()
                 documentSaveOptions.newFileNames = ['todo']
                 const promptAction = this.UIContext.getPromptAction()
@@ -371,7 +353,7 @@ struct DataInOut {
                   const uris = await documentViewPicker.save(documentSaveOptions)
                   if (uris.length === 1) {
                     const filePath = uris[0]
-                    await writeUri(filePath, JSON.stringify(arrayOut))
+                    await writeUri(filePath, JSON.stringify(array))
                     await promptAction.openToast({
                       message: '导出成功'
                     })
@@ -383,7 +365,7 @@ struct DataInOut {
                   const uris = await documentViewPicker.save(documentSaveOptions)
                   if (uris.length === 1) {
                     const filePath = uris[0]
-                    await writeUri(filePath, icsstringify(arrayOut))
+                    await writeUri(filePath, icsstringify(array))
                     await promptAction.openToast({
                       message: '导出成功'
                     })

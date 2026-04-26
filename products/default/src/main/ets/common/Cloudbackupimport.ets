@@ -2,7 +2,8 @@ import { relationalStore } from '@kit.ArkData'
 import { getPersonalAccountAccessToken } from './Account'
 import { decrypt, getKeyAlg } from './Crypto'
 import { Action, Location } from './Datachange'
-import { importTodo, TodoInItem } from './Dataimport'
+import { CloudBackupTimeItem } from './Dataget'
+import { importTodo, TodoItem } from './Dataimport'
 import request from './Request'
 
 interface Item {
@@ -26,7 +27,7 @@ interface TodoCloudBackup {
   bz: string,
   recentFinishedTime: number,
   updateTime: number,
-  cloudBackupTime: string
+  cloudBackupTime: CloudBackupTimeItem[]
 }
 
 export async function importCloudBackupTodo(context: Context, conflict: relationalStore.ConflictResolution) {
@@ -45,7 +46,7 @@ export async function importCloudBackupTodo(context: Context, conflict: relation
         })
         if (listResponse !== 'fail') {
           const array = JSON.parse(listResponse).data as Item[]
-          const todoArray: TodoInItem[] = []
+          const todoArray: TodoItem[] = []
           const promises = array.map(async (item) => {
             const itemstring = await decrypt({
               content: item.content,

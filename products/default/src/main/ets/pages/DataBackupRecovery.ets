@@ -9,6 +9,7 @@ import { hdsMaterial, HdsNavDestination, HdsNavDestinationTitleMode, ScrollEffec
 import { getCaldavServerInfo } from '../common/Caldavserver'
 import { importTodo } from '../common/Dataimport'
 import { read } from '../common/File'
+import { icsparse } from '../common/Ics'
 import { checkPermission } from '../common/Permission'
 import { getFlushPreference, setFlushPreference } from '../common/Preference'
 import { backupTable, caldavBackupTable, fileBackupTable, recoveryTable, webdavBackupTable } from '../common/Table'
@@ -105,10 +106,7 @@ struct DataBackupRecovery {
       const response = await session.get(webdavServerInfo.path + '/todo.txt')
       session.close()
       if (response.statusCode >= 200 && response.statusCode < 300) {
-        let body = ''
-        if (response.toString()) {
-          body = response.toString() as string
-        }
+        const body = String(response)
         if (!body) {
           await promptAction.openToast({
             message: '备份文件内容为空，无法恢复'
@@ -121,6 +119,59 @@ struct DataBackupRecovery {
         401: '账号密码错误',
         404: '无备份文件',
         405: '目录不存在或无权限'
+      }
+      const reason = statusCodeMap[response.statusCode]
+      if (reason) {
+        await promptAction.openToast({
+          message: '恢复失败，原因：' + reason
+        })
+        return 'fail'
+      }
+      await promptAction.openToast({
+        message: '请求失败，错误码：' + response.statusCode
+      })
+      return 'fail'
+    } catch (err) {
+      session.close()
+      await promptAction.openToast({
+        message: '发生错误，错误码：' + err.code
+      })
+      return 'fail'
+    }
+  }
+
+  async getCaldavBackup() {
+    const caldavServerInfo = await getCaldavServerInfo()
+    const session = rcp.createSession({
+      requestConfiguration: {
+        security: {
+          tlsRange: {
+            min: 'TlsV1.2'
+          }
+        }
+      },
+      headers: {
+        Authorization: 'Basic ' +
+          new util.Base64Helper().encodeToStringSync(new util.TextEncoder().encodeInto(caldavServerInfo.username + ':' +
+            caldavServerInfo.password))
+      }
+    })
+    try {
+      const response = await session.get(caldavServerInfo.path + '/todo.ics')
+      session.close()
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        const body = String(response)
+        if (!body) {
+          await promptAction.openToast({
+            message: '备份文件内容为空，无法恢复'
+          })
+          return 'fail'
+        }
+        return body
+      }
+      const statusCodeMap: Record<number, string> = {
+        401: '账号密码错误',
+        403: '备份不存在或无权限'
       }
       const reason = statusCodeMap[response.statusCode]
       if (reason) {
@@ -1275,24 +1326,24 @@ struct DataBackupRecovery {
                   })
                   return
                 }
-                await promptAction.openToast({
-                  message: '敬请期待'
-                })
-                /*this.dialogControllerProgress.open()
-                const filestring = await this.getWebdavBackup()
+                this.dialogControllerProgress.open()
+                const filestring = await this.getCaldavBackup()
                 this.dialogControllerProgress.close()
                 if (filestring !== 'fail') {
                   let conflictResolution = relationalStore.ConflictResolution.ON_CONFLICT_IGNORE
                   if (this.index === 1) {
                     conflictResolution = relationalStore.ConflictResolution.ON_CONFLICT_REPLACE
                   }
-                  const res = await importTodo(this.context, filestring, conflictResolution)
+                  const res = await importTodo(this.context, JSON.stringify({
+                    encrypted: false,
+                    data: icsparse(filestring)
+                  }), conflictResolution)
                   if (res === 'success') {
                     await promptAction.openToast({
                       message: '恢复成功'
                     })
                   }
-                }*/
+                }
               })
 
               Divider()

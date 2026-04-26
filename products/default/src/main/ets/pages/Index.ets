@@ -20,6 +20,7 @@ import { getKeyAlg } from '../common/Crypto'
 import { importTodo } from '../common/Dataimport'
 import getDeviceToken from '../common/Devicetoken'
 import { readUri } from '../common/File'
+import { icsparse } from '../common/Ics'
 import { getPreferType } from '../common/Prefertype'
 import request from '../common/Request'
 import Cleardata from './Cleardata'
@@ -311,8 +312,15 @@ struct Index {
             })
           }
           if (wantUri.endsWith('.vcs') || wantUri.endsWith('.ics')) {
-            //await importTodo(this.context, filestring)
+            await importTodo(this.context, JSON.stringify({
+              encrypted: false,
+              data: icsparse(filestring)
+            }),
+              relationalStore.ConflictResolution.ON_CONFLICT_IGNORE)
             this.context.eventHub.emit('refreshTodo')
+            await promptAction.openToast({
+              message: '导入成功'
+            })
           }
           if (wantUri.endsWith('.zip')) {
             const todoExtraFileDir = this.context.filesDir + '/todoextrafile/'

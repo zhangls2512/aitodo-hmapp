@@ -6,7 +6,7 @@ import { fileIo, fileUri } from '@kit.CoreFileKit'
 import { distributedDeviceManager } from '@kit.DistributedServiceKit'
 import { harmonyShare, systemShare } from '@kit.ShareKit'
 import { hdsMaterial, HdsNavDestination, HdsNavDestinationTitleMode, ScrollEffectType } from '@kit.UIDesignKit'
-import { getTodoList } from '../common/Dataget'
+import { getPersonalTodoList } from '../common/Dataget'
 import { write } from '../common/File'
 import { checkPermission } from '../common/Permission'
 import { getFlushPreference, setFlushPreference } from '../common/Preference'
@@ -973,10 +973,9 @@ struct Tablesync {
                 }
               })
               .onClick(async () => {
-                const array = await getTodoList(this.context)
-                const arrayOut = array.filter(item => !item.teamId)
+                const array = await getPersonalTodoList(this.context)
                 const filePath = this.context.tempDir + '/todo.txt'
-                await write(filePath, JSON.stringify(arrayOut))
+                await write(filePath, JSON.stringify(array))
                 const shareData = new systemShare.SharedData({
                   utd: uniformTypeDescriptor.UniformDataType.PLAIN_TEXT,
                   title: 'todo.txt',
