@@ -8,16 +8,27 @@ function timeStampToIcsTimeString(timeStamp: number) {
     String(date.getUTCMinutes()).padStart(2, '0') + String(date.getUTCSeconds()).padStart(2, '0') + 'Z'
 }
 
-export function icsTimeStringToTimeStamp(icsTimeString: string) {
+export function icsTimeStringToTimeStamp(icsTimeString: string, end?: boolean) {
   let timeStamp = 0
-  if (icsTimeString[15] === 'Z') {
+  if (icsTimeString.length === 16) {
     timeStamp = new Date(Date.UTC(Number(icsTimeString.substring(0, 4)), Number(icsTimeString.substring(4, 6)) - 1,
       Number(icsTimeString.substring(6, 8)), Number(icsTimeString.substring(9, 11)),
       Number(icsTimeString.substring(11, 13)), Number(icsTimeString.substring(13, 15)))).getTime()
-  } else {
+  }
+  if (icsTimeString.length === 15) {
     timeStamp = new Date(Number(icsTimeString.substring(0, 4)), Number(icsTimeString.substring(4, 6)) - 1,
       Number(icsTimeString.substring(6, 8)), Number(icsTimeString.substring(9, 11)),
       Number(icsTimeString.substring(11, 13)), Number(icsTimeString.substring(13, 15))).getTime()
+  }
+  if (icsTimeString.length === 8) {
+    if (!end) {
+      timeStamp = new Date(Number(icsTimeString.substring(0, 4)), Number(icsTimeString.substring(4, 6)) - 1,
+        Number(icsTimeString.substring(6, 8)), 0, 0, 0).getTime()
+    }
+    if (end) {
+      timeStamp = new Date(Number(icsTimeString.substring(0, 4)), Number(icsTimeString.substring(4, 6)) - 1,
+        Number(icsTimeString.substring(6, 8)), 23, 59, 59).getTime()
+    }
   }
   if (!Number.isNaN(timeStamp)) {
     return timeStamp
@@ -139,7 +150,7 @@ export function icsparse(icsString: string) {
           todo.startTime = icsTimeStringToTimeStamp(value)
         }
         if (key === 'DTEND') {
-          todo.endTime = icsTimeStringToTimeStamp(value)
+          todo.endTime = icsTimeStringToTimeStamp(value, true)
         }
         if (key === 'RRULE') {
           todo.recurrenceRule = value

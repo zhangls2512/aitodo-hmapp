@@ -3,6 +3,7 @@ import { promptAction } from '@kit.ArkUI'
 import { getPersonalAccountInfo } from './Account'
 import { Action, Location } from './Datachange'
 import { TodoItem } from './Dataimport'
+import { getRecentTodoFromFreq } from './Rrule'
 
 export interface CloudBackupTimeItem {
   uid: string,
@@ -25,9 +26,27 @@ export interface Todo {
   action: Action[],
   bz: string,
   recentCompletedTime: number,
+  isCompleted?: boolean,
   updateTime: number,
   cloudBackupTime: CloudBackupTimeItem[],
   isCloudBackup: boolean
+}
+
+export async function isTodoCompleted(context: Context, id: string, currentTime: number) {
+  const info = await getTodoInfo(context, id)
+  if (info !== 'fail') {
+    if (!info.recurrenceRule && info.recentCompletedTime !== -1) {
+      return true
+    }
+    if (info.recurrenceRule) {
+      const recentTodoStartEndTime =
+        getRecentTodoFromFreq(context, info.recurrenceRule, info.startTime, info.endTime, info.excludeTime, currentTime)
+      if (info.recentCompletedTime >= recentTodoStartEndTime.startTime) {
+        return true
+      }
+    }
+  }
+  return false
 }
 
 export async function getTodoInfo(context: Context, id: string) {
@@ -92,7 +111,7 @@ export async function getTodoInfo(context: Context, id: string) {
   return 'fail'
 }
 
-export async function getTodoList(context: Context) {
+export async function getTodoList(context: Context, currentTime: number) {
   try {
     const rdbStore = await relationalStore.getRdbStore(context, {
       name: 'todo',
@@ -137,6 +156,7 @@ export async function getTodoList(context: Context) {
         action: JSON.parse(resultSet.getValue(actionIndex) as string) as Action[],
         bz: resultSet.getValue(bzIndex) as string,
         recentCompletedTime: resultSet.getValue(recentCompletedTimeIndex) as number,
+        isCompleted: await isTodoCompleted(context, resultSet.getValue(idIndex) as string, currentTime),
         updateTime: resultSet.getValue(updateTimeIndex) as number,
         cloudBackupTime: JSON.parse(resultSet.getValue(cloudBackupTimeIndex) as string) as CloudBackupTimeItem[],
         isCloudBackup: false
@@ -160,7 +180,7 @@ export async function getTodoList(context: Context) {
   }
 }
 
-export async function getPersonalTodoList(context: Context) {
+export async function getPersonalTodoList(context: Context, currentTime: number) {
   try {
     const rdbStore = await relationalStore.getRdbStore(context, {
       name: 'todo',
@@ -218,7 +238,7 @@ export async function getPersonalTodoList(context: Context) {
   }
 }
 
-export async function getFilterTodoList(context: Context, contentKeyword: string, tag: string[]) {
+export async function getFilterTodoList(context: Context, currentTime: number, contentKeyword: string, tag: string[]) {
   try {
     const rdbStore = await relationalStore.getRdbStore(context, {
       name: 'todo',
@@ -272,6 +292,7 @@ export async function getFilterTodoList(context: Context, contentKeyword: string
           action: JSON.parse(resultSet.getValue(actionIndex) as string) as Action[],
           bz: resultSet.getValue(bzIndex) as string,
           recentCompletedTime: resultSet.getValue(recentCompletedTimeIndex) as number,
+          isCompleted: await isTodoCompleted(context, resultSet.getValue(idIndex) as string, currentTime),
           updateTime: resultSet.getValue(updateTimeIndex) as number,
           cloudBackupTime: JSON.parse(resultSet.getValue(cloudBackupTimeIndex) as string) as CloudBackupTimeItem[],
           isCloudBackup: false

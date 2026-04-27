@@ -3,8 +3,9 @@ import { util } from '@kit.ArkTS'
 import { promptAction } from '@kit.ArkUI'
 import { getPersonalAccountAccessToken, getPersonalAccountInfo } from './Account'
 import { encrypt } from './Crypto'
-import { CloudBackupTimeItem } from './Dataget'
+import { CloudBackupTimeItem, getTodoInfo, isTodoCompleted } from './Dataget'
 import request from './Request'
+import { getRecentTodoFromFreq } from './Rrule'
 import { autoBackupTable, autoSyncTable } from './Table'
 
 export interface Location {
@@ -211,6 +212,111 @@ export async function updateTodo(context: Context, id: string, data: TodoInput) 
           cloudBackupTime: cloudBackupTime
         })
       })
+    }
+  }
+}
+
+export async function completeTodo(context: Context, id: string, cloudBackup: boolean) {
+  const rdbStore = await relationalStore.getRdbStore(context, {
+    name: 'todo',
+    securityLevel: relationalStore.SecurityLevel.S1,
+    encrypt: true,
+    allowRebuild: true
+  })
+  const huaweiCloudSyncRdbStore = await relationalStore.getRdbStore(context, {
+    name: 'huaweicloudsync',
+    securityLevel: relationalStore.SecurityLevel.S1,
+    encrypt: true,
+    allowRebuild: true
+  })
+  const info = await getTodoInfo(context, id)
+  if (info !== 'fail') {
+    const completedTime = Date.now()
+    let res = 'success'
+    if (!info.teamId) {
+      if (!info.recurrenceRule) {
+        if (info.recentCompletedTime !== -1) {
+          await promptAction.openToast({
+            message: '无需重复完成'
+          })
+          res = 'fail'
+        }
+        if (info.startTime > completedTime) {
+          await promptAction.openToast({
+            message: '未到开始时间'
+          })
+          res = 'fail'
+        }
+      }
+      if (info.recurrenceRule) {
+        const recentTodoStartEndTime =
+          getRecentTodoFromFreq(context, info.recurrenceRule, info.startTime, info.endTime, info.excludeTime,
+            completedTime)
+        if (info.recentCompletedTime >= recentTodoStartEndTime.startTime) {
+          await promptAction.openToast({
+            message: '无需重复完成'
+          })
+          res = 'fail'
+        }
+        if (recentTodoStartEndTime.startTime > completedTime) {
+          await promptAction.openToast({
+            message: '未到开始时间'
+          })
+          res = 'fail'
+        }
+      }
+      for (let i = 0; i < info.dependency.length; i++) {
+        const completed = await isTodoCompleted(context, id, completedTime)
+        if (!completed) {
+          await promptAction.openToast({
+            message: '依赖待办未完成'
+          })
+          res = 'fail'
+          break
+        }
+      }
+    }
+    if (info.teamId) {
+      // 请求团队待办完成接口，如果请求失败或服务器返回失败则把res置为fail
+    }
+    if (res === 'success') {
+      const predicates = new relationalStore.RdbPredicates('todo')
+      predicates.equalTo('id', id)
+      rdbStore.updateSync({
+        recentCompletedTime: completedTime
+      }, predicates)
+      await promptAction.openToast({
+        message: '修改成功'
+      })
+      if (!info.teamId) {
+        huaweiCloudSyncRdbStore.updateSync({
+          recentCompletedTime: completedTime
+        }, predicates)
+        await autoSyncTable(context)
+        await autoBackupTable(context)
+        if (cloudBackup) {
+          await setCloudBackup(context, {
+            id: id,
+            content: JSON.stringify({
+              content: info.content,
+              priority: info.priority,
+              startTime: info.startTime,
+              endTime: info.endTime,
+              duration: info.duration,
+              recurrenceRule: info.recurrenceRule,
+              excludeTime: info.excludeTime,
+              tag: info.tag,
+              dependency: info.dependency,
+              location: info.location,
+              action: info.action,
+              bz: info.bz,
+              recentCompletedTime: completedTime,
+              updateTime: info.updateTime,
+              cloudBackupTime: info.cloudBackupTime
+            })
+          })
+        }
+      }
     }
   }
 }
