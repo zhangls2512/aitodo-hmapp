@@ -180,7 +180,7 @@ export async function getTodoList(context: Context, currentTime: number) {
   }
 }
 
-export async function getPersonalTodoList(context: Context, currentTime: number) {
+export async function getPersonalTodoList(context: Context) {
   try {
     const rdbStore = await relationalStore.getRdbStore(context, {
       name: 'todo',
