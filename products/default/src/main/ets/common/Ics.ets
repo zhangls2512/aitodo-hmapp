@@ -9,14 +9,20 @@ function timeStampToIcsTimeString(timeStamp: number) {
 }
 
 export function icsTimeStringToTimeStamp(icsTimeString: string) {
+  let timeStamp = 0
   if (icsTimeString[15] === 'Z') {
-    return new Date(Date.UTC(Number(icsTimeString.substring(0, 4)), Number(icsTimeString.substring(4, 6)) - 1,
+    timeStamp = new Date(Date.UTC(Number(icsTimeString.substring(0, 4)), Number(icsTimeString.substring(4, 6)) - 1,
       Number(icsTimeString.substring(6, 8)), Number(icsTimeString.substring(9, 11)),
       Number(icsTimeString.substring(11, 13)), Number(icsTimeString.substring(13, 15)))).getTime()
+  } else {
+    timeStamp = new Date(Number(icsTimeString.substring(0, 4)), Number(icsTimeString.substring(4, 6)) - 1,
+      Number(icsTimeString.substring(6, 8)), Number(icsTimeString.substring(9, 11)),
+      Number(icsTimeString.substring(11, 13)), Number(icsTimeString.substring(13, 15))).getTime()
   }
-  return new Date(Number(icsTimeString.substring(0, 4)), Number(icsTimeString.substring(4, 6)) - 1,
-    Number(icsTimeString.substring(6, 8)), Number(icsTimeString.substring(9, 11)),
-    Number(icsTimeString.substring(11, 13)), Number(icsTimeString.substring(13, 15))).getTime()
+  if (!Number.isNaN(timeStamp)) {
+    return timeStamp
+  }
+  return 0
 }
 
 export function icsstringify(todoArray: TodoItem[]) {
