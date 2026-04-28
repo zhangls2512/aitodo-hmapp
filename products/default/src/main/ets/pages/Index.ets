@@ -230,7 +230,7 @@ struct Index {
                 label: '推荐'
               }),
               new HdsSideMenuMainItem({
-                icon: $r('app.media.todo'),
+                icon: $r('app.media.todo_tab'),
                 label: '待办'
               }),
               new HdsSideMenuMainItem({

@@ -45,8 +45,9 @@ export async function isTodoCompleted(context: Context, id: string, currentTime:
         return true
       }
     }
+    return false
   }
-  return false
+  return true
 }
 
 export async function getTodoInfo(context: Context, id: string) {
