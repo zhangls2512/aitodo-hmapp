@@ -59,6 +59,26 @@ export async function newTeamAccount(accountInfo: TeamAccountInfo) {
   }
 }
 
+export async function getTeamName(teamId: string) {
+  const teamAccountList = await getTeamAccountList()
+  const teamAccount = teamAccountList.find(item => item.teamId === teamId)
+  if (teamAccount) {
+    return teamAccount.teamName
+  }
+  return '未知团队'
+}
+
+export async function updateTeamAccountAuthorization(id: string, authorization: string) {
+  const appAccountManager = appAccount.createAppAccountManager()
+  try {
+    await appAccountManager.setCredential(id, 'authorization', authorization)
+  } catch (err) {
+    await promptAction.openToast({
+      message: '发生错误，错误码：' + err.code
+    })
+  }
+}
+
 export async function getPersonalAccountAccessToken() {
   const appAccountManager = appAccount.createAppAccountManager()
   try {

@@ -266,7 +266,7 @@ export async function completeTodo(context: Context, id: string, cloudBackup: bo
         }
       }
       for (let i = 0; i < info.dependency.length; i++) {
-        const completed = await isTodoCompleted(context, id, completedTime)
+        const completed = await isTodoCompleted(context, info.dependency[i], completedTime)
         if (!completed) {
           await promptAction.openToast({
             message: '依赖待办未完成'

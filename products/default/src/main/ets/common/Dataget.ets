@@ -239,7 +239,8 @@ export async function getPersonalTodoList(context: Context) {
   }
 }
 
-export async function getFilterTodoList(context: Context, currentTime: number, contentKeyword: string, tag: string[]) {
+export async function getFilterTodoList(context: Context, currentTime: number, teamId: string, contentKeyword: string,
+  tag: string[]) {
   try {
     const rdbStore = await relationalStore.getRdbStore(context, {
       name: 'todo',
@@ -248,6 +249,7 @@ export async function getFilterTodoList(context: Context, currentTime: number, c
       allowRebuild: true
     })
     const predicates = new relationalStore.RdbPredicates('todo')
+    predicates.equalTo('teamId', teamId)
     if (contentKeyword) {
       predicates.contains('content', contentKeyword)
     }
@@ -318,6 +320,33 @@ export async function getFilterTodoList(context: Context, currentTime: number, c
   }
 }
 
-export function getRecommendTodoList() {
-  return []
+export async function getRecommendTodoList(context: Context) {
+  const currentTime = Date.now()
+  const list = await getTodoList(context, currentTime)
+  const lista = list.filter(item => !item.isCompleted)
+  const listb: Todo[] = []
+  for (let i = 0; i < lista.length; i++) {
+    const item = lista[i]
+    let allCompleted = true
+    for (let i = 0; i < item.dependency.length; i++) {
+      const completed = await isTodoCompleted(context, item.dependency[i], currentTime)
+      if (!completed) {
+        allCompleted = false
+        break
+      }
+    }
+    if (allCompleted) {
+      listb.push(item)
+    }
+  }
+  for (let i = 0; i < listb.length; i++) {
+    const item = listb[i]
+    if (item.recurrenceRule) {
+      const recentTodoStartEndTime =
+        getRecentTodoFromFreq(context, item.recurrenceRule, item.startTime, item.endTime, item.excludeTime, currentTime)
+      item.startTime = recentTodoStartEndTime.startTime
+      item.endTime = recentTodoStartEndTime.endTime
+    }
+  }
+  const listc = listb.filter(item => item.startTime <= currentTime && item.endTime > currentTime)
 }
