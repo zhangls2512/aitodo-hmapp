@@ -407,7 +407,8 @@ struct About {
               }
             })
             .onClick(async () => {
-              await this.context.openLink('https://appgallery.huawei.com/app/detail?id=com.zhangxm.aitodo&action=write-review')
+              await this.context.openLink(
+                'https://appgallery.huawei.com/app/detail?id=com.zhangxm.aitodo&action=write-review')
             })
 
             Divider()

@@ -15,7 +15,9 @@ struct Permissionsetting {
   @Local writePasteBoard: boolean = false
   @Local hoverId: number = -1
   context = this.getUIContext().getHostContext() as common.UIAbilityContext
+  approximatelyLocation = getPermission('ohos.permission.APPROXIMATELY_LOCATION')
   dataSync = getPermission('ohos.permission.DISTRIBUTED_DATASYNC')
+  location = getPermission('ohos.permission.LOCATION')
   readCalendar = getPermission('ohos.permission.READ_CALENDAR')
   writeCalendar = getPermission('ohos.permission.WRITE_CALENDAR')
 
@@ -49,7 +51,8 @@ struct Permissionsetting {
             .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
             .padding($r('sys.float.ohos_id_corner_radius_mark'))
 
-            Text('系统自动开启此权限，无法手动管理。本应用使用此权限获取并根据指定类型文件图标、网络、Wi-Fi等信息，使用互联网、应用关闭前执行自定义的预关闭动作、振动、窗口置顶等能力优化使用体验。通过此权限获取的信息不上传到本应用开发者服务器。')
+            Text(
+              '系统自动开启此权限，无法手动管理。本应用使用此权限获取并根据指定类型文件图标、网络、Wi-Fi等信息，使用互联网、应用关闭前执行自定义的预关闭动作、振动、窗口置顶等能力优化使用体验。通过此权限获取的信息不上传到本应用开发者服务器。')
               .enableAutoSpacing(true)
               .fontColor($r('sys.color.font_secondary'))
               .fontSize($r('sys.float.ohos_id_text_size_body3'))
@@ -114,6 +117,63 @@ struct Permissionsetting {
           Column() {
             Column() {
               Row() {
+                Text('模糊位置')
+                  .fontWeight(FontWeight.Medium)
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
+                Toggle({
+                  type: ToggleType.Switch,
+                  isOn: this.approximatelyLocation
+                })
+                  .enabled(false)
+              }
+              .borderRadius(12)
+              .padding(12)
+            }
+            .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+            .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
+            .padding($r('sys.float.ohos_id_corner_radius_mark'))
+
+            Text() {
+              Span($r('app.string.LOCATION_reason'))
+                .fontColor($r('sys.color.font_secondary'))
+              Span('请前往')
+                .fontColor($r('sys.color.font_secondary'))
+              Span('系统设置')
+                .fontColor($r('sys.color.font_emphasize'))
+                .fontWeight(FontWeight.Medium)
+                .onClick(async () => {
+                  await this.context.startAbility({
+                    bundleName: 'com.huawei.hmos.settings',
+                    abilityName: 'com.huawei.hmos.settings.MainAbility',
+                    uri: 'application_info_entry',
+                    parameters: {
+                      pushParams: 'com.zhangxm.aitodo'
+                    }
+                  })
+                })
+              Span('管理此权限。')
+                .fontColor($r('sys.color.font_secondary'))
+            }
+            .fontSize($r('sys.float.ohos_id_text_size_body3'))
+            .margin({
+              top: 6,
+              left: 12,
+              right: 12
+            })
+          }
+          .alignItems(HorizontalAlign.Start)
+        }
+        .margin({
+          top: $r('sys.float.ohos_id_elements_margin_vertical_l')
+        })
+
+        ListItem() {
+          Column() {
+            Column() {
+              Row() {
                 Text('设备发现和连接')
                   .fontWeight(FontWeight.Medium)
                   .layoutWeight(1)
@@ -135,6 +195,63 @@ struct Permissionsetting {
 
             Text() {
               Span($r('app.string.DISTRIBUTED_DATASYNC_reason'))
+                .fontColor($r('sys.color.font_secondary'))
+              Span('请前往')
+                .fontColor($r('sys.color.font_secondary'))
+              Span('系统设置')
+                .fontColor($r('sys.color.font_emphasize'))
+                .fontWeight(FontWeight.Medium)
+                .onClick(async () => {
+                  await this.context.startAbility({
+                    bundleName: 'com.huawei.hmos.settings',
+                    abilityName: 'com.huawei.hmos.settings.MainAbility',
+                    uri: 'application_info_entry',
+                    parameters: {
+                      pushParams: 'com.zhangxm.aitodo'
+                    }
+                  })
+                })
+              Span('管理此权限。')
+                .fontColor($r('sys.color.font_secondary'))
+            }
+            .fontSize($r('sys.float.ohos_id_text_size_body3'))
+            .margin({
+              top: 6,
+              left: 12,
+              right: 12
+            })
+          }
+          .alignItems(HorizontalAlign.Start)
+        }
+        .margin({
+          top: $r('sys.float.ohos_id_elements_margin_vertical_l')
+        })
+
+        ListItem() {
+          Column() {
+            Column() {
+              Row() {
+                Text('精确位置')
+                  .fontWeight(FontWeight.Medium)
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
+                Toggle({
+                  type: ToggleType.Switch,
+                  isOn: this.location
+                })
+                  .enabled(false)
+              }
+              .borderRadius(12)
+              .padding(12)
+            }
+            .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+            .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
+            .padding($r('sys.float.ohos_id_corner_radius_mark'))
+
+            Text() {
+              Span($r('app.string.LOCATION_reason'))
                 .fontColor($r('sys.color.font_secondary'))
               Span('请前往')
                 .fontColor($r('sys.color.font_secondary'))

@@ -17,6 +17,10 @@
       "value": "用于获取可信设备列表、在可信设备间同步数据。"
     },
     {
+      "name": "LOCATION_reason",
+      "value": "用于获取当前位置以推荐地点在当前位置附近的待办。"
+    },
+    {
       "name": "READ_CALENDAR_reason",
       "value": "用于同步系统日历到本应用待办。"
     },

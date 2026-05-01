@@ -358,9 +358,11 @@ export default struct Login {
                   verifyType: 'passkey',
                   credentialId: new util.Base64Helper().encodeToStringSync(publicKeyAssertionCredential.rawId,
                     util.Type.BASIC_URL_SAFE),
-                  authenticatorData: new util.Base64Helper().encodeToStringSync(publicKeyAssertionCredential.response.authenticatorData,
+                  authenticatorData: new util.Base64Helper().encodeToStringSync(
+                    publicKeyAssertionCredential.response.authenticatorData,
                     util.Type.BASIC_URL_SAFE),
-                  clientDataJSON: new util.Base64Helper().encodeToStringSync(publicKeyAssertionCredential.response.clientDataJson,
+                  clientDataJSON: new util.Base64Helper().encodeToStringSync(
+                    publicKeyAssertionCredential.response.clientDataJson,
                     util.Type.BASIC_URL_SAFE),
                   signature: new util.Base64Helper().encodeToStringSync(publicKeyAssertionCredential.response.signature,
                     util.Type.BASIC_URL_SAFE)

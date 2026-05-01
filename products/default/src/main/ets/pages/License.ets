@@ -410,7 +410,8 @@ struct License {
               .width('50%')
 
               Column() {
-                Text('有隐私相关功能，包括但不限于权限管理、业务与隐私的声明、第三方SDK列表、已收集个人信息清单、隐私声明摘要')
+                Text(
+                  '有隐私相关功能，包括但不限于权限管理、业务与隐私的声明、第三方SDK列表、已收集个人信息清单、隐私声明摘要')
                   .enableAutoSpacing(true)
                   .textAlign(TextAlign.Center)
               }

@@ -28,7 +28,7 @@ export default class InsightIntentExecutorImpl extends InsightIntentExecutor {
       context.eventHub.emit('refreshTodo')
     }
     if (name === 'GetRecommendTodo') {
-      const res = getRecommendTodoList()
+      const res = getRecommendTodoList(context)
       return Promise.resolve({
         code: -1,
         result: {

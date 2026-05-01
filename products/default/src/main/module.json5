@@ -184,8 +184,28 @@
         "name": "ohos.permission.WINDOW_TOPMOST"
       },
       {
+        "name": "ohos.permission.APPROXIMATELY_LOCATION",
+        "reason": "$string:LOCATION_reason",
+        "usedScene": {
+          "abilities": [
+            "EntryAbility"
+          ],
+          "when": "inuse"
+        }
+      },
+      {
         "name": "ohos.permission.DISTRIBUTED_DATASYNC",
         "reason": "$string:DISTRIBUTED_DATASYNC_reason",
+        "usedScene": {
+          "abilities": [
+            "EntryAbility"
+          ],
+          "when": "inuse"
+        }
+      },
+      {
+        "name": "ohos.permission.LOCATION",
+        "reason": "$string:LOCATION_reason",
         "usedScene": {
           "abilities": [
             "EntryAbility"

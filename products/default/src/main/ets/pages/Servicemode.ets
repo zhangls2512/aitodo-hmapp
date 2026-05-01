@@ -50,7 +50,8 @@ struct Servicemode {
             .padding($r('sys.float.ohos_id_corner_radius_mark'))
 
             Text() {
-              Span('全量模式下，本应用需要连接本应用开发者服务器，除可使用记录待办、检查本应用更新等无需连接本应用开发者服务器的功能外，还可使用账号登录、云备份、自动上传故障日志等需要连接本应用开发者服务器的功能。我们仅在您使用具体业务功能时，才会触发上述行为收集使用相关的个人信息。详情请参阅')
+              Span(
+                '全量模式下，本应用需要连接本应用开发者服务器，除可使用记录待办、检查本应用更新等无需连接本应用开发者服务器的功能外，还可使用账号登录、云备份、自动上传故障日志等需要连接本应用开发者服务器的功能。我们仅在您使用具体业务功能时，才会触发上述行为收集使用相关的个人信息。详情请参阅')
                 .fontColor($r('sys.color.font_secondary'))
               Span('关于轩铭智能待办与隐私的声明')
                 .fontColor($r('sys.color.font_emphasize'))
@@ -112,7 +113,8 @@ struct Servicemode {
             .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
             .padding($r('sys.float.ohos_id_corner_radius_mark'))
 
-            Text('基本模式下，本应用无需连接本应用开发者服务器，可使用记录待办、检查本应用更新等无需连接本应用开发者服务器的功能。此模式下无法使用账号登录、云备份、自动上传故障日志等需要连接本应用开发者服务器的功能。')
+            Text(
+              '基本模式下，本应用无需连接本应用开发者服务器，可使用记录待办、检查本应用更新等无需连接本应用开发者服务器的功能。此模式下无法使用账号登录、云备份、自动上传故障日志等需要连接本应用开发者服务器的功能。')
               .fontColor($r('sys.color.font_secondary'))
               .fontSize($r('sys.float.ohos_id_text_size_body3'))
               .margin({

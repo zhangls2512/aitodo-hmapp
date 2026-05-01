@@ -73,7 +73,8 @@ struct Vipcode {
                 top: $r('sys.float.ohos_id_text_paragraph_margin_m')
               })
               .onClick(async () => {
-                await this.context.openLink('https://appgallery.huawei.com/app/detail?id=com.zhangxm.aitodo&action=write-review')
+                await this.context.openLink(
+                  'https://appgallery.huawei.com/app/detail?id=com.zhangxm.aitodo&action=write-review')
               })
             Text('· 提供有效反馈')
               .fontColor($r('sys.color.font_emphasize'))

@@ -365,7 +365,8 @@ export default class EntryAbility extends UIAbility {
       encrypt: true,
       allowRebuild: true
     })
-    await rdbStore.executeSql('CREATE TABLE IF NOT EXISTS todo(id TEXT PRIMARY KEY,teamId,content,priority,startTime,endTime,duration,recurrenceRule,excludeTime,tag,dependency,location,action,bz,recentCompletedTime,updateTime,cloudBackupTime)')
+    await rdbStore.executeSql(
+      'CREATE TABLE IF NOT EXISTS todo(id TEXT PRIMARY KEY,teamId,content,priority,startTime,endTime,duration,recurrenceRule,excludeTime,tag,dependency,location,action,bz,recentCompletedTime,updateTime,cloudBackupTime)')
     await rdbStore.executeSql('CREATE INDEX IF NOT EXISTS name ON todo(content)')
     const huaweiCloudSyncRdbStore = await relationalStore.getRdbStore(this.context, {
       name: 'huaweicloudsync',
@@ -373,7 +374,8 @@ export default class EntryAbility extends UIAbility {
       encrypt: true,
       allowRebuild: true
     })
-    await huaweiCloudSyncRdbStore.executeSql('CREATE TABLE IF NOT EXISTS todo(id TEXT PRIMARY KEY,teamId TEXT,content TEXT,priority INTEGER,startTime INTEGER,endTime INTEGER,duration INTEGER,recurrenceRule TEXT,excludeTime TEXT,tag TEXT,dependency TEXT,location TEXT,action TEXT,bz TEXT,recentCompletedTime INTEGER,updateTime INTEGER,cloudBackupTime TEXT)')
+    await huaweiCloudSyncRdbStore.executeSql(
+      'CREATE TABLE IF NOT EXISTS todo(id TEXT PRIMARY KEY,teamId TEXT,content TEXT,priority INTEGER,startTime INTEGER,endTime INTEGER,duration INTEGER,recurrenceRule TEXT,excludeTime TEXT,tag TEXT,dependency TEXT,location TEXT,action TEXT,bz TEXT,recentCompletedTime INTEGER,updateTime INTEGER,cloudBackupTime TEXT)')
     rdbStore.on('dataChange', relationalStore.SubscribeType.SUBSCRIBE_TYPE_REMOTE, async (deviceIds) => {
       const promises = deviceIds.map(async (item) => {
         const tableName = await rdbStore.obtainDistributedTableName(item, 'todo')

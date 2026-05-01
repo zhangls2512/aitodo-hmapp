@@ -1,6 +1,7 @@
 import { common } from '@kit.AbilityKit'
 import { uri } from '@kit.ArkTS'
 import { LoadingDialog, promptAction } from '@kit.ArkUI'
+import { deviceInfo } from '@kit.BasicServicesKit'
 import { scanBarcode, scanCore } from '@kit.ScanKit'
 import { getPersonalAccountAccessToken, getPersonalAccountInfo, removeAccount } from '../common/Account'
 import getCloudServiceStatus from '../common/Cloudservice'
@@ -135,81 +136,68 @@ export default struct Me {
           })
 
           if (this.uid) {
-            Divider()
-              .padding({
-                left: 12,
-                right: 12
+            if (deviceInfo.deviceType !== '2in1') {
+              Divider()
+                .padding({
+                  left: 12,
+                  right: 12
+                })
+              Row() {
+                Text('扫码登录')
+                  .fontWeight(FontWeight.Medium)
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
+                Image($r('app.media.right'))
+                  .fillColor($r('sys.color.icon_fourth'))
+                  .height(12)
+                  .width(12)
+              }
+              .borderRadius(12)
+              .padding(12)
+              .stateStyles({
+                normal: {
+                  .backgroundColor(this.hoverId === 1 ? $r('sys.color.interactive_hover') :
+                    $r('sys.color.comp_background_primary'))
+                },
+                pressed: {
+                  .backgroundColor($r('sys.color.comp_background_secondary'))
+                }
               })
-            Row() {
-              Text('扫码登录')
-                .fontWeight(FontWeight.Medium)
-                .layoutWeight(1)
-                .margin({
-                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                })
-              Image($r('app.media.right'))
-                .fillColor($r('sys.color.icon_fourth'))
-                .height(12)
-                .width(12)
-            }
-            .borderRadius(12)
-            .padding(12)
-            .stateStyles({
-              normal: {
-                .backgroundColor(this.hoverId === 1 ? $r('sys.color.interactive_hover') :
-                  $r('sys.color.comp_background_primary'))
-              },
-              pressed: {
-                .backgroundColor($r('sys.color.comp_background_secondary'))
-              }
-            })
-            .onHover(isHover => {
-              if (!isHover) {
-                this.hoverId = -1
-              }
-              if (isHover) {
-                this.hoverId = 1
-              }
-            })
-            .onClick(async () => {
-              try {
-                const promptAction = this.UIContext.getPromptAction()
-                const scanres = await scanBarcode.startScanForResult(this.context, {
-                  scanTypes: [scanCore.ScanType.QR_CODE]
-                })
-                if (!scanres.originalValue.startsWith('https://www.zhangls2512.cn/product/account/login')) {
-                  await promptAction.showDialog({
-                    title: '提示',
-                    message: '请扫描有效的登录二维码',
-                    buttons: [
-                      {
-                        text: '确定',
-                        color: $r('sys.color.font_emphasize')
-                      }
-                    ]
-                  })
-                  return
+              .onHover(isHover => {
+                if (!isHover) {
+                  this.hoverId = -1
                 }
-                const uriInstance = new uri.URI(scanres.originalValue)
-                const ticket = uriInstance.getQueryValue('ticket')
-                if (!ticket) {
-                  await promptAction.showDialog({
-                    title: '提示',
-                    message: '链接格式错误',
-                    buttons: [
-                      {
-                        text: '确定',
-                        color: $r('sys.color.font_emphasize')
-                      }
-                    ]
-                  })
+                if (isHover) {
+                  this.hoverId = 1
                 }
-                if (ticket) {
-                  const accessToken = await getPersonalAccountAccessToken()
-                  if (!accessToken) {
+              })
+              .onClick(async () => {
+                try {
+                  const promptAction = this.UIContext.getPromptAction()
+                  const scanres = await scanBarcode.startScanForResult(this.context, {
+                    scanTypes: [scanCore.ScanType.QR_CODE]
+                  })
+                  if (!scanres.originalValue.startsWith('https://www.zhangls2512.cn/product/account/login')) {
                     await promptAction.showDialog({
                       title: '提示',
-                      message: '扫码登录失败，原因：未登录账号',
+                      message: '请扫描有效的登录二维码',
+                      buttons: [
+                        {
+                          text: '确定',
+                          color: $r('sys.color.font_emphasize')
+                        }
+                      ]
+                    })
+                    return
+                  }
+                  const uriInstance = new uri.URI(scanres.originalValue)
+                  const ticket = uriInstance.getQueryValue('ticket')
+                  if (!ticket) {
+                    await promptAction.showDialog({
+                      title: '提示',
+                      message: '链接格式错误',
                       buttons: [
                         {
                           text: '确定',
@@ -218,57 +206,71 @@ export default struct Me {
                       ]
                     })
                   }
-                  if (accessToken) {
-                    const confirm = await promptAction.showDialog({
-                      title: '提示',
-                      message: '确定登录？',
-                      buttons: [
-                        {
-                          text: '取消',
-                          color: $r('sys.color.font_primary')
-                        },
-                        {
-                          text: '确定',
-                          color: $r('sys.color.font_emphasize')
+                  if (ticket) {
+                    const accessToken = await getPersonalAccountAccessToken()
+                    if (!accessToken) {
+                      await promptAction.showDialog({
+                        title: '提示',
+                        message: '扫码登录失败，原因：未登录账号',
+                        buttons: [
+                          {
+                            text: '确定',
+                            color: $r('sys.color.font_emphasize')
+                          }
+                        ]
+                      })
+                    }
+                    if (accessToken) {
+                      const confirm = await promptAction.showDialog({
+                        title: '提示',
+                        message: '确定登录？',
+                        buttons: [
+                          {
+                            text: '取消',
+                            color: $r('sys.color.font_primary')
+                          },
+                          {
+                            text: '确定',
+                            color: $r('sys.color.font_emphasize')
+                          }
+                        ]
+                      })
+                      if (confirm.index === 1) {
+                        const dialogControllerProgress = new CustomDialogController({
+                          builder: LoadingDialog({
+                            content: '请求中...'
+                          })
+                        })
+                        dialogControllerProgress.open()
+                        const res = await request(this.context, '/account/confirmTicket', {
+                          accessToken: accessToken,
+                          ticket: ticket
+                        })
+                        dialogControllerProgress.close()
+                        if (res !== 'fail') {
+                          await promptAction.showDialog({
+                            title: '提示',
+                            message: '确定成功',
+                            buttons: [
+                              {
+                                text: '确定',
+                                color: $r('sys.color.font_emphasize')
+                              }
+                            ]
+                          })
                         }
-                      ]
-                    })
-                    if (confirm.index === 1) {
-                      const dialogControllerProgress = new CustomDialogController({
-                        builder: LoadingDialog({
-                          content: '请求中...'
-                        })
-                      })
-                      dialogControllerProgress.open()
-                      const res = await request(this.context, '/account/confirmTicket', {
-                        accessToken: accessToken,
-                        ticket: ticket
-                      })
-                      dialogControllerProgress.close()
-                      if (res !== 'fail') {
-                        await promptAction.showDialog({
-                          title: '提示',
-                          message: '确定成功',
-                          buttons: [
-                            {
-                              text: '确定',
-                              color: $r('sys.color.font_emphasize')
-                            }
-                          ]
-                        })
                       }
                     }
                   }
+                } catch (err) {
+                  if (err.code !== 1000500002) {
+                    await promptAction.openToast({
+                      message: '发生错误，错误码：' + err.code
+                    })
+                  }
                 }
-              } catch (err) {
-                if (err.code !== 1000500002) {
-                  await promptAction.openToast({
-                    message: '发生错误，错误码：' + err.code
-                  })
-                }
-              }
-            })
-
+              })
+            }
             Divider()
               .padding({
                 left: 12,
