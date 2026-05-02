@@ -1,9 +1,13 @@
 import { relationalStore } from '@kit.ArkData'
 import { promptAction } from '@kit.ArkUI'
-import { getPersonalAccountInfo } from './Account'
+import { geoLocationManager } from '@kit.LocationKit'
+import { map, mapCommon } from '@kit.MapKit'
+import { getPersonalAccountInfo, getTeamName } from './Account'
 import { Action, Location } from './Datachange'
 import { TodoItem } from './Dataimport'
+import { getPermission } from './Permission'
 import { getRecentTodoFromFreq } from './Rrule'
+import { getTagMap } from './Tag'
 
 export interface CloudBackupTimeItem {
   uid: string,
@@ -13,6 +17,7 @@ export interface CloudBackupTimeItem {
 export interface Todo {
   id: string,
   teamId: string,
+  teamName?: string,
   content: string,
   priority: number,
   startTime: number,
@@ -29,7 +34,10 @@ export interface Todo {
   isCompleted?: boolean,
   updateTime: number,
   cloudBackupTime: CloudBackupTimeItem[],
-  isCloudBackup: boolean
+  isCloudBackup: boolean,
+  distance?: number,
+  latestStartTime?: number,
+  priorityTagScore?: number
 }
 
 export async function isTodoCompleted(context: Context, id: string, currentTime: number) {
@@ -162,6 +170,7 @@ export async function getTodoList(context: Context, currentTime: number) {
         cloudBackupTime: JSON.parse(resultSet.getValue(cloudBackupTimeIndex) as string) as CloudBackupTimeItem[],
         isCloudBackup: false
       }
+      info.teamName = await getTeamName(info.teamId)
       const accountInfo = await getPersonalAccountInfo()
       const cloudBackupTimeItem = info.cloudBackupTime.find(item => item.uid === accountInfo.uid)
       if (cloudBackupTimeItem) {
@@ -300,6 +309,7 @@ export async function getFilterTodoList(context: Context, currentTime: number, t
           cloudBackupTime: JSON.parse(resultSet.getValue(cloudBackupTimeIndex) as string) as CloudBackupTimeItem[],
           isCloudBackup: false
         }
+        info.teamName = await getTeamName(info.teamId)
         const accountInfo = await getPersonalAccountInfo()
         const cloudBackupTimeItem = info.cloudBackupTime.find(item => item.uid === accountInfo.uid)
         if (cloudBackupTimeItem) {
@@ -349,4 +359,83 @@ export async function getRecommendTodoList(context: Context) {
     }
   }
   const listc = listb.filter(item => item.startTime <= currentTime && item.endTime > currentTime)
+  let latitude = -1
+  let longitude = -1
+  const location = getPermission('ohos.permission.LOCATION')
+  if (location) {
+    try {
+      const res = await geoLocationManager.getCurrentLocation()
+      const gcj02Position = map.convertCoordinateSync(mapCommon.CoordinateType.WGS84, mapCommon.CoordinateType.GCJ02, {
+        latitude: res.latitude,
+        longitude: res.longitude
+      })
+      latitude = gcj02Position.latitude
+      longitude = gcj02Position.longitude
+    } catch {
+    }
+  }
+  listc.forEach(item => {
+    if (latitude !== -1 && longitude !== -1 && item.location.latitude !== -1 && item.location.longitude !== -1) {
+      item.distance = map.calculateDistance({
+        latitude: latitude,
+        longitude: longitude
+      }, {
+        latitude: item.location.latitude,
+        longitude: item.location.longitude
+      })
+    } else {
+      item.distance = Infinity
+    }
+  })
+  listc.forEach(item => {
+    if (item.endTime !== -1) {
+      if (item.duration !== -1) {
+        const currentTimeDistance = item.endTime - currentTime
+        if (currentTimeDistance > 172800000) {
+          item.latestStartTime = Infinity
+        }
+        if (currentTimeDistance <= 172800000) {
+          item.latestStartTime = currentTimeDistance
+        }
+      }
+      if (item.duration === -1) {
+        item.latestStartTime = item.startTime
+      }
+    }
+    if (item.endTime === -1) {
+      item.latestStartTime = Infinity
+    }
+  })
+  const tagMap = await getTagMap(context)
+  listc.forEach(item => {
+    let tagScore = 5
+    let tagTotalScore = 0
+    item.tag.forEach(tagItem => {
+      if (!tagMap.has(tagItem)) {
+        tagTotalScore += 5
+      }
+      if (tagMap.has(tagItem)) {
+        tagTotalScore += tagMap.get(tagItem) as number
+      }
+    })
+    if (tagTotalScore > 0) {
+      tagScore = tagTotalScore / item.tag.length
+    }
+    item.priorityTagScore = item.priority * 0.6 + tagScore * 0.4
+  })
+  return listc.sort((a, b) => {
+    if (a.distance !== b.distance) {
+      return Number(a.distance) - Number(b.distance)
+    }
+    if (a.duration === -1 || b.duration === -1) {
+      return -1
+    }
+    if (a.latestStartTime !== b.latestStartTime) {
+      return Number(a.latestStartTime) - Number(b.latestStartTime)
+    }
+    if (a.priorityTagScore !== b.priorityTagScore) {
+      return Number(a.priorityTagScore) - Number(b.priorityTagScore)
+    }
+    return 0
+  })
 }

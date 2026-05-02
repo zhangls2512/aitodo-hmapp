@@ -8,7 +8,7 @@ function timeStampToIcsTimeString(timeStamp: number) {
     String(date.getUTCMinutes()).padStart(2, '0') + String(date.getUTCSeconds()).padStart(2, '0') + 'Z'
 }
 
-export function icsTimeStringToTimeStamp(icsTimeString: string, end?: boolean) {
+export function icsTimeStringToTimeStamp(icsTimeString: string, end = false) {
   let timeStamp = 0
   if (icsTimeString.length === 16) {
     timeStamp = new Date(Date.UTC(Number(icsTimeString.substring(0, 4)), Number(icsTimeString.substring(4, 6)) - 1,

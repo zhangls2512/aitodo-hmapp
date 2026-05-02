@@ -66,15 +66,15 @@ export function parseRRule(rRule: string) {
 }
 
 export function getRecentTodoFromFreq(context: Context, rRule: string, startTime: number, endTime: number,
-  excludeTime: number[],
-  currentTime: number) {
+  excludeTime: number[], currentTime: number) {
   let freq = ''
   let interval = 1
-  let until = -1
-  let maxCount = -1
-  let byDay: number[] = []
-  let byMonthday: number[] = []
-  let byMonth: number[] = []
+  let until = Infinity
+  let maxCount = Infinity
+  let byDay = [0, 1, 2, 3, 4, 5, 6]
+  let byMonthday =
+    [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31]
+  let byMonth = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
   const rfcFreq = ['YEARLY', 'MONTHLY', 'WEEKLY', 'DAILY']
   const customFreq = getCustomFreqList(context)
   const tokens = rRule.split(';')
@@ -120,7 +120,7 @@ export function getRecentTodoFromFreq(context: Context, rRule: string, startTime
       byMonthday = value.split(',').map(item => Number(item))
     }
     if (key === 'BYMONTH') {
-      byMonth = value.split(',').map(item => Number(item))
+      byMonth = value.split(',').map(item => Number(item) - 1)
     }
   })
   if (!freq) {
@@ -136,24 +136,30 @@ export function getRecentTodoFromFreq(context: Context, rRule: string, startTime
     startTime: startTime,
     endTime: endTime
   }
+  const byDaySet = new Set<number>(byDay)
+  const byMonthdaySet = new Set<number>(byMonthday)
+  const byMonthSet = new Set<number>(byMonth)
+  const excludeTimeSet = new Set<number>(excludeTime)
   if (!rfcFreq.includes(freq)) {
     const ymdList = customFreq.find(item => item.name === freq)?.list
     let ymdIndex = 0
     while (ymdList && ymdIndex < ymdList.length &&
       isWhile(date, result.startTime, result.endTime, until, maxCount, currentTime, count) && i <= 40000) {
       i++
-      if (isValid(date, byDay, byMonthday, byMonth, excludeTime)) {
+      if (isValid(date, byDaySet, byMonthdaySet, byMonthSet, excludeTimeSet)) {
         result.startTime = date.getTime()
         count++
       }
       date.setFullYear(ymdList[ymdIndex].year, ymdList[ymdIndex].month - 1, ymdList[ymdIndex].day)
       ymdIndex++
-      if (date.getTime() >= currentTime) {
+      const timeStamp = date.getTime()
+      if (timeStamp >= currentTime) {
         if (endTime !== -1) {
           result.endTime = result.startTime + endTime - startTime
         }
-        if (endTime === -1 && date.getTime() > currentTime && isValid(date, byDay, byMonthday, byMonth, excludeTime)) {
-          result.endTime = date.getTime()
+        if (endTime === -1 && timeStamp > currentTime &&
+          isValid(date, byDaySet, byMonthdaySet, byMonthSet, excludeTimeSet)) {
+          result.endTime = timeStamp
         }
       }
     }
@@ -161,7 +167,7 @@ export function getRecentTodoFromFreq(context: Context, rRule: string, startTime
   if (rfcFreq.includes(freq)) {
     while (isWhile(date, result.startTime, result.endTime, until, maxCount, currentTime, count) && i <= 40000) {
       i++
-      if (isValid(date, byDay, byMonthday, byMonth, excludeTime)) {
+      if (isValid(date, byDaySet, byMonthdaySet, byMonthSet, excludeTimeSet)) {
         result.startTime = date.getTime()
         count++
       }
@@ -177,17 +183,19 @@ export function getRecentTodoFromFreq(context: Context, rRule: string, startTime
       if (freq === 'DAILY') {
         date.setDate(date.getDate() + 1 * interval)
       }
-      if (date.getTime() >= currentTime) {
+      const timeStamp = date.getTime()
+      if (timeStamp >= currentTime) {
         if (endTime !== -1) {
           result.endTime = result.startTime + endTime - startTime
         }
-        if (endTime === -1 && date.getTime() > currentTime && isValid(date, byDay, byMonthday, byMonth, excludeTime)) {
-          result.endTime = date.getTime()
+        if (endTime === -1 && timeStamp > currentTime &&
+          isValid(date, byDaySet, byMonthdaySet, byMonthSet, excludeTimeSet)) {
+          result.endTime = timeStamp
         }
       }
     }
   }
-  if (!isValid(date, byDay, byMonthday, byMonth, excludeTime)) {
+  if (!isValid(date, byDaySet, byMonthdaySet, byMonthSet, excludeTimeSet)) {
     result.startTime = -1
     result.endTime = -1
   }
@@ -196,32 +204,34 @@ export function getRecentTodoFromFreq(context: Context, rRule: string, startTime
 
 function isWhile(date: Date, startTime: number, endTime: number, until: number, maxCount: number, currentTime: number,
   count: number) {
+  const timeStamp = date.getTime()
   if (startTime > currentTime) {
     return false
   }
-  if (date.getTime() > until) {
+  if (timeStamp > until) {
     return false
   }
   if (count > maxCount) {
     return false
   }
-  if (date.getTime() > currentTime && endTime !== -1) {
+  if (timeStamp > currentTime && endTime !== -1) {
     return false
   }
   return true
 }
 
-function isValid(date: Date, byDay: number[], byMonthday: number[], byMonth: number[], excludeTime: number[]) {
-  if (byDay.length > 0 && !byDay.includes(date.getDay())) {
+function isValid(date: Date, byDay: Set<number>, byMonthday: Set<number>, byMonth: Set<number>,
+  excludeTime: Set<number>) {
+  if (!byDay.has(date.getDay())) {
     return false
   }
-  if (byMonthday.length > 0 && !byMonthday.includes(date.getDate())) {
+  if (!byMonthday.has(date.getDate())) {
     return false
   }
-  if (byMonth.length > 0 && !byMonth.includes(date.getMonth() + 1)) {
+  if (!byMonth.has(date.getMonth())) {
     return false
   }
-  if (excludeTime.includes(date.getTime())) {
+  if (excludeTime.has(date.getTime())) {
     return false
   }
   return true

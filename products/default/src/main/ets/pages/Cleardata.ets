@@ -454,20 +454,17 @@ export default struct Cleardata {
                 })
                 if (data.index === 1) {
                   const promises = this.cache.map(async (item) => {
-                    try {
-                      if (item === 'appCache') {
-                        await bundleManager.cleanBundleCacheFilesForSelf()
+                    if (item === 'appCache') {
+                      await bundleManager.cleanBundleCacheFilesForSelf()
+                    }
+                    if (item === 'webviewCache') {
+                      webview.WebviewController.removeAllCache(true)
+                    }
+                    if (item === 'invitationQrcodeCache') {
+                      const invitationcodeQrcodeDir = this.context.cacheDir + '/media/invitationqrcode'
+                      if (fileIo.accessSync(invitationcodeQrcodeDir)) {
+                        await fileIo.rmdir(invitationcodeQrcodeDir)
                       }
-                      if (item === 'webviewCache') {
-                        webview.WebviewController.removeAllCache(true)
-                      }
-                      if (item === 'invitationQrcodeCache') {
-                        const invitationcodeQrcodeDir = this.context.cacheDir + '/media/invitationqrcode'
-                        if (fileIo.accessSync(invitationcodeQrcodeDir)) {
-                          await fileIo.rmdir(invitationcodeQrcodeDir)
-                        }
-                      }
-                    } catch {
                     }
                   })
                   await Promise.all(promises)

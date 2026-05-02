@@ -60,6 +60,9 @@ export async function newTeamAccount(accountInfo: TeamAccountInfo) {
 }
 
 export async function getTeamName(teamId: string) {
+  if (!teamId) {
+    return '个人'
+  }
   const teamAccountList = await getTeamAccountList()
   const teamAccount = teamAccountList.find(item => item.teamId === teamId)
   if (teamAccount) {

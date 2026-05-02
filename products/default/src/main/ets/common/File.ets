@@ -4,14 +4,21 @@ import { promptAction } from '@kit.ArkUI'
 import { fileIo } from '@kit.CoreFileKit'
 import { fileManagerService } from '@kit.FileManagerServiceKit'
 
-export async function read(path: string) {
+export async function read(path: string, ignoreNotexist = false) {
   try {
     const filestring = await fileIo.readText(path)
     return filestring
   } catch (err) {
-    await promptAction.openToast({
-      message: '发生错误，错误码：' + err.code
-    })
+    if (err.code !== 13900002) {
+      await promptAction.openToast({
+        message: '发生错误，错误码：' + err.code
+      })
+    }
+    if (err.code === 13900002 && !ignoreNotexist) {
+      await promptAction.openToast({
+        message: '发生错误，错误码：' + err.code
+      })
+    }
     return 'fail'
   }
 }

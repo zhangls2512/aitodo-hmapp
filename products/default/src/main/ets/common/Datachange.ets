@@ -397,13 +397,13 @@ export async function setCloudBackup(context: Context, data: CloudBackupItem) {
   }
 }
 
-export async function deleteCloudBackup(context: Context, data: CloudBackupItem) {
+export async function deleteCloudBackup(context: Context, id: string) {
   const accessToken = await getPersonalAccountAccessToken()
   const accountInfo = await getPersonalAccountInfo()
   if (accessToken) {
     const res = await request(context, '/todo/deleteBackup', {
       accessToken: accessToken,
-      id: data.id
+      id: id
     })
     if (res !== 'fail') {
       const rdbStore = await relationalStore.getRdbStore(context, {
@@ -419,7 +419,7 @@ export async function deleteCloudBackup(context: Context, data: CloudBackupItem)
         allowRebuild: true
       })
       const predicates = new relationalStore.RdbPredicates('todo')
-      predicates.equalTo('id', data.id)
+      predicates.equalTo('id', id)
       const resultSet = await rdbStore.query(predicates)
       let cloudBackupTime: CloudBackupTimeItem[] = []
       if (resultSet.goToNextRow()) {
