@@ -10,7 +10,6 @@ export default class InsightIntentExecutorImpl extends InsightIntentExecutor {
     if (name === 'NewTodo') {
       const paramJson = JSON.parse(paramString) as TodoInput
       await newTodo(context, {
-        teamId: '',
         content: paramJson.content,
         priority: paramJson.priority,
         startTime: paramJson.startTime,

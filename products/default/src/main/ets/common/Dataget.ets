@@ -408,6 +408,10 @@ export async function getRecommendTodoList(context: Context) {
   })
   const tagMap = await getTagMap(context)
   listc.forEach(item => {
+    let priority = 5
+    if (item.priority >= 1 && item.priority <= 9) {
+      priority = 10 - item.priority
+    }
     let tagScore = 5
     let tagTotalScore = 0
     item.tag.forEach(tagItem => {
@@ -421,7 +425,7 @@ export async function getRecommendTodoList(context: Context) {
     if (tagTotalScore > 0) {
       tagScore = tagTotalScore / item.tag.length
     }
-    item.priorityTagScore = item.priority * 0.6 + tagScore * 0.4
+    item.priorityTagScore = priority * 0.6 + tagScore * 0.4
   })
   return listc.sort((a, b) => {
     if (a.distance !== b.distance) {

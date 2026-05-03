@@ -20,7 +20,6 @@ export interface Action {
 }
 
 export interface TodoInput {
-  teamId: string,
   content: string,
   priority: number,
   startTime: number,
@@ -62,7 +61,7 @@ export async function newTodo(context: Context, data: TodoInput) {
   const updateTime = Date.now()
   rdbStore.insertSync('todo', {
     id: id,
-    teamId: data.teamId,
+    teamId: '',
     content: data.content,
     priority: data.priority,
     startTime: data.startTime,
@@ -82,49 +81,47 @@ export async function newTodo(context: Context, data: TodoInput) {
   await promptAction.openToast({
     message: '新增成功'
   })
-  if (!data.teamId) {
-    huaweiCloudSyncRdbStore.insertSync('todo', {
+  huaweiCloudSyncRdbStore.insertSync('todo', {
+    id: id,
+    content: data.content,
+    priority: data.priority,
+    startTime: data.startTime,
+    endTime: data.endTime,
+    duration: data.duration,
+    recurrenceRule: data.recurrenceRule,
+    excludeTime: JSON.stringify(data.excludeTime),
+    tag: JSON.stringify(data.tag),
+    dependency: JSON.stringify(data.dependency),
+    location: JSON.stringify(data.location),
+    action: JSON.stringify(data.action),
+    bz: data.bz,
+    recentCompletedTime: -1,
+    updateTime: updateTime,
+    cloudBackupTime: JSON.stringify([])
+  })
+  await autoSyncTable(context)
+  await autoBackupTable(context)
+  if (data.cloudBackup) {
+    await setCloudBackup(context, {
       id: id,
-      content: data.content,
-      priority: data.priority,
-      startTime: data.startTime,
-      endTime: data.endTime,
-      duration: data.duration,
-      recurrenceRule: data.recurrenceRule,
-      excludeTime: JSON.stringify(data.excludeTime),
-      tag: JSON.stringify(data.tag),
-      dependency: JSON.stringify(data.dependency),
-      location: JSON.stringify(data.location),
-      action: JSON.stringify(data.action),
-      bz: data.bz,
-      recentCompletedTime: -1,
-      updateTime: updateTime,
-      cloudBackupTime: JSON.stringify([])
-    })
-    await autoSyncTable(context)
-    await autoBackupTable(context)
-    if (data.cloudBackup) {
-      await setCloudBackup(context, {
-        id: id,
-        content: JSON.stringify({
-          content: data.content,
-          priority: data.priority,
-          startTime: data.startTime,
-          endTime: data.endTime,
-          duration: data.duration,
-          recurrenceRule: data.recurrenceRule,
-          excludeTime: data.excludeTime,
-          tag: data.tag,
-          dependency: data.dependency,
-          location: data.location,
-          action: data.action,
-          bz: data.bz,
-          recentCompletedTime: -1,
-          updateTime: updateTime,
-          cloudBackupTime: []
-        })
+      content: JSON.stringify({
+        content: data.content,
+        priority: data.priority,
+        startTime: data.startTime,
+        endTime: data.endTime,
+        duration: data.duration,
+        recurrenceRule: data.recurrenceRule,
+        excludeTime: data.excludeTime,
+        tag: data.tag,
+        dependency: data.dependency,
+        location: data.location,
+        action: data.action,
+        bz: data.bz,
+        recentCompletedTime: -1,
+        updateTime: updateTime,
+        cloudBackupTime: []
       })
-    }
+    })
   }
 }
 
@@ -144,12 +141,10 @@ export async function updateTodo(context: Context, id: string, data: TodoInput) 
   const predicates = new relationalStore.RdbPredicates('todo')
   predicates.equalTo('id', id)
   const resultSet = await rdbStore.query(predicates)
-  let teamId = ''
   let recentCompletedTime = -1
   const updateTime = Date.now()
   let cloudBackupTime: CloudBackupTimeItem[] = []
   if (resultSet.goToNextRow()) {
-    teamId = resultSet.getValue(resultSet.getColumnIndex('teamId')) as string
     recentCompletedTime = resultSet.getValue(resultSet.getColumnIndex('recentCompletedTime')) as number
     cloudBackupTime =
       JSON.parse(resultSet.getValue(resultSet.getColumnIndex('cloudBackupTime')) as string) as CloudBackupTimeItem[]
@@ -173,46 +168,44 @@ export async function updateTodo(context: Context, id: string, data: TodoInput) 
   await promptAction.openToast({
     message: '修改成功'
   })
-  if (!teamId) {
-    huaweiCloudSyncRdbStore.updateSync({
-      content: data.content,
-      priority: data.priority,
-      startTime: data.startTime,
-      endTime: data.endTime,
-      duration: data.duration,
-      recurrenceRule: data.recurrenceRule,
-      excludeTime: JSON.stringify(data.excludeTime),
-      tag: JSON.stringify(data.tag),
-      dependency: JSON.stringify(data.dependency),
-      location: JSON.stringify(data.location),
-      action: JSON.stringify(data.action),
-      bz: data.bz,
-      updateTime: updateTime
-    }, predicates)
-    await autoSyncTable(context)
-    await autoBackupTable(context)
-    if (data.cloudBackup) {
-      await setCloudBackup(context, {
-        id: id,
-        content: JSON.stringify({
-          content: data.content,
-          priority: data.priority,
-          startTime: data.startTime,
-          endTime: data.endTime,
-          duration: data.duration,
-          recurrenceRule: data.recurrenceRule,
-          excludeTime: data.excludeTime,
-          tag: data.tag,
-          dependency: data.dependency,
-          location: data.location,
-          action: data.action,
-          bz: data.bz,
-          recentCompletedTime: recentCompletedTime,
-          updateTime: updateTime,
-          cloudBackupTime: cloudBackupTime
-        })
+  huaweiCloudSyncRdbStore.updateSync({
+    content: data.content,
+    priority: data.priority,
+    startTime: data.startTime,
+    endTime: data.endTime,
+    duration: data.duration,
+    recurrenceRule: data.recurrenceRule,
+    excludeTime: JSON.stringify(data.excludeTime),
+    tag: JSON.stringify(data.tag),
+    dependency: JSON.stringify(data.dependency),
+    location: JSON.stringify(data.location),
+    action: JSON.stringify(data.action),
+    bz: data.bz,
+    updateTime: updateTime
+  }, predicates)
+  await autoSyncTable(context)
+  await autoBackupTable(context)
+  if (data.cloudBackup) {
+    await setCloudBackup(context, {
+      id: id,
+      content: JSON.stringify({
+        content: data.content,
+        priority: data.priority,
+        startTime: data.startTime,
+        endTime: data.endTime,
+        duration: data.duration,
+        recurrenceRule: data.recurrenceRule,
+        excludeTime: data.excludeTime,
+        tag: data.tag,
+        dependency: data.dependency,
+        location: data.location,
+        action: data.action,
+        bz: data.bz,
+        recentCompletedTime: recentCompletedTime,
+        updateTime: updateTime,
+        cloudBackupTime: cloudBackupTime
       })
-    }
+    })
   }
 }
 
@@ -233,51 +226,46 @@ export async function completeTodo(context: Context, id: string, cloudBackup: bo
   if (info !== 'fail') {
     const completedTime = Date.now()
     let res = 'success'
-    if (!info.teamId) {
-      if (!info.recurrenceRule) {
-        if (info.recentCompletedTime !== -1) {
-          await promptAction.openToast({
-            message: '无需重复完成'
-          })
-          res = 'fail'
-        }
-        if (info.startTime > completedTime) {
-          await promptAction.openToast({
-            message: '未到开始时间'
-          })
-          res = 'fail'
-        }
+    if (!info.recurrenceRule) {
+      if (info.recentCompletedTime !== -1) {
+        await promptAction.openToast({
+          message: '无需重复完成'
+        })
+        res = 'fail'
       }
-      if (info.recurrenceRule) {
-        const recentTodoStartEndTime =
-          getRecentTodoFromFreq(context, info.recurrenceRule, info.startTime, info.endTime, info.excludeTime,
-            completedTime)
-        if (info.recentCompletedTime >= recentTodoStartEndTime.startTime) {
-          await promptAction.openToast({
-            message: '无需重复完成'
-          })
-          res = 'fail'
-        }
-        if (recentTodoStartEndTime.startTime > completedTime) {
-          await promptAction.openToast({
-            message: '未到开始时间'
-          })
-          res = 'fail'
-        }
-      }
-      for (let i = 0; i < info.dependency.length; i++) {
-        const completed = await isTodoCompleted(context, info.dependency[i], completedTime)
-        if (!completed) {
-          await promptAction.openToast({
-            message: '依赖待办未完成'
-          })
-          res = 'fail'
-          break
-        }
+      if (info.startTime > completedTime) {
+        await promptAction.openToast({
+          message: '未到开始时间'
+        })
+        res = 'fail'
       }
     }
-    if (info.teamId) {
-      // 请求团队待办完成接口，如果请求失败或服务器返回失败则把res置为fail
+    if (info.recurrenceRule) {
+      const recentTodoStartEndTime =
+        getRecentTodoFromFreq(context, info.recurrenceRule, info.startTime, info.endTime, info.excludeTime,
+          completedTime)
+      if (info.recentCompletedTime >= recentTodoStartEndTime.startTime) {
+        await promptAction.openToast({
+          message: '无需重复完成'
+        })
+        res = 'fail'
+      }
+      if (recentTodoStartEndTime.startTime > completedTime) {
+        await promptAction.openToast({
+          message: '未到开始时间'
+        })
+        res = 'fail'
+      }
+    }
+    for (let i = 0; i < info.dependency.length; i++) {
+      const completed = await isTodoCompleted(context, info.dependency[i], completedTime)
+      if (!completed) {
+        await promptAction.openToast({
+          message: '依赖待办未完成'
+        })
+        res = 'fail'
+        break
+      }
     }
     if (res === 'success') {
       const predicates = new relationalStore.RdbPredicates('todo')
