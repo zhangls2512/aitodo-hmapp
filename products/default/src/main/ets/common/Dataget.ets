@@ -356,7 +356,8 @@ export async function getRecommendTodoList(context: Context) {
       item.endTime = recentTodoStartEndTime.endTime
     }
   }
-  const listc = listb.filter(item => item.startTime <= currentTime && item.endTime > currentTime)
+  const listc =
+    listb.filter(item => item.startTime <= currentTime && (item.endTime === -1 || item.endTime >= currentTime))
   let latitude = -1
   let longitude = -1
   const location = getPermission('ohos.permission.LOCATION')
