@@ -40,48 +40,6 @@ export async function setPersonalAccount(accessToken: string, accountInfo: Perso
   }
 }
 
-export async function newTeamAccount(accountInfo: TeamAccountInfo) {
-  const appAccountManager = appAccount.createAppAccountManager()
-  try {
-    await appAccountManager.createAccount(accountInfo.id, {
-      customData: {
-        path: accountInfo.path,
-        name: accountInfo.name,
-        teamId: accountInfo.teamId,
-        teamName: accountInfo.teamName
-      }
-    })
-    await appAccountManager.setCredential(accountInfo.id, 'authorization', accountInfo.authorization)
-  } catch (err) {
-    await promptAction.openToast({
-      message: '发生错误，错误码：' + err.code
-    })
-  }
-}
-
-export async function getTeamName(teamId: string) {
-  if (!teamId) {
-    return '个人'
-  }
-  const teamAccountList = await getTeamAccountList()
-  const teamAccount = teamAccountList.find(item => item.teamId === teamId)
-  if (teamAccount) {
-    return teamAccount.teamName
-  }
-  return '未知团队'
-}
-
-export async function updateTeamAccountAuthorization(id: string, authorization: string) {
-  const appAccountManager = appAccount.createAppAccountManager()
-  try {
-    await appAccountManager.setCredential(id, 'authorization', authorization)
-  } catch (err) {
-    await promptAction.openToast({
-      message: '发生错误，错误码：' + err.code
-    })
-  }
-}
-
 export async function getPersonalAccountAccessToken() {
   const appAccountManager = appAccount.createAppAccountManager()
   try {
@@ -127,32 +85,6 @@ export async function getPersonalAccountInfo(): Promise<PersonalAccountInfo> {
       endDate: 0
     }
   }
-}
-
-export async function getTeamAccountList(): Promise<TeamAccountInfo[]> {
-  const appAccountManager = appAccount.createAppAccountManager()
-  const appAccountIds = await appAccountManager.getAccountsByOwner('com.zhangxm.aitodo')
-  const appAccounts: TeamAccountInfo[] = []
-  const promises = appAccountIds.map(async (item) => {
-    const id = item.name
-    if (id !== 'personal') {
-      appAccounts.push({
-        id: id,
-        path: appAccountManager.getCustomDataSync(id, 'path'),
-        name: appAccountManager.getCustomDataSync(id, 'name'),
-        teamId: appAccountManager.getCustomDataSync(id, 'teamId'),
-        teamName: appAccountManager.getCustomDataSync(id, 'teamName'),
-        authorization: await appAccountManager.getCredential(id, 'authorization')
-      })
-    }
-  })
-  await Promise.all(promises)
-  return appAccounts
-}
-
-export async function removeAccount(id: string) {
-  const appAccountManager = appAccount.createAppAccountManager()
-  await appAccountManager.removeAccount(id)
 }
 
 export async function autoLoginPersonalAccount(context: Context) {
@@ -248,4 +180,81 @@ export async function autoLoginPersonalAccount(context: Context) {
       }
     }
   }
+}
+
+export async function newTeamAccount(accountInfo: TeamAccountInfo) {
+  const appAccountManager = appAccount.createAppAccountManager()
+  try {
+    await appAccountManager.createAccount(accountInfo.id, {
+      customData: {
+        path: accountInfo.path,
+        name: accountInfo.name,
+        teamId: accountInfo.teamId,
+        teamName: accountInfo.teamName
+      }
+    })
+    await appAccountManager.setCredential(accountInfo.id, 'authorization', accountInfo.authorization)
+  } catch (err) {
+    await promptAction.openToast({
+      message: '发生错误，错误码：' + err.code
+    })
+  }
+}
+
+export async function getTeamName(teamId: string) {
+  if (!teamId) {
+    return '个人'
+  }
+  const teamAccountList = await getTeamAccountList()
+  const teamAccount = teamAccountList.find(item => item.teamId === teamId)
+  if (teamAccount) {
+    return teamAccount.teamName
+  }
+  return '未知团队'
+}
+
+export async function getTeamAccountAuthorization(id: string) {
+  const appAccountManager = appAccount.createAppAccountManager()
+  try {
+    return await appAccountManager.getCredential(id, 'authorization')
+  } catch {
+    return ''
+  }
+}
+
+export async function getTeamAccountList(): Promise<TeamAccountInfo[]> {
+  const appAccountManager = appAccount.createAppAccountManager()
+  const appAccountIds = await appAccountManager.getAccountsByOwner('com.zhangxm.aitodo')
+  const appAccounts: TeamAccountInfo[] = []
+  const promises = appAccountIds.map(async (item) => {
+    const id = item.name
+    if (id !== 'personal') {
+      appAccounts.push({
+        id: id,
+        path: appAccountManager.getCustomDataSync(id, 'path'),
+        name: appAccountManager.getCustomDataSync(id, 'name'),
+        teamId: appAccountManager.getCustomDataSync(id, 'teamId'),
+        teamName: appAccountManager.getCustomDataSync(id, 'teamName'),
+        authorization: await appAccountManager.getCredential(id, 'authorization')
+      })
+    }
+  })
+  await Promise.all(promises)
+  return appAccounts
+}
+
+export async function updateTeamAccountAuthorization(id: string, authorization: string) {
+  const appAccountManager = appAccount.createAppAccountManager()
+  try {
+    await appAccountManager.setCredential(id, 'authorization', authorization)
+  } catch (err) {
+    await promptAction.openToast({
+      message: '发生错误，错误码：' + err.code
+    })
+  }
+}
+
+export async function removeAccount(id: string) {
+  const appAccountManager = appAccount.createAppAccountManager()
+  await appAccountManager.removeAccount(id)
 }

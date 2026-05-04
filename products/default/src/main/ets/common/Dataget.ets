@@ -32,6 +32,7 @@ export interface Todo {
   bz: string,
   recentCompletedTime: number,
   isCompleted?: boolean,
+  status?: string,
   updateTime: number,
   cloudBackupTime: CloudBackupTimeItem[],
   isCloudBackup: boolean,
@@ -248,8 +249,7 @@ export async function getPersonalTodoList(context: Context) {
   }
 }
 
-export async function getFilterTodoList(context: Context, currentTime: number, teamId: string, contentKeyword: string,
-  tag: string[]) {
+export async function getCurrentTimePersonalTodoList(context: Context, currentTime: number) {
   try {
     const rdbStore = await relationalStore.getRdbStore(context, {
       name: 'todo',
@@ -258,10 +258,7 @@ export async function getFilterTodoList(context: Context, currentTime: number, t
       allowRebuild: true
     })
     const predicates = new relationalStore.RdbPredicates('todo')
-    predicates.equalTo('teamId', teamId)
-    if (contentKeyword) {
-      predicates.contains('content', contentKeyword)
-    }
+    predicates.equalTo('teamId', '')
     const resultSet = await rdbStore.query(predicates)
     const idIndex = resultSet.getColumnIndex('id')
     const teamIdIndex = resultSet.getColumnIndex('teamId')
@@ -282,34 +279,35 @@ export async function getFilterTodoList(context: Context, currentTime: number, t
     const cloudBackupTimeIndex = resultSet.getColumnIndex('cloudBackupTime')
     const array: Todo[] = []
     while (resultSet.goToNextRow()) {
-      let fit = true
-      if (tag.length > 0) {
-        const todoTag = JSON.parse(resultSet.getValue(tagIndex) as string) as string[]
-        fit = tag.every(item => todoTag.includes(item))
+      const info: Todo = {
+        id: resultSet.getValue(idIndex) as string,
+        teamId: resultSet.getValue(teamIdIndex) as string,
+        content: resultSet.getValue(contentIndex) as string,
+        priority: resultSet.getValue(priorityIndex) as number,
+        startTime: resultSet.getValue(startTimeIndex) as number,
+        endTime: resultSet.getValue(endTimeIndex) as number,
+        duration: resultSet.getValue(durationIndex) as number,
+        recurrenceRule: resultSet.getValue(recurrenceRuleIndex) as string,
+        excludeTime: JSON.parse(resultSet.getValue(excludeTimeIndex) as string) as number[],
+        tag: JSON.parse(resultSet.getValue(tagIndex) as string) as string[],
+        dependency: JSON.parse(resultSet.getValue(dependencyIndex) as string) as string[],
+        location: JSON.parse(resultSet.getValue(locationIndex) as string) as Location,
+        action: JSON.parse(resultSet.getValue(actionIndex) as string) as Action[],
+        bz: resultSet.getValue(bzIndex) as string,
+        recentCompletedTime: resultSet.getValue(recentCompletedTimeIndex) as number,
+        isCompleted: await isTodoCompleted(context, resultSet.getValue(idIndex) as string, currentTime),
+        updateTime: resultSet.getValue(updateTimeIndex) as number,
+        cloudBackupTime: JSON.parse(resultSet.getValue(cloudBackupTimeIndex) as string) as CloudBackupTimeItem[],
+        isCloudBackup: false
       }
-      if (fit) {
-        const info: Todo = {
-          id: resultSet.getValue(idIndex) as string,
-          teamId: resultSet.getValue(teamIdIndex) as string,
-          content: resultSet.getValue(contentIndex) as string,
-          priority: resultSet.getValue(priorityIndex) as number,
-          startTime: resultSet.getValue(startTimeIndex) as number,
-          endTime: resultSet.getValue(endTimeIndex) as number,
-          duration: resultSet.getValue(durationIndex) as number,
-          recurrenceRule: resultSet.getValue(recurrenceRuleIndex) as string,
-          excludeTime: JSON.parse(resultSet.getValue(excludeTimeIndex) as string) as number[],
-          tag: JSON.parse(resultSet.getValue(tagIndex) as string) as string[],
-          dependency: JSON.parse(resultSet.getValue(dependencyIndex) as string) as string[],
-          location: JSON.parse(resultSet.getValue(locationIndex) as string) as Location,
-          action: JSON.parse(resultSet.getValue(actionIndex) as string) as Action[],
-          bz: resultSet.getValue(bzIndex) as string,
-          recentCompletedTime: resultSet.getValue(recentCompletedTimeIndex) as number,
-          isCompleted: await isTodoCompleted(context, resultSet.getValue(idIndex) as string, currentTime),
-          updateTime: resultSet.getValue(updateTimeIndex) as number,
-          cloudBackupTime: JSON.parse(resultSet.getValue(cloudBackupTimeIndex) as string) as CloudBackupTimeItem[],
-          isCloudBackup: false
-        }
-        info.teamName = await getTeamName(info.teamId)
+      if (info.recurrenceRule) {
+        const recentTodoStartEndTime =
+          getRecentTodoFromFreq(context, info.recurrenceRule, info.startTime, info.endTime, info.excludeTime,
+            currentTime)
+        info.startTime = recentTodoStartEndTime.startTime
+        info.endTime = recentTodoStartEndTime.endTime
+      }
+      if (currentTime + 86400000 > info.startTime && (info.endTime === -1 || currentTime <= info.endTime)) {
         const accountInfo = await getPersonalAccountInfo()
         const cloudBackupTimeItem = info.cloudBackupTime.find(item => item.uid === accountInfo.uid)
         if (cloudBackupTimeItem) {
@@ -389,7 +387,10 @@ export async function getRecommendTodoList(context: Context) {
   })
   listc.forEach(item => {
     if (item.endTime !== -1) {
-      if (item.duration !== -1) {
+      if (!item.duration) {
+        item.latestStartTime = item.startTime
+      }
+      if (item.duration) {
         const currentTimeDistance = item.endTime - currentTime
         if (currentTimeDistance > 172800000) {
           item.latestStartTime = Infinity
@@ -397,9 +398,6 @@ export async function getRecommendTodoList(context: Context) {
         if (currentTimeDistance <= 172800000) {
           item.latestStartTime = currentTimeDistance
         }
-      }
-      if (item.duration === -1) {
-        item.latestStartTime = item.startTime
       }
     }
     if (item.endTime === -1) {
@@ -431,7 +429,7 @@ export async function getRecommendTodoList(context: Context) {
     if (a.distance !== b.distance) {
       return Number(a.distance) - Number(b.distance)
     }
-    if (a.duration === -1 || b.duration === -1) {
+    if (!a.duration || !b.duration) {
       return -1
     }
     if (a.latestStartTime !== b.latestStartTime) {

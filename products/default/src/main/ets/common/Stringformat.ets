@@ -5,6 +5,28 @@ export function getTimeStringFromTimeStamp(timeStamp: number): string {
     String(date.getMinutes()).padStart(2, '0') + ':' + String(date.getSeconds()).padStart(2, '0')
 }
 
+export function getDateStringFromTimeStamp(timeStamp: number): string {
+  const date = new Date(timeStamp)
+  const dayMap: Record<number, string> = {
+    0: '星期日',
+    1: '星期一',
+    2: '星期二',
+    3: '星期三',
+    4: '星期四',
+    5: '星期五',
+    6: '星期六'
+  }
+  return date.getFullYear() + '年' + String(date.getMonth() + 1) + '月' + String(date.getDate()) + '日' +
+    dayMap[date.getDay()]
+}
+
+export function getDateTimeStringFromTimeStamp(timeStamp: number): string {
+  const date = new Date(timeStamp)
+  return date.getFullYear() + '年' + String(date.getMonth() + 1) + '月' + String(date.getDate()) + '日' +
+    String(date.getHours()) + ':' +
+    String(date.getMinutes()).padStart(2, '0') + ':' + String(date.getSeconds()).padStart(2, '0')
+}
+
 export function getTimeStringFromSecond(second: number) {
   return getTimeStringFromTimeStamp(second * 1000)
 }

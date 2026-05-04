@@ -54,12 +54,12 @@
               },
               {
                 "scheme": "file",
-                "type": "general.",
+                "type": "general.vcs",
                 "linkFeature": "FileOpen"
               },
               {
                 "scheme": "file",
-                "type": "general.zip-archive",
+                "type": "general.ics",
                 "linkFeature": "FileOpen"
               },
               {
@@ -93,11 +93,6 @@
               {
                 "scheme": "file",
                 "utd": "general.ics",
-                "maxFileSupported": 1
-              },
-              {
-                "scheme": "file",
-                "utd": "general.zip-archive",
                 "maxFileSupported": 1
               }
             ]
@@ -162,6 +157,9 @@
       }
     ],
     "requestPermissions": [
+      {
+        "name": "ohos.permission.FILE_ACCESS_PERSIST"
+      },
       {
         "name": "ohos.permission.GET_FILE_ICON"
       },

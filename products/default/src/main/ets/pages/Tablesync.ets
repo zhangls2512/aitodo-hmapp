@@ -1,7 +1,6 @@
 import { common } from '@kit.AbilityKit'
 import { cloudData, relationalStore, uniformTypeDescriptor } from '@kit.ArkData'
 import { LengthMetrics, LoadingDialog, promptAction } from '@kit.ArkUI'
-import { zlib } from '@kit.BasicServicesKit'
 import { fileIo, fileUri } from '@kit.CoreFileKit'
 import { distributedDeviceManager } from '@kit.DistributedServiceKit'
 import { harmonyShare, systemShare } from '@kit.ShareKit'
@@ -1082,90 +1081,6 @@ struct Tablesync {
                   await sharableTarget.share(shareData)
                 })
                 const promptAction = this.UIContext.getPromptAction()
-                await promptAction.showDialog({
-                  title: '提示',
-                  message: '碰一碰/隔空传送邻近设备即可同步，关闭此弹窗后停止同步',
-                  buttons: [
-                    {
-                      text: '关闭',
-                      color: $r('sys.color.warning')
-                    }
-                  ],
-                  onDidDisappear: async () => {
-                    await fileIo.unlink(filePath)
-                    harmonyShare.off('knockShare')
-                    harmonyShare.off('gesturesShare')
-                  }
-                })
-              })
-
-              Divider()
-                .padding({
-                  left: 12,
-                  right: 12
-                })
-              Row() {
-                Text('待办附件')
-                  .fontWeight(FontWeight.Medium)
-                  .layoutWeight(1)
-                  .margin({
-                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                  })
-                Image($r('app.media.right'))
-                  .fillColor($r('sys.color.icon_fourth'))
-                  .height(12)
-                  .width(12)
-              }
-              .borderRadius(12)
-              .padding(12)
-              .stateStyles({
-                normal: {
-                  .backgroundColor(this.hoverId === 2 ? $r('sys.color.interactive_hover') :
-                    $r('sys.color.ohos_id_color_card_bg'))
-                },
-                pressed: {
-                  .backgroundColor($r('sys.color.interactive_pressed'))
-                }
-              })
-              .onHover(isHover => {
-                if (!isHover) {
-                  this.hoverId = -1
-                }
-                if (isHover) {
-                  this.hoverId = 2
-                }
-              })
-              .onClick(async () => {
-                const promptAction = this.UIContext.getPromptAction()
-                const todoExtraFileDir = this.context.filesDir + '/todoextrafile/'
-                if (!fileIo.accessSync(todoExtraFileDir)) {
-                  await promptAction.openToast({
-                    message: '无待办附件，无需同步'
-                  })
-                  return
-                }
-                const todoExtraFileNameArray = await fileIo.listFile(todoExtraFileDir)
-                const todoExtraFilePathArray = todoExtraFileNameArray.map(item => todoExtraFileDir + item)
-                if (todoExtraFilePathArray.length === 0) {
-                  await promptAction.openToast({
-                    message: '无待办附件，无需同步'
-                  })
-                  return
-                }
-                const filePath = this.context.tempDir + '/todoextrafile.zip'
-                await zlib.compressFiles(todoExtraFilePathArray, filePath, {})
-                const shareData = new systemShare.SharedData({
-                  utd: uniformTypeDescriptor.UniformDataType.ZIP_ARCHIVE,
-                  title: 'todoextrafile.zip',
-                  description: getSizeString(fileIo.statSync(filePath).size),
-                  uri: fileUri.getUriFromPath(filePath)
-                })
-                harmonyShare.on('knockShare', async (sharableTarget) => {
-                  await sharableTarget.share(shareData)
-                })
-                harmonyShare.on('gesturesShare', async (sharableTarget) => {
-                  await sharableTarget.share(shareData)
-                })
                 await promptAction.showDialog({
                   title: '提示',
                   message: '碰一碰/隔空传送邻近设备即可同步，关闭此弹窗后停止同步',

@@ -1,7 +1,7 @@
 import { util } from '@kit.ArkTS'
 import { TodoItem } from './Dataimport'
 
-function timeStampToIcsTimeString(timeStamp: number) {
+export function timeStampToIcsTimeString(timeStamp: number) {
   const date = new Date(timeStamp)
   return date.getUTCFullYear() + String(date.getUTCMonth() + 1).padStart(2, '0') +
     String(date.getUTCDate()).padStart(2, '0') + 'T' + String(date.getUTCHours()).padStart(2, '0') +
@@ -48,7 +48,9 @@ export function icsstringify(todoArray: TodoItem[]) {
     if (item.endTime !== -1) {
       result += 'DTEND:' + timeStampToIcsTimeString(item.endTime) + '\r\n'
     }
-    if (item.recurrenceRule) {
+    if (item.recurrenceRule &&
+      (item.recurrenceRule.includes('FREQ=YEARLY') || item.recurrenceRule.includes('FREQ=MONTHLY') ||
+        item.recurrenceRule.includes('FREQ=WEEKLY') || item.recurrenceRule.includes('FREQ=DAILY'))) {
       result += 'RRULE:' + item.recurrenceRule + '\r\n'
     }
     if (item.excludeTime.length > 0) {
@@ -82,10 +84,10 @@ export function icsparse(icsString: string) {
   let todo: TodoItem = {
     id: util.generateRandomUUID(),
     content: '',
-    priority: 5,
+    priority: 0,
     startTime: Date.now(),
     endTime: -1,
-    duration: -1,
+    duration: 0,
     recurrenceRule: '',
     excludeTime: [],
     tag: [],
@@ -108,10 +110,10 @@ export function icsparse(icsString: string) {
       todo = {
         id: util.generateRandomUUID(),
         content: '',
-        priority: 5,
+        priority: 0,
         startTime: Date.now(),
         endTime: -1,
-        duration: -1,
+        duration: 0,
         recurrenceRule: '',
         excludeTime: [],
         tag: [],

@@ -2,7 +2,7 @@ import { common } from '@kit.AbilityKit'
 import { relationalStore } from '@kit.ArkData'
 import { uri } from '@kit.ArkTS'
 import { LoadingDialog } from '@kit.ArkUI'
-import { deviceInfo, zlib } from '@kit.BasicServicesKit'
+import { deviceInfo } from '@kit.BasicServicesKit'
 import { fileIo } from '@kit.CoreFileKit'
 import { image } from '@kit.ImageKit'
 import {
@@ -301,8 +301,7 @@ struct Index {
       })
       const promptAction = this.UIContext.getPromptAction()
       this.context.eventHub.on('wantUri', async (wantUri: string) => {
-        if (wantUri.endsWith('.txt') || wantUri.endsWith('.vcs') || wantUri.endsWith('.ics') ||
-          wantUri.endsWith('.zip')) {
+        if (wantUri.endsWith('.txt') || wantUri.endsWith('.vcs') || wantUri.endsWith('.ics')) {
           const filestring = await readUri(wantUri)
           if (wantUri.endsWith('.txt')) {
             await importTodo(this.context, filestring, relationalStore.ConflictResolution.ON_CONFLICT_IGNORE)
@@ -321,41 +320,6 @@ struct Index {
             await promptAction.openToast({
               message: '导入成功'
             })
-          }
-          if (wantUri.endsWith('.zip')) {
-            const todoExtraFileDir = this.context.filesDir + '/todoextrafile/'
-            if (!fileIo.accessSync(todoExtraFileDir)) {
-              await fileIo.mkdir(todoExtraFileDir, true)
-            }
-            const filePath = todoExtraFileDir + 'todoextrafile.zip'
-            const srcFile = fileIo.openSync(wantUri)
-            const destFile = fileIo.openSync(filePath, fileIo.OpenMode.CREATE | fileIo.OpenMode.WRITE_ONLY)
-            await fileIo.copyFile(srcFile.fd, destFile.fd)
-            fileIo.closeSync(srcFile)
-            fileIo.closeSync(destFile)
-            await zlib.decompressFile(filePath, todoExtraFileDir)
-            await fileIo.unlink(filePath)
-            const data = await promptAction.showDialog({
-              title: '提示',
-              message: '导入成功，需重启应用生效，是否重启？',
-              buttons: [
-                {
-                  text: '取消',
-                  color: $r('sys.color.font_primary')
-                },
-                {
-                  text: '重启',
-                  color: $r('sys.color.font_emphasize')
-                }
-              ]
-            })
-            if (data.index === 1) {
-              const applicationContext = this.context.getApplicationContext()
-              applicationContext.restartApp({
-                bundleName: 'com.zhangxm.aitodo',
-                abilityName: 'EntryAbility'
-              })
-            }
           }
         }
         const accessToken = await getPersonalAccountAccessToken()

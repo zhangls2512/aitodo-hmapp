@@ -9,10 +9,6 @@
       "value": "导入待办"
     },
     {
-      "name": "importTodoExtraFile",
-      "value": "导入待办附件"
-    },
-    {
       "name": "DISTRIBUTED_DATASYNC_reason",
       "value": "用于获取可信设备列表、在可信设备间同步数据。"
     },

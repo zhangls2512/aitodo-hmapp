@@ -12,7 +12,7 @@ interface YMD {
   day: number
 }
 
-export function getCustomFreqList(context: Context) {
+export function getCustomFreqList(context: Context, see = false) {
   const dataPreferences = preferences.getPreferencesSync(context, {
     name: 'customFreq',
     storageType: preferences.StorageType.GSKV
@@ -24,7 +24,7 @@ export function getCustomFreqList(context: Context) {
       list: kvsobject[key].split(',').sort((a: string, b: string) => Number(a) - Number(b)).map((item: string) => {
         return {
           year: Number(item.substring(0, 4)),
-          month: Number(item.substring(4, 6)) - 1,
+          month: see ? Number(item.substring(4, 6)) : Number(item.substring(4, 6)) - 1,
           day: Number(item.substring(6, 8))
         } as YMD
       })

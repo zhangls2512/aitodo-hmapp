@@ -110,8 +110,7 @@ export async function systemCalendarSyncTable(context: Context) {
       type: calendarManager.CalendarType.LOCAL,
       displayName: '轩铭智能待办'
     })
-    const events = await calendar.getEvents(undefined,
-      ['id', 'title', 'location', 'startTime', 'endTime', 'recurrenceRule', 'description', 'identifier'])
+    const events = await calendar.getEvents()
     const todos = await getPersonalTodoList(context)
     const promisesa = todos.map(async (item) => {
       const eventItem = events.find(eventItem => eventItem.identifier === item.id)

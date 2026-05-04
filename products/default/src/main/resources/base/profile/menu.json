@@ -15,20 +15,6 @@
           ]
         }
       ]
-    },
-    {
-      "abilityName": "EntryAbility",
-      "menuItem": "$string:importTodoExtraFile",
-      "menuHandler": "clickMenu2",
-      "menuContext": [
-        {
-          "menuKind": 1,
-          "menuRule": "single",
-          "fileSupportType": [
-            ".zip"
-          ]
-        }
-      ]
     }
   ]
 }
