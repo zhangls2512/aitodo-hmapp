@@ -1001,8 +1001,14 @@ export default struct Updatetodo {
           if (key === 'FREQ') {
             const validFreqs =
               ['YEARLY', 'MONTHLY', 'WEEKLY', 'DAILY'].concat(getCustomFreqList(this.context).map(item => item.name))
-            this.recurrenceFreqIndex = validFreqs.indexOf(value)
-            this.recurrenceFreqValue = this.freq[this.recurrenceFreqIndex].value as string
+            const index = validFreqs.indexOf(value)
+            if (index !== -1) {
+              this.recurrenceFreqIndex = index
+              this.recurrenceFreqValue = this.freq[this.recurrenceFreqIndex].value as string
+            }
+            if (index === -1) {
+              this.recurrence = false
+            }
           }
           if (key === 'INTERVAL') {
             this.recurrenceInterval = value

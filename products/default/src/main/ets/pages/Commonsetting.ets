@@ -1,10 +1,12 @@
 import { common, ConfigurationConstant } from '@kit.AbilityKit'
-import { LengthMetrics, window } from '@kit.ArkUI'
+import { LengthMetrics, LoadingDialog, promptAction, window } from '@kit.ArkUI'
 import { deviceInfo } from '@kit.BasicServicesKit'
 import { fileIo } from '@kit.CoreFileKit'
 import { image } from '@kit.ImageKit'
 import { photoAccessHelper } from '@kit.MediaLibraryKit'
 import { hdsMaterial, HdsNavDestination, HdsNavDestinationTitleMode, ScrollEffectType } from '@kit.UIDesignKit'
+import { CustomFreq, setCustomFreq } from '../common/Customfreq'
+import { downloadParameter } from '../common/Parameter'
 import { getFlushPreference, setFlushPreference } from '../common/Preference'
 
 @Builder
@@ -33,6 +35,11 @@ struct Commonsetting {
   UIContext = this.getUIContext()
   context = this.UIContext.getHostContext() as common.UIAbilityContext
   pageInfos = new NavPathStack()
+  dialogControllerProgress = new CustomDialogController({
+    builder: LoadingDialog({
+      content: '请求中...'
+    })
+  })
 
   build() {
     HdsNavDestination() {
@@ -690,6 +697,57 @@ struct Commonsetting {
                 this.pageInfos.pushPath({
                   name: 'Customfreqlist'
                 })
+              })
+
+              Divider()
+                .padding({
+                  left: 12,
+                  right: 12
+                })
+              Row() {
+                Text('下载并更新中国法定工作日、节假日自定义重复周期')
+                  .fontWeight(FontWeight.Medium)
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
+                Image($r('app.media.right'))
+                  .fillColor($r('sys.color.icon_fourth'))
+                  .height(12)
+                  .width(12)
+              }
+              .borderRadius(12)
+              .padding(12)
+              .stateStyles({
+                normal: {
+                  .backgroundColor(this.hoverId === 4 ? $r('sys.color.interactive_hover') :
+                    $r('sys.color.ohos_id_color_card_bg'))
+                },
+                pressed: {
+                  .backgroundColor($r('sys.color.interactive_pressed'))
+                }
+              })
+              .onHover(isHover => {
+                if (!isHover) {
+                  this.hoverId = -1
+                }
+                if (isHover) {
+                  this.hoverId = 4
+                }
+              })
+              .onClick(async () => {
+                this.dialogControllerProgress.open()
+                const res = await downloadParameter(this.context)
+                this.dialogControllerProgress.close()
+                if (res !== 'fail') {
+                  const customFreqList = JSON.parse(res) as CustomFreq[]
+                  customFreqList.forEach(item => {
+                    setCustomFreq(this.context, item.name, item.list)
+                  })
+                  await promptAction.openToast({
+                    message: '下载并更新成功'
+                  })
+                }
               })
             }
             .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
