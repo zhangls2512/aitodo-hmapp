@@ -430,7 +430,7 @@ export default struct Todoinfo {
       this.recurrence = recurrenceRule ? true : false
       if (this.recurrence) {
         const tokens = recurrenceRule.split(';')
-        const keyValues = tokens.map(item => item.split('='))
+        const keyValues = tokens.map(item => item.split('=', 2))
         keyValues.forEach(item => {
           const key = item[0]
           const value = item[1]

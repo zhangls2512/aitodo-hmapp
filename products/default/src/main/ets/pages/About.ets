@@ -722,10 +722,7 @@ struct About {
                 }
               })
               .onClick(async () => {
-                await promptAction.openToast({
-                  message: '敬请期待'
-                })
-                //await this.context.openLink('https://www.chuckfang.com/MeoW/appLinking?channelId=待补充')
+                await this.context.openLink('https://www.chuckfang.com/MeoW/appLinking?channelId=2387a702d29448a7bb1bd552c6d67830')
               })
             }
             .backgroundColor($r('sys.color.ohos_id_color_card_bg'))

@@ -201,6 +201,7 @@ export default struct Updatetodo {
               type: ToggleType.Switch,
               isOn: this.recurrence!!
             })
+              .enabled(this.teamId === '')
           }
           .margin({
             top: $r('sys.float.ohos_id_elements_margin_vertical_m')
@@ -977,7 +978,7 @@ export default struct Updatetodo {
       this.recurrence = recurrenceRule ? true : false
       if (this.recurrence) {
         const tokens = recurrenceRule.split(';')
-        const keyValues = tokens.map(item => item.split('='))
+        const keyValues = tokens.map(item => item.split('=', 2))
         keyValues.forEach(item => {
           const key = item[0]
           const value = item[1]

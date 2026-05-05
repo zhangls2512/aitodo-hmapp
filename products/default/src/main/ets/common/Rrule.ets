@@ -12,7 +12,7 @@ export function parseRRule(rRule: string) {
     recurrenceFrequency: calendarManager.RecurrenceFrequency.YEARLY
   }
   const tokens = rRule.split(';')
-  const keyValues = tokens.map(item => item.split('='))
+  const keyValues = tokens.map(item => item.split('=', 2))
   keyValues.forEach(item => {
     const key = item[0]
     const value = item[1]
@@ -78,7 +78,7 @@ export function getRecentTodoFromFreq(context: Context, rRule: string, startTime
   const rfcFreq = ['YEARLY', 'MONTHLY', 'WEEKLY', 'DAILY']
   const customFreq = getCustomFreqList(context)
   const tokens = rRule.split(';')
-  const keyValues = tokens.map(item => item.split('='))
+  const keyValues = tokens.map(item => item.split('=', 2))
   keyValues.forEach(item => {
     const key = item[0]
     const value = item[1]

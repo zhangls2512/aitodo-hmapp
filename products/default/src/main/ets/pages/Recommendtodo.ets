@@ -5,10 +5,12 @@ import { getRecommendTodoList, Todo } from '../common/Dataget'
 import { checkPermission } from '../common/Permission'
 import { getPreferType } from '../common/Prefertype'
 import { getDateTimeStringFromTimeStamp } from '../common/Stringformat'
+import NewTodo from './Newtodo'
 import TodoInfo from './Todoinfo'
 
 @ComponentV2
 export default struct Recommendtodo {
+  @Provider() isShowNewSheet: boolean = false
   @Local isShowInfoSheet: boolean = false
   @Local preferType: number = 1
   @Local todoArray: Todo[] = []
@@ -43,6 +45,13 @@ export default struct Recommendtodo {
   }
 
   @Builder
+  NewSheetBuilder() {
+    NewTodo({
+      teamId: ''
+    })
+  }
+
+  @Builder
   InfoSheetBuilder(id: string) {
     TodoInfo({
       todoId: id
@@ -54,6 +63,12 @@ export default struct Recommendtodo {
       refreshing: $$this.loading
     }) {
       List() {
+        if (this.todoArray.length === 0) {
+          ListItem() {
+            Text('无数据')
+          }
+          .width('100%')
+        }
         ForEach(this.todoArray, (item: Todo, index) => {
           ListItem() {
             Column() {
@@ -187,10 +202,59 @@ export default struct Recommendtodo {
             top: index !== 0 ? $r('sys.float.ohos_id_elements_margin_vertical_m') : 0
           })
         })
-        ListItem()
-          .margin({
-            bottom: this.preferType === 0 ? 80 : 0
-          })
+        ListItem() {
+          Text('推荐算法逻辑说明')
+            .fontColor($r('sys.color.font_emphasize'))
+            .fontSize($r('sys.float.ohos_id_text_size_body3'))
+            .onClick(async () => {
+              const promptAction = this.UIContext.getPromptAction()
+              await promptAction.showDialog({
+                title: '推荐算法逻辑说明',
+                message: '先过滤出未完成且可完成，再根据当前位置与地点之间的距离、结束时间、预计耗时、优先级、标签等对其进行排序。全程离线不联网。',
+                buttons: [
+                  {
+                    text: '确定',
+                    color: $r('sys.color.font_emphasize')
+                  }
+                ]
+              })
+            })
+        }
+        .margin({
+          bottom: this.preferType === 0 ? 80 : 0,
+          top: $r('sys.float.ohos_id_elements_margin_vertical_l')
+        })
+        .width('100%')
+        .bindSheet(this.isShowNewSheet!!, this.NewSheetBuilder(), {
+          height: SheetSize.FIT_CONTENT,
+          preferType: this.preferType,
+          title: {
+            title: '新增待办'
+          },
+          onDisappear: () => {
+            this.loading = true
+          },
+          onWillDismiss: async (DismissSheetAction) => {
+            const promptAction = this.UIContext.getPromptAction()
+            const data = await promptAction.showDialog({
+              title: '提示',
+              message: '数据尚未保存，确定退出？',
+              buttons: [
+                {
+                  text: '取消',
+                  color: $r('sys.color.font_primary')
+                },
+                {
+                  text: '确定',
+                  color: $r('sys.color.font_emphasize')
+                }
+              ]
+            })
+            if (data.index === 1) {
+              DismissSheetAction.dismiss()
+            }
+          }
+        })
       }
     }
     .height('100%')
@@ -201,15 +265,29 @@ export default struct Recommendtodo {
     })
     .onAppear(async () => {
       this.preferType = getPreferType(this.UIContext)
+      this.context.eventHub.on('newTodo', () => {
+        if (!this.isShowNewSheet && !this.isShowInfoSheet) {
+          this.isShowNewSheet = true
+        }
+      })
       this.context.eventHub.on('refreshTodo', () => {
         this.loading = true
+      })
+      this.context.eventHub.on('todoInfo', (todoId: string) => {
+        if (this.isShowInfoSheet) {
+          this.isShowInfoSheet = false
+        }
+        this.todoId = todoId
+        this.isShowInfoSheet = true
       })
       await checkPermission(this.context, this.UIContext, 'ohos.permission.APPROXIMATELY_LOCATION')
       await checkPermission(this.context, this.UIContext, 'ohos.permission.LOCATION')
       this.loading = true
     })
     .onDisAppear(() => {
+      this.context.eventHub.off('todoInfo')
       this.context.eventHub.off('refreshTodo')
+      this.context.eventHub.off('newTodo')
     })
     .onRefreshing(async () => {
       this.todoArray = []

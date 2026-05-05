@@ -6,6 +6,21 @@
       "buildFunction": "AboutBuilder"
     },
     {
+      "name": "Tag",
+      "pageSourceFile": "src/main/ets/pages/Tag.ets",
+      "buildFunction": "TagBuilder"
+    },
+    {
+      "name": "Customfreqlist",
+      "pageSourceFile": "src/main/ets/pages/Customfreqlist.ets",
+      "buildFunction": "CustomfreqlistBuilder"
+    },
+    {
+      "name": "Customfreqedit",
+      "pageSourceFile": "src/main/ets/pages/Customfreqedit.ets",
+      "buildFunction": "CustomfreqeditBuilder"
+    },
+    {
       "name": "Clearpreferencekey",
       "pageSourceFile": "src/main/ets/pages/Clearpreferencekey.ets",
       "buildFunction": "ClearpreferencekeyBuilder"

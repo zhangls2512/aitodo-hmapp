@@ -50,10 +50,14 @@ export default class EntryAbility extends UIAbility {
       await openLink(this.context, want.parameters.noticeUrl as string)
     }
     if (want.parameters?.shortcutId === 'newTodo') {
-      this.context.eventHub.emit('newTodo')
+      setTimeout(() => {
+        this.context.eventHub.emit('newTodo')
+      }, 100)
     }
     if (want.parameters?.action === 'todoInfo') {
-      this.context.eventHub.emit('todoInfo', want.parameters.todoId)
+      setTimeout(() => {
+        this.context.eventHub.emit('todoInfo', want.parameters?.todoId)
+      }, 100)
     }
     if (want.parameters?.menuHandler === 'clickMenu1' || want.parameters?.menuHandler === 'clickMenu2') {
       const uriList = want.parameters.uriList as string[]

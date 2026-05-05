@@ -213,13 +213,13 @@ export async function getTeamName(teamId: string) {
   return '未知团队'
 }
 
-export async function getTeamAccountAuthorization(id: string) {
-  const appAccountManager = appAccount.createAppAccountManager()
-  try {
-    return await appAccountManager.getCredential(id, 'authorization')
-  } catch {
-    return ''
+export async function getTeamAccountAuthorization(teamId: string) {
+  const teamAccountList = await getTeamAccountList()
+  const authorization = teamAccountList.find(item => item.teamId === teamId)?.authorization
+  if (authorization) {
+    return authorization
   }
+  return ''
 }
 
 export async function getTeamAccountList(): Promise<TeamAccountInfo[]> {

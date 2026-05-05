@@ -516,7 +516,8 @@ export default struct TodoPage {
           })
             .searchButton('搜索')
             .onSubmit(() => {
-              this.loading = true
+              this.todoArray = this.todoArray.filter(item => item.content.includes(this.contentKeyword) &&
+                this.tag.every(tagItem => item.tag.includes(tagItem)))
             })
           Scroll() {
             Row() {
@@ -531,6 +532,8 @@ export default struct TodoPage {
                     .padding(12)
                     .onClick(() => {
                       this.tag.push(item)
+                      this.todoArray = this.todoArray.filter(item => item.content.includes(this.contentKeyword) &&
+                        this.tag.every(tagItem => item.tag.includes(tagItem)))
                     })
                   }
                   .backgroundColor($r('sys.color.comp_background_primary'))
@@ -550,6 +553,8 @@ export default struct TodoPage {
                     .padding(12)
                     .onClick(() => {
                       this.tag.splice(this.tag.indexOf(item), 1)
+                      this.todoArray = this.todoArray.filter(item => item.content.includes(this.contentKeyword) &&
+                        this.tag.every(tagItem => item.tag.includes(tagItem)))
                     })
                   }
                   .backgroundColor($r('sys.color.background_emphasize'))
@@ -572,8 +577,16 @@ export default struct TodoPage {
           refreshing: $$this.loading
         }) {
           List() {
-            ForEach(this.todoArray.filter(item => item.content.includes(this.contentKeyword) &&
-              this.tag.every(tagItem => item.tag.includes(tagItem))), (item: Todo, index) => {
+            if (this.todoArray.length === 0) {
+              ListItem() {
+                Text('无数据')
+              }
+              .margin({
+                top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+              })
+              .width('100%')
+            }
+            ForEach(this.todoArray, (item: Todo, index) => {
               ListItem() {
                 Column() {
                   Row() {
@@ -783,11 +796,6 @@ export default struct TodoPage {
     })
     .onAppear(async () => {
       this.preferType = getPreferType(this.UIContext)
-      this.context.eventHub.on('newTodo', () => {
-        if (!this.isShowNewSheet && !this.isShowInfoSheet && !this.isShowUpdateSheet) {
-          this.isShowNewSheet = true
-        }
-      })
       this.context.eventHub.on('refreshTodo', async () => {
         this.enableCloudBackup = false
         this.loading = true
@@ -795,13 +803,6 @@ export default struct TodoPage {
         if (cloudServiceStatus && getKeyAlg()) {
           this.enableCloudBackup = true
         }
-      })
-      this.context.eventHub.on('todoInfo', (todoId: string) => {
-        if (this.isShowInfoSheet) {
-          this.isShowInfoSheet = false
-        }
-        this.todoId = todoId
-        this.isShowInfoSheet = true
       })
       const currentDate = new Date()
       this.currentTime =
@@ -813,9 +814,7 @@ export default struct TodoPage {
       }
     })
     .onDisAppear(() => {
-      this.context.eventHub.off('todoInfo')
       this.context.eventHub.off('refreshTodo')
-      this.context.eventHub.off('newTodo')
     })
     .bindSheet(this.isShowUpdateSheet!!, this.UpdateSheetBuilder(this.todoId), {
       height: SheetSize.FIT_CONTENT,

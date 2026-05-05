@@ -1,4 +1,4 @@
-import { read } from './File'
+import { read, write } from './File'
 
 export interface Tag {
   value: string,
@@ -24,4 +24,8 @@ export async function getTagMap(context: Context) {
     return map
   }
   return map
+}
+
+export async function setTag(context: Context, tag: Tag[]) {
+  await write(context.filesDir + '/tag.txt', JSON.stringify(tag))
 }

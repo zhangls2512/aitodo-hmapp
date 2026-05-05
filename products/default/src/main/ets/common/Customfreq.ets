@@ -1,18 +1,36 @@
 import { preferences } from '@kit.ArkData'
 import { deleteFlushPreferenceKey, setFlushPreference } from './Preference'
 
-interface CustomFreq {
+export interface CustomFreq {
   name: string,
   list: YMD[]
 }
 
-interface YMD {
+export interface YMD {
   year: number,
   month: number,
   day: number
 }
 
-export function getCustomFreqList(context: Context, see = false) {
+export function getCustomFreqFromName(context: Context, name: string) {
+  const dataPreferences = preferences.getPreferencesSync(context, {
+    name: 'customFreq',
+    storageType: preferences.StorageType.GSKV
+  })
+  const kv = dataPreferences.getSync(name, '') as string
+  if (!kv) {
+    return []
+  }
+  return kv.split(',').sort((a: string, b: string) => Number(a) - Number(b)).map((item: string) => {
+    return {
+      year: Number(item.substring(0, 4)),
+      month: Number(item.substring(4, 6)),
+      day: Number(item.substring(6, 8))
+    } as YMD
+  })
+}
+
+export function getCustomFreqList(context: Context) {
   const dataPreferences = preferences.getPreferencesSync(context, {
     name: 'customFreq',
     storageType: preferences.StorageType.GSKV
@@ -24,7 +42,7 @@ export function getCustomFreqList(context: Context, see = false) {
       list: kvsobject[key].split(',').sort((a: string, b: string) => Number(a) - Number(b)).map((item: string) => {
         return {
           year: Number(item.substring(0, 4)),
-          month: see ? Number(item.substring(4, 6)) : Number(item.substring(4, 6)) - 1,
+          month: Number(item.substring(4, 6)) - 1,
           day: Number(item.substring(6, 8))
         } as YMD
       })
@@ -32,8 +50,9 @@ export function getCustomFreqList(context: Context, see = false) {
   })
 }
 
-export function setCustomFreq(context: Context, name: string, value: string) {
-  setFlushPreference(context, 'customFreq', name, value)
+export function setCustomFreq(context: Context, name: string, ymdList: YMD[]) {
+  setFlushPreference(context, 'customFreq', name,
+    ymdList.map(item => item.year + String(item.month).padStart(2, '0') + String(item.day).padStart(2, '0')).join(','))
 }
 
 export function removeCustomFreq(context: Context, name: string) {

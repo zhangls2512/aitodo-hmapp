@@ -49,8 +49,7 @@ export function icsstringify(todoArray: TodoItem[]) {
       result += 'DTEND:' + timeStampToIcsTimeString(item.endTime) + '\r\n'
     }
     if (item.recurrenceRule &&
-      (item.recurrenceRule.includes('FREQ=YEARLY') || item.recurrenceRule.includes('FREQ=MONTHLY') ||
-        item.recurrenceRule.includes('FREQ=WEEKLY') || item.recurrenceRule.includes('FREQ=DAILY'))) {
+      ['YEARLY', 'MONTHLY', 'WEEKLY', 'DAILY'].some(freqItem => item.recurrenceRule.includes(freqItem))) {
       result += 'RRULE:' + item.recurrenceRule + '\r\n'
     }
     if (item.excludeTime.length > 0) {
