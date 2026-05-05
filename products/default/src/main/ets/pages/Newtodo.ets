@@ -145,6 +145,16 @@ export default struct Newtodo {
               .enableAutoSpacing(true)
               .enabled(false)
               .layoutWeight(1)
+            if (this.endTime !== -1) {
+              Image($r('app.media.close'))
+                .height(24)
+                .margin({
+                  left: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
+                .onClick(() => {
+                  this.endTime = -1
+                })
+            }
           }
           .margin({
             top: $r('sys.float.ohos_id_elements_margin_vertical_m')
@@ -844,6 +854,12 @@ export default struct Newtodo {
             if (!this.content) {
               await promptAction.openToast({
                 message: '请输入内容'
+              })
+              return
+            }
+            if (!this.duration) {
+              await promptAction.openToast({
+                message: '请输入预计耗时'
               })
               return
             }
