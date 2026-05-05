@@ -16,7 +16,7 @@ import { getDateTimeStringFromTimeStamp } from '../common/Stringformat'
 export default struct Updatetodo {
   @Consumer() isShowUpdateSheet: boolean = false
   @Param todoId: string = ''
-  @Param accountId: string = ''
+  @Param teamId: string = ''
   @Local content: string = ''
   @Local priority: number = 0
   @Local startTime: number = Date.now()
@@ -32,6 +32,7 @@ export default struct Updatetodo {
   @Local recurrenceByMonth: number[] = []
   @Local recurrenceByMonthDay: number[] = []
   @Local recurrenceByDay: string[] = []
+  @Local excludeTime: number[] = []
   @Local tagArray: string[] = []
   @Local tag: string = ''
   @Local dependencyArray: string[] = []
@@ -72,7 +73,6 @@ export default struct Updatetodo {
             placeholder: '请输入内容',
             text: this.content!!
           })
-            .defaultFocus(true)
             .enableAutoSpacing(true)
           Row() {
             Text('优先级')
@@ -261,13 +261,14 @@ export default struct Updatetodo {
               this.UIContext.showDatePickerDialog({
                 selected: this.recurrenceUntil === -1 ? new Date() : new Date(this.recurrenceUntil),
                 onDateAccept: async (value) => {
-                  if (value.getTime() < this.startTime) {
+                  const time = value.getTime()
+                  if (time < this.startTime) {
                     await promptAction.openToast({
                       message: '截止时间不能早于开始时间'
                     })
                     return
                   }
-                  this.recurrenceUntil = value.getTime()
+                  this.recurrenceUntil = time
                 }
               })
             })
@@ -490,6 +491,42 @@ export default struct Updatetodo {
         .alignItems(HorizontalAlign.Start)
       }
 
+      if (this.excludeTime.length > 0) {
+        ListItem() {
+          Text('排除时间')
+            .fontWeight(FontWeight.Medium)
+        }
+        .margin({
+          top: $r('sys.float.ohos_id_elements_margin_vertical_l')
+        })
+      }
+      ForEach(this.excludeTime, (item: number, index) => {
+        ListItem() {
+          Column() {
+            Row() {
+              Text(getDateTimeStringFromTimeStamp(item))
+                .enableAutoSpacing(true)
+                .layoutWeight(1)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
+              Image($r('app.media.delete'))
+                .height(24)
+                .onClick(() => {
+                  this.excludeTime.splice(index, 1)
+                })
+            }
+            .borderRadius(12)
+            .padding(12)
+          }
+          .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+          .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
+          .padding($r('sys.float.ohos_id_corner_radius_mark'))
+        }
+        .margin({
+          top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+        })
+      })
       ListItem() {
         Column() {
           Text('标签')
@@ -661,11 +698,7 @@ export default struct Updatetodo {
                   }
                 }
               })
-            Text('示例：{"bundleName":"com.huawei.hmos.settings","abilityName":"com.huawei.hmos.settings.MainAbility","uri":"application_info_entry","parameters":{"pushParams":"com.zhangxm.aitodo"}}（打开系统“设置”应用的“轩铭智能待办”应用权限管理页面）')
-              .margin({
-                top: $r('sys.float.ohos_id_elements_margin_vertical_m')
-              })
-            Text('Want简介')
+            Text('Want介绍')
               .enableAutoSpacing(true)
               .fontColor($r('sys.color.font_emphasize'))
               .margin({
@@ -674,6 +707,10 @@ export default struct Updatetodo {
               .onClick(async () => {
                 await openLink(this.context,
                   'https://developer.huawei.com/consumer/cn/doc/harmonyos-references/js-apis-app-ability-want')
+              })
+            Text('示例：{"bundleName":"com.huawei.hmos.settings","abilityName":"com.huawei.hmos.settings.MainAbility","uri":"application_info_entry","parameters":{"pushParams":"com.zhangxm.aitodo"}}（打开系统“设置”应用的“轩铭智能待办”应用权限管理页面）')
+              .margin({
+                top: $r('sys.float.ohos_id_elements_margin_vertical_m')
               })
           }
           if (this.actionTypeValue === '打开链接') {
@@ -887,10 +924,7 @@ export default struct Updatetodo {
                 recurrenceRule += this.recurrenceByDay.join(',')
               }
             }
-            if (this.accountId !== 'personal') {
-              //请求团队修改待办API
-            }
-            if (this.accountId === 'personal') {
+            if (!this.teamId) {
               await updateTodo(this.context, this.todoId, {
                 content: this.content,
                 priority: this.priority,
@@ -910,6 +944,9 @@ export default struct Updatetodo {
                 bz: this.bz,
                 cloudBackup: this.cloudBackup
               })
+            }
+            if (this.teamId) {
+              //请求团队修改待办API
             }
             this.isShowUpdateSheet = false
           })
@@ -970,6 +1007,7 @@ export default struct Updatetodo {
           }
         })
       }
+      this.excludeTime = todoInfo.excludeTime
       this.tagArray = todoInfo.tag
       this.dependencyArray = todoInfo.dependency
       this.locationLatitude = todoInfo.location.latitude

@@ -3,7 +3,7 @@ import { promptAction } from '@kit.ArkUI'
 import { geoLocationManager } from '@kit.LocationKit'
 import { map, mapCommon } from '@kit.MapKit'
 import { getPersonalAccountInfo, getTeamName } from './Account'
-import { Action, Location } from './Datachange'
+import { Action, canCompleteTodo, Location } from './Datachange'
 import { TodoItem } from './Dataimport'
 import { getPermission } from './Permission'
 import { getRecentTodoFromFreq } from './Rrule'
@@ -32,10 +32,11 @@ export interface Todo {
   bz: string,
   recentCompletedTime: number,
   isCompleted?: boolean,
+  canCompleted?: boolean,
   status?: string,
   updateTime: number,
   cloudBackupTime: CloudBackupTimeItem[],
-  isCloudBackup: boolean,
+  isCloudBackup?: boolean,
   distance?: number,
   latestStartTime?: number,
   priorityTagScore?: number
@@ -121,7 +122,7 @@ export async function getTodoInfo(context: Context, id: string) {
   return 'fail'
 }
 
-export async function getTodoList(context: Context, currentTime: number) {
+export async function getCanCompletedTodoList(context: Context, currentTime: number) {
   try {
     const rdbStore = await relationalStore.getRdbStore(context, {
       name: 'todo',
@@ -168,18 +169,20 @@ export async function getTodoList(context: Context, currentTime: number) {
         recentCompletedTime: resultSet.getValue(recentCompletedTimeIndex) as number,
         isCompleted: await isTodoCompleted(context, resultSet.getValue(idIndex) as string, currentTime),
         updateTime: resultSet.getValue(updateTimeIndex) as number,
-        cloudBackupTime: JSON.parse(resultSet.getValue(cloudBackupTimeIndex) as string) as CloudBackupTimeItem[],
-        isCloudBackup: false
+        cloudBackupTime: JSON.parse(resultSet.getValue(cloudBackupTimeIndex) as string) as CloudBackupTimeItem[]
       }
       info.teamName = await getTeamName(info.teamId)
-      const accountInfo = await getPersonalAccountInfo()
-      const cloudBackupTimeItem = info.cloudBackupTime.find(item => item.uid === accountInfo.uid)
-      if (cloudBackupTimeItem) {
-        if (cloudBackupTimeItem.time >= info.updateTime) {
-          info.isCloudBackup = true
-        }
+      if (info.recurrenceRule) {
+        const recentTodoStartEndTime =
+          getRecentTodoFromFreq(context, info.recurrenceRule, info.startTime, info.endTime, info.excludeTime,
+            currentTime)
+        info.startTime = recentTodoStartEndTime.startTime
+        info.endTime = recentTodoStartEndTime.endTime
       }
-      array.push(info)
+      const canCompleted = await canCompleteTodo(context, info.id, !info.isCompleted, Date.now())
+      if (canCompleted) {
+        array.push(info)
+      }
     }
     resultSet.close()
     return array
@@ -307,7 +310,8 @@ export async function getCurrentTimePersonalTodoList(context: Context, currentTi
         info.startTime = recentTodoStartEndTime.startTime
         info.endTime = recentTodoStartEndTime.endTime
       }
-      if (currentTime + 86400000 > info.startTime && (info.endTime === -1 || currentTime <= info.endTime)) {
+      info.canCompleted = await canCompleteTodo(context, info.id, !info.isCompleted, Date.now())
+      if (currentTime + 86400000 > info.startTime && (info.endTime === -1 || currentTime < info.endTime)) {
         const accountInfo = await getPersonalAccountInfo()
         const cloudBackupTimeItem = info.cloudBackupTime.find(item => item.uid === accountInfo.uid)
         if (cloudBackupTimeItem) {
@@ -330,34 +334,7 @@ export async function getCurrentTimePersonalTodoList(context: Context, currentTi
 
 export async function getRecommendTodoList(context: Context) {
   const currentTime = Date.now()
-  const list = await getTodoList(context, currentTime)
-  const lista = list.filter(item => !item.isCompleted)
-  const listb: Todo[] = []
-  for (let i = 0; i < lista.length; i++) {
-    const item = lista[i]
-    let allCompleted = true
-    for (let i = 0; i < item.dependency.length; i++) {
-      const completed = await isTodoCompleted(context, item.dependency[i], currentTime)
-      if (!completed) {
-        allCompleted = false
-        break
-      }
-    }
-    if (allCompleted) {
-      listb.push(item)
-    }
-  }
-  for (let i = 0; i < listb.length; i++) {
-    const item = listb[i]
-    if (item.recurrenceRule) {
-      const recentTodoStartEndTime =
-        getRecentTodoFromFreq(context, item.recurrenceRule, item.startTime, item.endTime, item.excludeTime, currentTime)
-      item.startTime = recentTodoStartEndTime.startTime
-      item.endTime = recentTodoStartEndTime.endTime
-    }
-  }
-  const listc =
-    listb.filter(item => item.startTime <= currentTime && (item.endTime === -1 || item.endTime >= currentTime))
+  const list = await getCanCompletedTodoList(context, currentTime)
   let latitude = -1
   let longitude = -1
   const location = getPermission('ohos.permission.LOCATION')
@@ -373,7 +350,7 @@ export async function getRecommendTodoList(context: Context) {
     } catch {
     }
   }
-  listc.forEach(item => {
+  list.forEach(item => {
     if (latitude !== -1 && longitude !== -1 && item.location.latitude !== -1 && item.location.longitude !== -1) {
       item.distance = map.calculateDistance({
         latitude: latitude,
@@ -386,7 +363,7 @@ export async function getRecommendTodoList(context: Context) {
       item.distance = Infinity
     }
   })
-  listc.forEach(item => {
+  list.forEach(item => {
     if (item.endTime !== -1) {
       if (!item.duration) {
         item.latestStartTime = item.startTime
@@ -406,7 +383,7 @@ export async function getRecommendTodoList(context: Context) {
     }
   })
   const tagMap = await getTagMap(context)
-  listc.forEach(item => {
+  list.forEach(item => {
     let priority = 5
     if (item.priority >= 1 && item.priority <= 9) {
       priority = 10 - item.priority
@@ -426,7 +403,7 @@ export async function getRecommendTodoList(context: Context) {
     }
     item.priorityTagScore = priority * 0.6 + tagScore * 0.4
   })
-  return listc.sort((a, b) => {
+  return list.sort((a, b) => {
     if (a.distance !== b.distance) {
       return Number(a.distance) - Number(b.distance)
     }

@@ -9,7 +9,7 @@ import { completeTodo, deleteCloudBackup, deleteTodo, setCloudBackup } from '../
 import { getCurrentTimePersonalTodoList, Todo } from '../common/Dataget'
 import { getPreferType } from '../common/Prefertype'
 import { deleteQuickBarTodo, getQuickBarTodoIdList, setQuickBarTodo, syncQuickBarTodo } from '../common/Quickbar'
-import { getDateStringFromTimeStamp } from '../common/Stringformat'
+import { getDateStringFromTimeStamp, getDateTimeStringFromTimeStamp } from '../common/Stringformat'
 import NewTodo from './Newtodo'
 import TodoInfo from './Todoinfo'
 import UpdateTodo from './Updatetodo'
@@ -23,7 +23,7 @@ export default struct TodoPage {
   @Local todoArray: Todo[] = []
   @Local loading: boolean = false
   @Local enableCloudBackup: boolean = false
-  @Local accountId: string = 'personal'
+  @Local teamId: string = ''
   @Local currentTime: number = -1
   @Local contentKeyword: string = ''
   @Local tag: string[] = []
@@ -69,7 +69,7 @@ export default struct TodoPage {
             this.multipleSelect = true
             this.multipleSelectArray.push(item)
           })
-        if (this.accountId === 'personal' && deviceInfo.deviceType === '2in1') {
+        if (!this.teamId && deviceInfo.deviceType === '2in1') {
           if (!this.quickBarTodoIdArray.includes(item.id)) {
             MenuItem({
               startIcon: $r('app.media.addcircle'),
@@ -127,26 +127,49 @@ export default struct TodoPage {
         })
           .onClick(async () => {
             const promptAction = this.UIContext.getPromptAction()
-            const data = await promptAction.showDialog({
-              title: '提示',
-              message: '删除成功后无法恢复，确定删除？',
-              buttons: [
-                {
-                  text: '取消',
-                  color: $r('sys.color.font_primary')
-                },
-                {
-                  text: '删除',
-                  color: $r('sys.color.warning')
-                }
-              ]
-            })
-            if (data.index === 1) {
-              await deleteTodo(this.context, item.id)
-              this.loading = true
+            if (!item.recurrenceRule) {
+              const data = await promptAction.showDialog({
+                title: '提示',
+                message: '删除成功后无法恢复，确定删除？',
+                buttons: [
+                  {
+                    text: '取消',
+                    color: $r('sys.color.font_primary')
+                  },
+                  {
+                    text: '删除',
+                    color: $r('sys.color.warning')
+                  }
+                ]
+              })
+              if (data.index === 1) {
+                await deleteTodo(this.context, item.id)
+              }
             }
+            if (item.recurrenceRule) {
+              const data = await promptAction.showActionMenu({
+                title: '删除模式',
+                buttons: [
+                  {
+                    text: '仅限此待办',
+                    color: $r('sys.color.font_primary')
+                  },
+                  {
+                    text: '所有重复待办',
+                    color: $r('sys.color.font_primary')
+                  }
+                ]
+              })
+              if (data.index === 0) {
+                await deleteTodo(this.context, item.id, true, item.excludeTime.concat([item.startTime]))
+              }
+              if (data.index === 1) {
+                await deleteTodo(this.context, item.id)
+              }
+            }
+            this.loading = true
           })
-        if (this.accountId === 'personal') {
+        if (!this.teamId) {
           if (this.enableCloudBackup && !item.isCloudBackup) {
             MenuItem({
               startIcon: $r('app.media.cloud'),
@@ -198,7 +221,7 @@ export default struct TodoPage {
   @Builder
   NewSheetBuilder() {
     NewTodo({
-      accountId: this.accountId
+      teamId: this.teamId
     })
   }
 
@@ -213,7 +236,7 @@ export default struct TodoPage {
   UpdateSheetBuilder(id: string) {
     UpdateTodo({
       todoId: id,
-      accountId: this.accountId
+      teamId: this.teamId
     })
   }
 
@@ -312,7 +335,7 @@ export default struct TodoPage {
               }
             })
 
-            if (this.accountId === 'personal' && this.enableCloudBackup) {
+            if (!this.teamId && this.enableCloudBackup) {
               Column() {
                 Image($r('app.media.cloud'))
               }
@@ -577,20 +600,18 @@ export default struct TodoPage {
                         type: ToggleType.Checkbox,
                         isOn: item.isCompleted
                       })
+                        .enabled(item.canCompleted)
                         .margin({
                           right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
                         })
                         .onChange(async (isOn) => {
-                          let res = ''
-                          if (this.accountId !== 'personal') {
+                          if (!this.teamId) {
+                            await completeTodo(this.context, item.id, isOn)
+                          }
+                          if (this.teamId) {
                             //请求团队完成待办API
                           }
-                          if (this.accountId === 'personal') {
-                            res = await completeTodo(this.context, item.id, isOn)
-                          }
-                          if (res !== 'fail') {
-                            this.loading = true
-                          }
+                          this.loading = true
                         })
                     }
                     if (item.isCloudBackup) {
@@ -615,6 +636,65 @@ export default struct TodoPage {
                           .enableAutoSpacing(true)
                           .fontColor($r('sys.color.font_tertiary'))
                           .fontWeight(FontWeight.Bold)
+                      }
+                      Row() {
+                        Text('开始时间')
+                          .fontWeight(FontWeight.Medium)
+                          .margin({
+                            right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                          })
+                        Text(getDateTimeStringFromTimeStamp(item.startTime))
+                          .enableAutoSpacing(true)
+                          .layoutWeight(1)
+                      }
+                      .margin({
+                        top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+                      })
+
+                      if (item.endTime !== -1) {
+                        Row() {
+                          Text('结束时间')
+                            .fontWeight(FontWeight.Medium)
+                            .margin({
+                              right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                            })
+                          Text(getDateTimeStringFromTimeStamp(item.endTime))
+                            .enableAutoSpacing(true)
+                            .layoutWeight(1)
+                        }
+                        .margin({
+                          top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+                        })
+                      }
+                      if (item.location.location) {
+                        Row() {
+                          Text('地点')
+                            .fontWeight(FontWeight.Medium)
+                            .margin({
+                              right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                            })
+                          Text(item.location.location)
+                            .enableAutoSpacing(true)
+                            .layoutWeight(1)
+                        }
+                        .margin({
+                          top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+                        })
+                      }
+                      if (item.tag.length > 0) {
+                        Row() {
+                          Text('标签')
+                            .fontWeight(FontWeight.Medium)
+                            .margin({
+                              right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                            })
+                          Text(item.tag.join('、'))
+                            .enableAutoSpacing(true)
+                            .layoutWeight(1)
+                        }
+                        .margin({
+                          top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+                        })
                       }
                     }
                     .alignItems(HorizontalAlign.Start)
@@ -665,10 +745,7 @@ export default struct TodoPage {
           this.todoArray = []
           this.tag = []
           this.tags = []
-          if (this.accountId !== 'personal') {
-            //请求获取待办列表API
-          }
-          if (this.accountId === 'personal') {
+          if (!this.teamId) {
             this.todoArray = await getCurrentTimePersonalTodoList(this.context, this.currentTime)
             const allTagArray: string[] = []
             this.todoArray.forEach(item => {
@@ -683,6 +760,9 @@ export default struct TodoPage {
               await syncQuickBarTodo(this.context)
               this.quickBarTodoIdArray = await getQuickBarTodoIdList(this.context)
             }
+          }
+          if (this.teamId) {
+            //请求获取待办列表API
           }
           this.loading = false
         })

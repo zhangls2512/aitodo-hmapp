@@ -4,6 +4,7 @@ import { completeTodo } from '../common/Datachange'
 import { getRecommendTodoList, Todo } from '../common/Dataget'
 import { checkPermission } from '../common/Permission'
 import { getPreferType } from '../common/Prefertype'
+import { getDateTimeStringFromTimeStamp } from '../common/Stringformat'
 import TodoInfo from './Todoinfo'
 
 @ComponentV2
@@ -65,16 +66,13 @@ export default struct Recommendtodo {
                     right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
                   })
                   .onChange(async (isOn) => {
-                    let res = ''
                     if (!item.teamId) {
-                      res = await completeTodo(this.context, item.id, isOn)
+                      await completeTodo(this.context, item.id, isOn)
                     }
                     if (item.teamId) {
                       //请求团队完成待办API
                     }
-                    if (res !== 'fail') {
-                      this.loading = true
-                    }
+                    this.loading = true
                   })
                 Column() {
                   if (!item.isCompleted) {
@@ -91,6 +89,65 @@ export default struct Recommendtodo {
                       .enableAutoSpacing(true)
                       .fontColor($r('sys.color.font_tertiary'))
                       .fontWeight(FontWeight.Bold)
+                  }
+                  Row() {
+                    Text('开始时间')
+                      .fontWeight(FontWeight.Medium)
+                      .margin({
+                        right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                      })
+                    Text(getDateTimeStringFromTimeStamp(item.startTime))
+                      .enableAutoSpacing(true)
+                      .layoutWeight(1)
+                  }
+                  .margin({
+                    top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+                  })
+
+                  if (item.endTime !== -1) {
+                    Row() {
+                      Text('结束时间')
+                        .fontWeight(FontWeight.Medium)
+                        .margin({
+                          right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                        })
+                      Text(getDateTimeStringFromTimeStamp(item.endTime))
+                        .enableAutoSpacing(true)
+                        .layoutWeight(1)
+                    }
+                    .margin({
+                      top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+                    })
+                  }
+                  if (item.location.location) {
+                    Row() {
+                      Text('地点')
+                        .fontWeight(FontWeight.Medium)
+                        .margin({
+                          right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                        })
+                      Text(item.location.location)
+                        .enableAutoSpacing(true)
+                        .layoutWeight(1)
+                    }
+                    .margin({
+                      top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+                    })
+                  }
+                  if (item.tag.length > 0) {
+                    Row() {
+                      Text('标签')
+                        .fontWeight(FontWeight.Medium)
+                        .margin({
+                          right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                        })
+                      Text(item.tag.join('、'))
+                        .enableAutoSpacing(true)
+                        .layoutWeight(1)
+                    }
+                    .margin({
+                      top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+                    })
                   }
                 }
                 .alignItems(HorizontalAlign.Start)

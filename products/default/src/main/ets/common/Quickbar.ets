@@ -1,5 +1,5 @@
 import { quickBarManager } from '@kit.DeskTopExtensionKit'
-import { getTodoList } from './Dataget'
+import { getPersonalTodoList } from './Dataget'
 
 interface QuickBarTodoItem {
   taskId: number,
@@ -136,7 +136,7 @@ export async function deleteQuickBarTodo(context: Context, todoId: string) {
 
 export async function syncQuickBarTodo(context: Context) {
   const todoIds = await getQuickBarTodoIdList(context)
-  const todos = await getTodoList(context, Date.now())
+  const todos = await getPersonalTodoList(context)
   const promises = todoIds.map(async (item) => {
     const todo = todos.find(todoItem => todoItem.id === item)
     if (!todo) {

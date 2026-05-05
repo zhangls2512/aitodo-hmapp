@@ -14,7 +14,7 @@ import { getDateTimeStringFromTimeStamp } from '../common/Stringformat'
 @ComponentV2
 export default struct Newtodo {
   @Consumer() isShowNewSheet: boolean = false
-  @Param accountId: string = ''
+  @Param teamId: string = ''
   @Local content: string = ''
   @Local priority: number = 0
   @Local startTime: number = Date.now()
@@ -259,13 +259,14 @@ export default struct Newtodo {
               this.UIContext.showDatePickerDialog({
                 selected: this.recurrenceUntil === -1 ? new Date() : new Date(this.recurrenceUntil),
                 onDateAccept: async (value) => {
-                  if (value.getTime() < this.startTime) {
+                  const time = value.getTime()
+                  if (time < this.startTime) {
                     await promptAction.openToast({
                       message: '截止时间不能早于开始时间'
                     })
                     return
                   }
-                  this.recurrenceUntil = value.getTime()
+                  this.recurrenceUntil = time
                 }
               })
             })
@@ -659,11 +660,7 @@ export default struct Newtodo {
                   }
                 }
               })
-            Text('示例：{"bundleName":"com.huawei.hmos.settings","abilityName":"com.huawei.hmos.settings.MainAbility","uri":"application_info_entry","parameters":{"pushParams":"com.zhangxm.aitodo"}}（打开系统“设置”应用的“轩铭智能待办”应用权限管理页面）')
-              .margin({
-                top: $r('sys.float.ohos_id_elements_margin_vertical_m')
-              })
-            Text('Want简介')
+            Text('Want介绍')
               .enableAutoSpacing(true)
               .fontColor($r('sys.color.font_emphasize'))
               .margin({
@@ -672,6 +669,10 @@ export default struct Newtodo {
               .onClick(async () => {
                 await openLink(this.context,
                   'https://developer.huawei.com/consumer/cn/doc/harmonyos-references/js-apis-app-ability-want')
+              })
+            Text('示例：{"bundleName":"com.huawei.hmos.settings","abilityName":"com.huawei.hmos.settings.MainAbility","uri":"application_info_entry","parameters":{"pushParams":"com.zhangxm.aitodo"}}（打开系统“设置”应用的“轩铭智能待办”应用权限管理页面）')
+              .margin({
+                top: $r('sys.float.ohos_id_elements_margin_vertical_m')
               })
           }
           if (this.actionTypeValue === '打开链接') {
@@ -885,10 +886,7 @@ export default struct Newtodo {
                 recurrenceRule += this.recurrenceByDay.join(',')
               }
             }
-            if (this.accountId !== 'personal') {
-              //请求团队新增待办API
-            }
-            if (this.accountId === 'personal') {
+            if (!this.teamId) {
               await newTodo(this.context, {
                 content: this.content,
                 priority: this.priority,
@@ -908,6 +906,9 @@ export default struct Newtodo {
                 bz: this.bz,
                 cloudBackup: this.cloudBackup
               })
+            }
+            if (this.teamId) {
+              //请求团队新增待办API
             }
             this.isShowNewSheet = false
           })

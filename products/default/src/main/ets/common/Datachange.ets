@@ -209,78 +209,54 @@ export async function updateTodo(context: Context, id: string, data: TodoInput) 
   }
 }
 
-export async function completeTodo(context: Context, id: string, complete: boolean) {
-  const rdbStore = await relationalStore.getRdbStore(context, {
-    name: 'todo',
-    securityLevel: relationalStore.SecurityLevel.S1,
-    encrypt: true,
-    allowRebuild: true
-  })
-  const huaweiCloudSyncRdbStore = await relationalStore.getRdbStore(context, {
-    name: 'huaweicloudsync',
-    securityLevel: relationalStore.SecurityLevel.S1,
-    encrypt: true,
-    allowRebuild: true
-  })
+export async function canCompleteTodo(context: Context, id: string, complete: boolean, completedTime: number,
+  prompt = false) {
+  let res = true
   const info = await getTodoInfo(context, id)
   if (info !== 'fail') {
-    const updateTime = Date.now()
     if (!complete) {
-      let res = 'success'
       if (info.recentCompletedTime === -1) {
-        await promptAction.openToast({
-          message: '无需取消完成'
-        })
-        res = 'fail'
+        if (prompt) {
+          await promptAction.openToast({
+            message: '无需取消完成'
+          })
+        }
+        res = false
       }
       if (info.recurrenceRule) {
-        await promptAction.openToast({
-          message: '重复待办不支持取消完成'
-        })
-        res = 'fail'
-      }
-      if (res === 'success') {
-        const predicates = new relationalStore.RdbPredicates('todo')
-        predicates.equalTo('id', id)
-        rdbStore.updateSync({
-          recentCompletedTime: -1,
-          updateTime: updateTime
-        }, predicates)
-        await promptAction.openToast({
-          message: '已取消完成'
-        })
-        if (!info.teamId) {
-          huaweiCloudSyncRdbStore.updateSync({
-            recentCompletedTime: -1,
-            updateTime: updateTime
-          }, predicates)
-          await autoSyncTable(context)
-          await autoBackupTable(context)
+        if (prompt) {
+          await promptAction.openToast({
+            message: '重复待办不支持取消完成'
+          })
         }
+        res = false
       }
-      return res
     }
     if (complete) {
-      const completedTime = updateTime
-      let res = 'success'
       if (!info.recurrenceRule) {
         if (info.recentCompletedTime !== -1) {
-          await promptAction.openToast({
-            message: '无需重复完成'
-          })
-          res = 'fail'
+          if (prompt) {
+            await promptAction.openToast({
+              message: '无需重复完成'
+            })
+          }
+          res = false
         }
         if (info.startTime > completedTime) {
-          await promptAction.openToast({
-            message: '未到开始时间'
-          })
-          res = 'fail'
+          if (prompt) {
+            await promptAction.openToast({
+              message: '未到开始时间'
+            })
+          }
+          res = false
         }
         if (info.endTime !== -1 && info.endTime < completedTime) {
-          await promptAction.openToast({
-            message: '已过结束时间'
-          })
-          res = 'fail'
+          if (prompt) {
+            await promptAction.openToast({
+              message: '已过结束时间'
+            })
+          }
+          res = false
         }
       }
       if (info.recurrenceRule) {
@@ -288,60 +264,51 @@ export async function completeTodo(context: Context, id: string, complete: boole
           getRecentTodoFromFreq(context, info.recurrenceRule, info.startTime, info.endTime, info.excludeTime,
             completedTime)
         if (info.recentCompletedTime >= recentTodoStartEndTime.startTime) {
-          await promptAction.openToast({
-            message: '无需重复完成'
-          })
-          res = 'fail'
+          if (prompt) {
+            await promptAction.openToast({
+              message: '无需重复完成'
+            })
+          }
+          res = false
         }
         if (recentTodoStartEndTime.startTime > completedTime) {
-          await promptAction.openToast({
-            message: '未到开始时间'
-          })
-          res = 'fail'
+          if (prompt) {
+            await promptAction.openToast({
+              message: '未到开始时间'
+            })
+          }
+          res = false
         }
         if (recentTodoStartEndTime.endTime !== -1 && recentTodoStartEndTime.endTime < completedTime) {
-          await promptAction.openToast({
-            message: '已过结束时间'
-          })
-          res = 'fail'
+          if (prompt) {
+            await promptAction.openToast({
+              message: '已过结束时间'
+            })
+          }
+          res = false
         }
       }
       for (let i = 0; i < info.dependency.length; i++) {
         const completed = await isTodoCompleted(context, info.dependency[i], completedTime)
         if (!completed) {
-          await promptAction.openToast({
-            message: '依赖待办未完成'
-          })
-          res = 'fail'
+          if (prompt) {
+            await promptAction.openToast({
+              message: '依赖待办未完成'
+            })
+          }
+          res = false
           break
         }
       }
-      if (res === 'success') {
-        const predicates = new relationalStore.RdbPredicates('todo')
-        predicates.equalTo('id', id)
-        rdbStore.updateSync({
-          recentCompletedTime: completedTime,
-          updateTime: updateTime
-        }, predicates)
-        await promptAction.openToast({
-          message: '已完成'
-        })
-        if (!info.teamId) {
-          huaweiCloudSyncRdbStore.updateSync({
-            recentCompletedTime: completedTime,
-            updateTime: updateTime
-          }, predicates)
-          await autoSyncTable(context)
-          await autoBackupTable(context)
-        }
-      }
-      return res
     }
   }
-  return 'fail'
+  if (info === 'fail') {
+    res = false
+  }
+  return res
 }
 
-export async function deleteTodo(context: Context, id: string) {
+export async function completeTodo(context: Context, id: string, complete: boolean) {
   const rdbStore = await relationalStore.getRdbStore(context, {
     name: 'todo',
     securityLevel: relationalStore.SecurityLevel.S1,
@@ -356,8 +323,70 @@ export async function deleteTodo(context: Context, id: string) {
   })
   const predicates = new relationalStore.RdbPredicates('todo')
   predicates.equalTo('id', id)
-  rdbStore.deleteSync(predicates)
-  huaweiCloudSyncRdbStore.deleteSync(predicates)
+  const updateTime = Date.now()
+  const canComplete = await canCompleteTodo(context, id, complete, updateTime, true)
+  if (canComplete) {
+    if (!complete) {
+      rdbStore.updateSync({
+        recentCompletedTime: -1,
+        updateTime: updateTime
+      }, predicates)
+      huaweiCloudSyncRdbStore.updateSync({
+        recentCompletedTime: -1,
+        updateTime: updateTime
+      }, predicates)
+      await promptAction.openToast({
+        message: '已取消完成'
+      })
+    }
+    if (complete) {
+      rdbStore.updateSync({
+        recentCompletedTime: updateTime,
+        updateTime: updateTime
+      }, predicates)
+      huaweiCloudSyncRdbStore.updateSync({
+        recentCompletedTime: updateTime,
+        updateTime: updateTime
+      }, predicates)
+      await promptAction.openToast({
+        message: '已完成'
+      })
+    }
+    await autoSyncTable(context)
+    await autoBackupTable(context)
+  }
+}
+
+export async function deleteTodo(context: Context, id: string, single = false, excludeTime: number[] = []) {
+  const rdbStore = await relationalStore.getRdbStore(context, {
+    name: 'todo',
+    securityLevel: relationalStore.SecurityLevel.S1,
+    encrypt: true,
+    allowRebuild: true
+  })
+  const huaweiCloudSyncRdbStore = await relationalStore.getRdbStore(context, {
+    name: 'huaweicloudsync',
+    securityLevel: relationalStore.SecurityLevel.S1,
+    encrypt: true,
+    allowRebuild: true
+  })
+  const predicates = new relationalStore.RdbPredicates('todo')
+  predicates.equalTo('id', id)
+  if (!single) {
+    rdbStore.deleteSync(predicates)
+    huaweiCloudSyncRdbStore.deleteSync(predicates)
+  }
+  if (single) {
+    const updateTime = Date.now()
+    rdbStore.updateSync({
+      excludeTime: JSON.stringify(excludeTime),
+      updateTime: updateTime
+    }, predicates)
+    huaweiCloudSyncRdbStore.updateSync({
+      excludeTime: JSON.stringify(excludeTime),
+      updateTime: updateTime
+    }, predicates)
+  }
   await promptAction.openToast({
     message: '删除成功'
   })

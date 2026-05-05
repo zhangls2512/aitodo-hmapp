@@ -211,7 +211,7 @@ function isWhile(date: Date, startTime: number, endTime: number, until: number, 
   if (timeStamp > until) {
     return false
   }
-  if (count > maxCount) {
+  if (count >= maxCount) {
     return false
   }
   if (timeStamp > currentTime && endTime !== -1) {

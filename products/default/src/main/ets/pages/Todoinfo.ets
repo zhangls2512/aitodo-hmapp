@@ -319,13 +319,15 @@ export default struct Todoinfo {
         .alignItems(HorizontalAlign.Start)
       }
 
-      ListItem() {
-        Text('动作')
-          .fontWeight(FontWeight.Medium)
+      if (this.action.length > 0) {
+        ListItem() {
+          Text('动作')
+            .fontWeight(FontWeight.Medium)
+        }
+        .margin({
+          top: $r('sys.float.ohos_id_elements_margin_vertical_l')
+        })
       }
-      .margin({
-        top: $r('sys.float.ohos_id_elements_margin_vertical_l')
-      })
 
       ForEach(this.action, (item: Action, index) => {
         ListItem() {
