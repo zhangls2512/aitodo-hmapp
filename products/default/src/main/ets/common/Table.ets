@@ -7,12 +7,14 @@ import { distributedDeviceManager } from '@kit.DistributedServiceKit'
 import { rcp } from '@kit.RemoteCommunicationKit'
 import { getCaldavServerInfo } from './Caldavserver'
 import { encrypt, EncryptData, getKeyAlg } from './Crypto'
+import { deleteTodo } from './Datachange'
 import { getPersonalTodoList } from './Dataget'
+import { importTodoArray, TodoItem } from './Dataimport'
 import { write } from './File'
 import { icsstringify } from './Ics'
 import { getPermission } from './Permission'
 import { getFlushPreference } from './Preference'
-import { parseRRule } from './Rrule'
+import { parseRRule, stringifyRRule } from './Rrule'
 import { getWebdavServerInfo } from './Webdavserver'
 
 interface Item {
@@ -48,7 +50,10 @@ export async function autoSyncTable(context: Context, fromDeviceId?: string) {
     await Promise.all(promises)
   }
   await huaweiCloudSyncTable(context)
-  await systemCalendarSyncTable(context)
+  const autoSystemCalendarSync = getFlushPreference(context, 'dataSetting', 'autoSystemCalendarSync', false)
+  if (autoSystemCalendarSync) {
+    await systemCalendarSyncTable(context, 'push')
+  }
 }
 
 export async function syncTable(context: Context, networkId: string, syncMode: relationalStore.SyncMode) {
@@ -93,7 +98,7 @@ async function huaweiCloudSyncTable(context: Context) {
   }
 }
 
-export async function systemCalendarSyncTable(context: Context) {
+export async function systemCalendarSyncTable(context: Context, mode: 'push' | 'pull') {
   if (getPermission('ohos.permission.READ_CALENDAR') && getPermission('ohos.permission.WRITE_CALENDAR')) {
     const systemCalendarManager = calendarManager.getCalendarManager(context)
     const allCalendars = await systemCalendarManager.getAllCalendars()
@@ -112,47 +117,94 @@ export async function systemCalendarSyncTable(context: Context) {
     })
     const events = await calendar.getEvents()
     const todos = await getPersonalTodoList(context)
-    const promisesa = todos.map(async (item) => {
-      const eventItem = events.find(eventItem => eventItem.identifier === item.id)
-      const event: calendarManager.Event = {
-        type: calendarManager.EventType.NORMAL,
-        title: item.content,
-        location: {
-          latitude: item.location.latitude,
-          longitude: item.location.longitude,
-          location: item.location.location
-        },
-        startTime: item.startTime,
-        endTime: item.endTime,
-        description: item.bz,
-        identifier: item.id
-      }
-      if (item.recurrenceRule) {
-        event.recurrenceRule = {
-          recurrenceFrequency: parseRRule(item.recurrenceRule).recurrenceFrequency,
-          expire: parseRRule(item.recurrenceRule).expire,
-          count: parseRRule(item.recurrenceRule).count,
-          interval: parseRRule(item.recurrenceRule).interval,
-          excludedDates: item.excludeTime,
-          daysOfWeek: parseRRule(item.recurrenceRule).daysOfWeek,
-          daysOfMonth: parseRRule(item.recurrenceRule).daysOfMonth,
-          monthsOfYear: parseRRule(item.recurrenceRule).monthsOfYear
+    if (mode === 'push') {
+      const promisesa = todos.map(async (item) => {
+        const eventItem = events.find(eventItem => eventItem.identifier === item.id)
+        const event: calendarManager.Event = {
+          type: calendarManager.EventType.NORMAL,
+          title: item.content,
+          location: {
+            latitude: item.location.latitude,
+            longitude: item.location.longitude,
+            location: item.location.location
+          },
+          startTime: item.startTime,
+          endTime: item.endTime,
+          description: item.bz,
+          identifier: item.id
         }
+        if (item.recurrenceRule) {
+          event.recurrenceRule = {
+            recurrenceFrequency: parseRRule(item.recurrenceRule).recurrenceFrequency,
+            expire: parseRRule(item.recurrenceRule).expire,
+            count: parseRRule(item.recurrenceRule).count,
+            interval: parseRRule(item.recurrenceRule).interval,
+            excludedDates: item.excludeTime,
+            daysOfWeek: parseRRule(item.recurrenceRule).daysOfWeek,
+            daysOfMonth: parseRRule(item.recurrenceRule).daysOfMonth,
+            monthsOfYear: parseRRule(item.recurrenceRule).monthsOfYear
+          }
+        }
+        if (!eventItem) {
+          try {
+            await calendar.addEvent(event)
+          } catch {
+          }
+        } else {
+          event.id = eventItem.id
+          await calendar.updateEvent(event)
+        }
+      })
+      await Promise.all(promisesa)
+      const promisesb = events.map(async (item) => {
+        if (!todos.find(todoItem => todoItem.id === item.identifier)) {
+          await calendar.deleteEvent(item.id)
+        }
+      })
+      await Promise.all(promisesb)
+    }
+    if (mode === 'pull') {
+      const todoArray: TodoItem[] = []
+      for (let i = 0; i < events.length; i++) {
+        const item = events[i]
+        const event = await calendar.getEvents(calendarManager.EventFilter.filterById([item.id]), ['recurrenceRule'])
+        const excludeTime: number[] = []
+        if (event[0].recurrenceRule?.excludedDates) {
+          event[0].recurrenceRule?.excludedDates.forEach(item => {
+            excludeTime.push(item)
+          })
+        }
+        todoArray.push({
+          id: String(item.identifier),
+          content: String(item.title),
+          priority: 0,
+          startTime: item.startTime,
+          endTime: item.endTime,
+          duration: 0,
+          recurrenceRule: event[0].recurrenceRule ? stringifyRRule(JSON.stringify(event[0].recurrenceRule)) : '',
+          excludeTime: excludeTime,
+          tag: [],
+          dependency: [],
+          location: {
+            latitude: item.location?.latitude ? Number(item.location?.latitude) : -1,
+            longitude: item.location?.longitude ? Number(item.location?.longitude) : -1,
+            location: item.location?.location ? String(item.location?.location) : ''
+          },
+          action: [],
+          bz: String(item.description),
+          recentCompletedTime: -1,
+          updateTime: Date.now(),
+          cloudBackupTime: []
+        })
       }
-      if (!eventItem) {
-        await calendar.addEvent(event)
-      } else {
-        event.id = eventItem.id
-        await calendar.updateEvent(event)
-      }
-    })
-    await Promise.all(promisesa)
-    const promisesb = events.map(async (item) => {
-      if (!todos.find(todoItem => todoItem.id === item.identifier)) {
-        await calendar.deleteEvent(item.id)
-      }
-    })
-    await Promise.all(promisesb)
+      await importTodoArray(context, todoArray, relationalStore.ConflictResolution.ON_CONFLICT_REPLACE)
+      const promisesb = todos.map(async (item) => {
+        if (!events.find(eventItem => eventItem.identifier === item.id)) {
+          await deleteTodo(context, item.id)
+        }
+      })
+      await Promise.all(promisesb)
+    }
     return 'success'
   }
   return 'fail'

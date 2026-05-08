@@ -1,6 +1,6 @@
 import { calendarManager } from '@kit.CalendarKit'
 import { getCustomFreqList } from './Customfreq'
-import { icsTimeStringToTimeStamp } from './Ics'
+import { icsTimeStringToTimeStamp, timeStampToIcsTimeString } from './Ics'
 
 interface RecentTodoStartEndTime {
   startTime: number,
@@ -62,6 +62,46 @@ export function parseRRule(rRule: string) {
       result.monthsOfYear = value.split(',').map(item => Number(item))
     }
   })
+  return result
+}
+
+export function stringifyRRule(rRule: string) {
+  const rRuleObject = JSON.parse(rRule) as calendarManager.RecurrenceRule
+  let result = 'FREQ='
+  result += ['YEARLY', 'MONTHLY', 'WEEKLY', 'DAILY'][rRuleObject.recurrenceFrequency]
+  if (rRuleObject.expire) {
+    result += ';UNTIL='
+    result += timeStampToIcsTimeString(rRuleObject.expire)
+  }
+  if (rRuleObject.count) {
+    result += ';COUNT='
+    result += rRuleObject.count
+  }
+  if (rRuleObject.interval) {
+    result += ';INTERVAL='
+    result += rRuleObject.interval
+  }
+  if (rRuleObject.monthsOfYear) {
+    result += ';BYMONTH='
+    result += Object.values(rRuleObject.monthsOfYear).join(',')
+  }
+  if (rRuleObject.daysOfMonth) {
+    result += ';BYMONTHDAY='
+    result += Object.values(rRuleObject.daysOfMonth).join(',')
+  }
+  if (rRuleObject.daysOfWeek) {
+    result += ';BYDAY='
+    const dayMap: Record<number, string> = {
+      1: 'MO',
+      2: 'TU',
+      3: 'WE',
+      4: 'TH',
+      5: 'FR',
+      6: 'SA',
+      7: 'SU'
+    }
+    result += Object.values(rRuleObject.daysOfWeek).map(item => dayMap[item]).join(',')
+  }
   return result
 }
 

@@ -882,7 +882,7 @@ struct Tablesync {
               })
             Column() {
               Row() {
-                Text('自动同步')
+                Text('自动同步 (推送)')
                   .fontWeight(FontWeight.Medium)
                   .layoutWeight(1)
                   .margin({
@@ -936,7 +936,27 @@ struct Tablesync {
                 }
               })
               .onClick(async () => {
-                const res = await systemCalendarSyncTable(this.context)
+                const promptAction = this.UIContext.getPromptAction()
+                const data = await promptAction.showActionMenu({
+                  title: '选择同步模式',
+                  buttons: [
+                    {
+                      text: '推送 (本应用 > 系统日历)',
+                      color: $r('sys.color.font_primary')
+                    },
+                    {
+                      text: '拉取 (系统日历 > 本应用)',
+                      color: $r('sys.color.font_primary')
+                    }
+                  ]
+                })
+                let res = ''
+                if (data.index === 0) {
+                  res = await systemCalendarSyncTable(this.context, 'push')
+                }
+                if (data.index === 1) {
+                  res = await systemCalendarSyncTable(this.context, 'pull')
+                }
                 if (res === 'success') {
                   await promptAction.openToast({
                     message: '同步成功'

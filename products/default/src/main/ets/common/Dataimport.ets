@@ -63,59 +63,7 @@ export async function importTodo(context: Context, data: string, conflict: relat
   if (importstring !== 'fail' && importstring !== 'unabledecrypt') {
     try {
       const array = JSON.parse(importstring) as TodoItem[]
-      const rdbStore = await relationalStore.getRdbStore(context, {
-        name: 'todo',
-        securityLevel: relationalStore.SecurityLevel.S1,
-        encrypt: true,
-        allowRebuild: true
-      })
-      const huaweiCloudSyncRdbStore = await relationalStore.getRdbStore(context, {
-        name: 'huaweicloudsync',
-        securityLevel: relationalStore.SecurityLevel.S1,
-        encrypt: true,
-        allowRebuild: true
-      })
-      array.forEach(item => {
-        rdbStore.insertSync('todo', {
-          id: item.id,
-          teamId: '',
-          content: item.content,
-          priority: item.priority,
-          startTime: item.startTime,
-          endTime: item.endTime,
-          duration: item.duration,
-          recurrenceRule: item.recurrenceRule,
-          excludeTime: JSON.stringify(item.excludeTime),
-          tag: JSON.stringify(item.tag),
-          dependency: JSON.stringify(item.dependency),
-          location: JSON.stringify(item.location),
-          action: JSON.stringify(item.action),
-          bz: item.bz,
-          recentCompletedTime: item.recentCompletedTime,
-          updateTime: item.updateTime,
-          cloudBackupTime: JSON.stringify(item.cloudBackupTime)
-        }, conflict)
-        huaweiCloudSyncRdbStore.insertSync('todo', {
-          id: item.id,
-          content: item.content,
-          priority: item.priority,
-          startTime: item.startTime,
-          endTime: item.endTime,
-          duration: item.duration,
-          recurrenceRule: item.recurrenceRule,
-          excludeTime: JSON.stringify(item.excludeTime),
-          tag: JSON.stringify(item.tag),
-          dependency: JSON.stringify(item.dependency),
-          location: JSON.stringify(item.location),
-          action: JSON.stringify(item.action),
-          bz: item.bz,
-          recentCompletedTime: item.recentCompletedTime,
-          updateTime: item.updateTime,
-          cloudBackupTime: JSON.stringify(item.cloudBackupTime)
-        }, conflict)
-      })
-      await autoSyncTable(context)
-      await autoBackupTable(context)
+      await importTodoArray(context, array, conflict)
       return 'success'
     } catch {
       await promptAction.openToast({
@@ -131,4 +79,61 @@ export async function importTodo(context: Context, data: string, conflict: relat
     }
     return 'fail'
   }
+}
+
+export async function importTodoArray(context: Context, todoArray: TodoItem[],
+  conflict: relationalStore.ConflictResolution) {
+  const rdbStore = await relationalStore.getRdbStore(context, {
+    name: 'todo',
+    securityLevel: relationalStore.SecurityLevel.S1,
+    encrypt: true,
+    allowRebuild: true
+  })
+  const huaweiCloudSyncRdbStore = await relationalStore.getRdbStore(context, {
+    name: 'huaweicloudsync',
+    securityLevel: relationalStore.SecurityLevel.S1,
+    encrypt: true,
+    allowRebuild: true
+  })
+  todoArray.forEach(item => {
+    rdbStore.insertSync('todo', {
+      id: item.id,
+      teamId: '',
+      content: item.content,
+      priority: item.priority,
+      startTime: item.startTime,
+      endTime: item.endTime,
+      duration: item.duration,
+      recurrenceRule: item.recurrenceRule,
+      excludeTime: JSON.stringify(item.excludeTime),
+      tag: JSON.stringify(item.tag),
+      dependency: JSON.stringify(item.dependency),
+      location: JSON.stringify(item.location),
+      action: JSON.stringify(item.action),
+      bz: item.bz,
+      recentCompletedTime: item.recentCompletedTime,
+      updateTime: item.updateTime,
+      cloudBackupTime: JSON.stringify(item.cloudBackupTime)
+    }, conflict)
+    huaweiCloudSyncRdbStore.insertSync('todo', {
+      id: item.id,
+      content: item.content,
+      priority: item.priority,
+      startTime: item.startTime,
+      endTime: item.endTime,
+      duration: item.duration,
+      recurrenceRule: item.recurrenceRule,
+      excludeTime: JSON.stringify(item.excludeTime),
+      tag: JSON.stringify(item.tag),
+      dependency: JSON.stringify(item.dependency),
+      location: JSON.stringify(item.location),
+      action: JSON.stringify(item.action),
+      bz: item.bz,
+      recentCompletedTime: item.recentCompletedTime,
+      updateTime: item.updateTime,
+      cloudBackupTime: JSON.stringify(item.cloudBackupTime)
+    }, conflict)
+  })
+  await autoSyncTable(context)
+  await autoBackupTable(context)
 }
