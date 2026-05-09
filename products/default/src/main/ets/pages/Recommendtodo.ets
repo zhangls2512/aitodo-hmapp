@@ -5,7 +5,6 @@ import { getRecommendTodoList, Todo } from '../common/Dataget'
 import { checkPermission } from '../common/Permission'
 import { getPreferType } from '../common/Prefertype'
 import { getDateTimeStringFromTimeStamp } from '../common/Stringformat'
-import NewTodo from './Newtodo'
 import TodoInfo from './Todoinfo'
 
 @ComponentV2
@@ -19,6 +18,7 @@ export default struct Recommendtodo {
   UIContext = this.getUIContext()
   context = this.UIContext.getHostContext() as common.UIAbilityContext
   todoId = ''
+  teamId = ''
   dialogControllerProgress = new CustomDialogController({
     builder: LoadingDialog({
       content: '请求中...'
@@ -39,22 +39,17 @@ export default struct Recommendtodo {
       })
         .onClick(() => {
           this.todoId = item.id
+          this.teamId = item.teamId
           this.isShowInfoSheet = true
         })
     }
   }
 
   @Builder
-  NewSheetBuilder() {
-    NewTodo({
-      teamId: ''
-    })
-  }
-
-  @Builder
-  InfoSheetBuilder(id: string) {
+  InfoSheetBuilder() {
     TodoInfo({
-      todoId: id
+      todoId: this.todoId,
+      teamId: this.teamId
     })
   }
 
@@ -225,36 +220,6 @@ export default struct Recommendtodo {
           top: $r('sys.float.ohos_id_elements_margin_vertical_l')
         })
         .width('100%')
-        .bindSheet(this.isShowNewSheet!!, this.NewSheetBuilder(), {
-          height: SheetSize.FIT_CONTENT,
-          preferType: this.preferType,
-          title: {
-            title: '新增待办'
-          },
-          onDisappear: () => {
-            this.loading = true
-          },
-          onWillDismiss: async (DismissSheetAction) => {
-            const promptAction = this.UIContext.getPromptAction()
-            const data = await promptAction.showDialog({
-              title: '提示',
-              message: '数据尚未保存，确定退出？',
-              buttons: [
-                {
-                  text: '取消',
-                  color: $r('sys.color.font_primary')
-                },
-                {
-                  text: '确定',
-                  color: $r('sys.color.font_emphasize')
-                }
-              ]
-            })
-            if (data.index === 1) {
-              DismissSheetAction.dismiss()
-            }
-          }
-        })
       }
     }
     .height('100%')
@@ -294,7 +259,7 @@ export default struct Recommendtodo {
       this.todoArray = await getRecommendTodoList(this.context)
       this.loading = false
     })
-    .bindSheet(this.isShowInfoSheet!!, this.InfoSheetBuilder(this.todoId), {
+    .bindSheet(this.isShowInfoSheet!!, this.InfoSheetBuilder(), {
       height: SheetSize.FIT_CONTENT,
       preferType: this.preferType,
       title: {

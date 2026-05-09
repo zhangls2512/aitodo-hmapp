@@ -9,6 +9,7 @@ import { Action, newTodo } from '../common/Datachange'
 import { timeStampToIcsTimeString } from '../common/Ics'
 import openLink from '../common/Openlink'
 import { getFlushPreference } from '../common/Preference'
+import { isProxyReminderEnabled } from '../common/Proxyreminder'
 import { getDateTimeStringFromTimeStamp } from '../common/Stringformat'
 
 @ComponentV2
@@ -18,6 +19,8 @@ export default struct Newtodo {
   @Local content: string = ''
   @Local priority: number = 0
   @Local startTime: number = Date.now()
+  @Local remind: boolean = false
+  @Local remindEnabled: boolean = true
   @Local endTime: number = -1
   @Local duration: string = '0'
   @Local recurrence: boolean = false
@@ -133,6 +136,32 @@ export default struct Newtodo {
             })
           })
 
+          if (!this.teamId && !this.recurrence) {
+            Row() {
+              Text('提醒')
+                .fontWeight(FontWeight.Medium)
+                .layoutWeight(1)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
+              Toggle({
+                type: ToggleType.Switch,
+                isOn: this.remind!!
+              })
+                .enabled(this.remindEnabled)
+            }
+            .margin({
+              top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+            })
+
+            if (!this.remindEnabled) {
+              Text('当前已存在的有效提醒数量已达到系统最大限制，不可开启提醒。可前往“我的”>“设置”>“通用”>“通用”>“功能”>“提醒管理”删除不必要的提醒后再开启提醒。')
+                .fontColor($r('sys.color.warning'))
+                .margin({
+                  top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+                })
+            }
+          }
           Row() {
             Text('结束时间')
               .fontWeight(FontWeight.Medium)
@@ -921,7 +950,8 @@ export default struct Newtodo {
                 },
                 action: this.actionArray,
                 bz: this.bz,
-                cloudBackup: this.cloudBackup
+                cloudBackup: this.cloudBackup,
+                remind: this.remind
               })
             }
             if (this.teamId) {
@@ -946,6 +976,7 @@ export default struct Newtodo {
             value: item
           }
         })
+      this.remindEnabled = await isProxyReminderEnabled()
       const res = await getCloudServiceStatus(this.context)
       const key = getKeyAlg()
       if (!res) {

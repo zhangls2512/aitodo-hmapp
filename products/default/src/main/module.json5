@@ -176,6 +176,9 @@
         "name": "ohos.permission.PREPARE_APP_TERMINATE"
       },
       {
+        "name": "ohos.permission.PUBLISH_AGENT_REMINDER"
+      },
+      {
         "name": "ohos.permission.VIBRATE"
       },
       {

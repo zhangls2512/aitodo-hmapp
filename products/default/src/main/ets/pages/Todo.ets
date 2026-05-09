@@ -490,16 +490,17 @@ export default struct TodoPage {
   }
 
   @Builder
-  InfoSheetBuilder(id: string) {
+  InfoSheetBuilder() {
     TodoInfo({
-      todoId: id
+      todoId: this.todoId,
+      teamId: this.teamId
     })
   }
 
   @Builder
-  UpdateSheetBuilder(id: string) {
+  UpdateSheetBuilder() {
     UpdateTodo({
-      todoId: id,
+      todoId: this.todoId,
       teamId: this.teamId
     })
   }
@@ -1074,7 +1075,7 @@ export default struct TodoPage {
           }
           this.loading = false
         })
-        .bindSheet(this.isShowInfoSheet!!, this.InfoSheetBuilder(this.todoId), {
+        .bindSheet(this.isShowInfoSheet!!, this.InfoSheetBuilder(), {
           height: SheetSize.FIT_CONTENT,
           preferType: this.preferType,
           title: {
@@ -1111,7 +1112,7 @@ export default struct TodoPage {
     .onDisAppear(() => {
       this.context.eventHub.off('refreshTodo')
     })
-    .bindSheet(this.isShowUpdateSheet!!, this.UpdateSheetBuilder(this.todoId), {
+    .bindSheet(this.isShowUpdateSheet!!, this.UpdateSheetBuilder(), {
       height: SheetSize.FIT_CONTENT,
       preferType: this.preferType,
       title: {

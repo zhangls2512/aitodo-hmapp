@@ -4,6 +4,7 @@ import { promptAction } from '@kit.ArkUI'
 import { getPersonalAccountAccessToken, getPersonalAccountInfo } from './Account'
 import { encrypt } from './Crypto'
 import { CloudBackupTimeItem, getTodoInfo, isTodoCompleted } from './Dataget'
+import { cancelProxyReminder, setProxyReminder } from './Proxyreminder'
 import request from './Request'
 import { getRecentTodoFromFreq } from './Rrule'
 import { autoBackupTable, autoSyncTable } from './Table'
@@ -32,7 +33,8 @@ export interface TodoInput {
   location: Location,
   action: Action[],
   bz: string,
-  cloudBackup: boolean
+  cloudBackup: boolean,
+  remind: boolean
 }
 
 interface CloudBackupItem {
@@ -59,6 +61,15 @@ export async function newTodo(context: Context, data: TodoInput) {
   })
   const id = util.generateRandomUUID()
   const updateTime = Date.now()
+  if (!data.recurrenceRule && data.remind) {
+    await setProxyReminder({
+      id: -1,
+      todoId: id,
+      title: data.content,
+      content: data.bz,
+      time: data.startTime
+    })
+  }
   rdbStore.insertSync('todo', {
     id: id,
     teamId: '',
@@ -149,6 +160,17 @@ export async function updateTodo(context: Context, id: string, data: TodoInput) 
     cloudBackupTime =
       JSON.parse(resultSet.getValue(resultSet.getColumnIndex('cloudBackupTime')) as string) as CloudBackupTimeItem[]
     resultSet.close()
+  }
+  if (!data.recurrenceRule && data.remind) {
+    await setProxyReminder({
+      id: -1,
+      todoId: id,
+      title: data.content,
+      content: data.bz,
+      time: data.startTime
+    })
+  } else {
+    await cancelProxyReminder(id)
   }
   rdbStore.updateSync({
     content: data.content,
@@ -375,6 +397,7 @@ export async function deleteTodo(context: Context, id: string, single = false, e
   if (!single) {
     rdbStore.deleteSync(predicates)
     huaweiCloudSyncRdbStore.deleteSync(predicates)
+    await cancelProxyReminder(id)
   }
   if (single) {
     const updateTime = Date.now()

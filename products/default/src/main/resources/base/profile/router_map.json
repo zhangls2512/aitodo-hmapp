@@ -11,6 +11,11 @@
       "buildFunction": "TagBuilder"
     },
     {
+      "name": "Remind",
+      "pageSourceFile": "src/main/ets/pages/Remind.ets",
+      "buildFunction": "RemindBuilder"
+    },
+    {
       "name": "Customfreqlist",
       "pageSourceFile": "src/main/ets/pages/Customfreqlist.ets",
       "buildFunction": "CustomfreqlistBuilder"

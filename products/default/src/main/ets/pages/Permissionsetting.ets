@@ -52,7 +52,7 @@ struct Permissionsetting {
             .padding($r('sys.float.ohos_id_corner_radius_mark'))
 
             Text(
-              '系统自动开启此权限，无法手动管理。本应用使用此权限获取并根据指定类型文件图标、网络、Wi-Fi等信息，使用持久化访问文件Uri、互联网、应用关闭前执行自定义的预关闭动作、振动、窗口置顶等能力优化使用体验。通过此权限获取的信息不上传到本应用开发者服务器。')
+              '系统自动开启此权限，无法手动管理。本应用使用此权限获取并根据指定类型文件图标、网络、Wi-Fi等信息，使用持久化访问文件Uri、互联网、应用关闭前执行自定义的预关闭动作、后台代理提醒、振动、窗口置顶等能力优化使用体验。通过此权限获取的信息不上传到本应用开发者服务器。')
               .enableAutoSpacing(true)
               .fontColor($r('sys.color.font_secondary'))
               .fontSize($r('sys.float.ohos_id_text_size_body3'))

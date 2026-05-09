@@ -7,14 +7,17 @@ import { icsTimeStringToTimeStamp } from '../common/Ics'
 import openLink from '../common/Openlink'
 import copy from '../common/Pasteboard'
 import { getFlushPreference } from '../common/Preference'
+import { isProxyReminderOn } from '../common/Proxyreminder'
 import { getDateTimeStringFromTimeStamp } from '../common/Stringformat'
 
 @ComponentV2
 export default struct Todoinfo {
   @Param todoId: string = ''
+  @Param teamId: string = ''
   @Local content: string = ''
   @Local priority: number = 0
   @Local startTime: number = Date.now()
+  @Local remind: boolean = false
   @Local endTime: number = -1
   @Local duration: number = 0
   @Local recurrence: boolean = false
@@ -109,6 +112,16 @@ export default struct Todoinfo {
             top: $r('sys.float.ohos_id_text_margin_vertical')
           })
 
+          if (!this.teamId && !this.recurrence) {
+            Text() {
+              Span('提醒：')
+                .fontWeight(FontWeight.Medium)
+              Span(this.remind ? '开' : '关')
+            }
+            .margin({
+              top: $r('sys.float.ohos_id_text_margin_vertical')
+            })
+          }
           if (this.endTime !== -1) {
             Text() {
               Span('结束时间：')
@@ -469,6 +482,7 @@ export default struct Todoinfo {
       this.locationLocation = todoInfo.location.location
       this.action = todoInfo.action
       this.bz = todoInfo.bz
+      this.remind = await isProxyReminderOn(this.todoId)
     })
   }
 }

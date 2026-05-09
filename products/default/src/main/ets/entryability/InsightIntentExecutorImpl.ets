@@ -22,7 +22,8 @@ export default class InsightIntentExecutorImpl extends InsightIntentExecutor {
         location: paramJson.location,
         action: paramJson.action,
         bz: paramJson.bz,
-        cloudBackup: false
+        cloudBackup: false,
+        remind: paramJson.remind
       })
       context.eventHub.emit('refreshTodo')
     }
