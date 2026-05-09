@@ -330,8 +330,16 @@ struct Index {
         })
         if (wantUri.startsWith('https://www.zhangls2512.cn/product/todo')) {
           const urires = new uri.URI(wantUri)
+          const share = urires.getQueryValue('share')
           const invitationCode = urires.getQueryValue('invitationcode')
           const vipCode = urires.getQueryValue('vipcode')
+          if (share) {
+            await importTodo(this.context, share, relationalStore.ConflictResolution.ON_CONFLICT_IGNORE)
+            await promptAction.openToast({
+              message: '导入成功'
+            })
+            this.context.eventHub.emit('refreshTodo')
+          }
           if (invitationCode) {
             if (!accessToken) {
               await promptAction.showDialog({

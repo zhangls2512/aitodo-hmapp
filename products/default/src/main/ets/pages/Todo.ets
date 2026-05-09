@@ -1,15 +1,26 @@
 import { common } from '@kit.AbilityKit'
 import { FunctionComponent } from '@kit.AgentFrameworkKit'
+import { uniformTypeDescriptor } from '@kit.ArkData'
+import { uri } from '@kit.ArkTS'
 import { LoadingDialog, promptAction } from '@kit.ArkUI'
 import { deviceInfo } from '@kit.BasicServicesKit'
+import { fileIo, fileUri } from '@kit.CoreFileKit'
+import { image } from '@kit.ImageKit'
+import { netBoost } from '@kit.NetworkBoostKit'
+import { rcp } from '@kit.RemoteCommunicationKit'
+import { generateBarcode, scanCore } from '@kit.ScanKit'
+import { harmonyShare, systemShare } from '@kit.ShareKit'
 import { hdsEffect } from '@kit.UIDesignKit'
 import getCloudServiceStatus from '../common/Cloudservice'
 import { getKeyAlg } from '../common/Crypto'
 import { completeTodo, deleteCloudBackup, deleteTodo, setCloudBackup } from '../common/Datachange'
 import { getCurrentTimePersonalTodoList, Todo } from '../common/Dataget'
+import { TodoItem } from '../common/Dataimport'
+import { write } from '../common/File'
+import { icsstringify } from '../common/Ics'
 import { getPreferType } from '../common/Prefertype'
 import { deleteQuickBarTodo, getQuickBarTodoIdList, setQuickBarTodo, syncQuickBarTodo } from '../common/Quickbar'
-import { getDateStringFromTimeStamp, getDateTimeStringFromTimeStamp } from '../common/Stringformat'
+import { getDateStringFromTimeStamp, getDateTimeStringFromTimeStamp, getSizeString } from '../common/Stringformat'
 import NewTodo from './Newtodo'
 import TodoInfo from './Todoinfo'
 import UpdateTodo from './Updatetodo'
@@ -45,6 +56,250 @@ export default struct TodoPage {
   getDateFromTimeStamp(timeStamp: number) {
     const date = new Date(timeStamp)
     return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0)
+  }
+
+  async shareTodo(todoArray: Todo[]) {
+    const todos: TodoItem[] = []
+    todoArray.forEach(item => {
+      todos.push({
+        id: item.id,
+        content: item.content,
+        priority: item.priority,
+        startTime: item.startTime,
+        endTime: item.endTime,
+        duration: item.duration,
+        recurrenceRule: item.recurrenceRule,
+        excludeTime: item.excludeTime,
+        tag: item.tag,
+        dependency: item.dependency,
+        location: item.location,
+        action: item.action,
+        bz: item.bz,
+        recentCompletedTime: -1,
+        updateTime: item.updateTime,
+        cloudBackupTime: []
+      })
+    })
+    const promptAction = this.UIContext.getPromptAction()
+    const data = await promptAction.showActionMenu({
+      title: '选择分享方式',
+      buttons: [
+        {
+          text: '系统分享',
+          color: $r('sys.color.font_primary')
+        },
+        {
+          text: '碰一碰 / 隔空传送 (txt)',
+          color: $r('sys.color.font_primary')
+        },
+        {
+          text: '碰一碰 / 隔空传送 (ics)',
+          color: $r('sys.color.font_primary')
+        },
+        {
+          text: '链接',
+          color: $r('sys.color.font_primary')
+        },
+        {
+          text: '二维码',
+          color: $r('sys.color.font_primary')
+        }
+      ]
+    })
+    if (data.index === 0) {
+      const vcsPath = this.context.tempDir + '/todo.vcs'
+      const icsPath = this.context.tempDir + '/todo.ics'
+      const txtPath = this.context.tempDir + '/todo.txt'
+      const ics = icsstringify(todos)
+      await write(vcsPath, ics)
+      await write(icsPath, ics)
+      await write(txtPath, JSON.stringify(todos))
+      const shareData = new systemShare.SharedData({
+        utd: uniformTypeDescriptor.UniformDataType.VCS,
+        title: todos.length > 1 ? '“' + todos[0].content + '”等 ' + todos.length + ' 个待办' : todos[0].content,
+        label: '日历日程 (.vcs)',
+        description: getSizeString(fileIo.statSync(vcsPath).size),
+        uri: fileUri.getUriFromPath(vcsPath)
+      })
+      shareData.addRecord({
+        utd: uniformTypeDescriptor.UniformDataType.ICS,
+        title: todos.length > 1 ? '“' + todos[0].content + '”等 ' + todos.length + ' 个待办' : todos[0].content,
+        label: '日历日程 (.ics)',
+        description: getSizeString(fileIo.statSync(icsPath).size),
+        uri: fileUri.getUriFromPath(icsPath)
+      })
+      shareData.addRecord({
+        utd: uniformTypeDescriptor.UniformDataType.PLAIN_TEXT,
+        title: todos.length > 1 ? '“' + todos[0].content + '”等 ' + todos.length + ' 个待办' : todos[0].content,
+        description: getSizeString(fileIo.statSync(txtPath).size),
+        uri: fileUri.getUriFromPath(txtPath)
+      })
+      const shareController = new systemShare.ShareController(shareData)
+      await shareController.show(this.context, {})
+    }
+    if (data.index === 1) {
+      const filePath = this.context.tempDir + '/todo.txt'
+      await write(filePath, JSON.stringify(todos))
+      const shareData = new systemShare.SharedData({
+        utd: uniformTypeDescriptor.UniformDataType.PLAIN_TEXT,
+        title: todos.length > 1 ? '“' + todos[0].content + '”等 ' + todos.length + ' 个待办' : todos[0].content,
+        description: getSizeString(fileIo.statSync(filePath).size),
+        uri: fileUri.getUriFromPath(filePath)
+      })
+      harmonyShare.on('knockShare', async (sharableTarget) => {
+        await sharableTarget.share(shareData)
+      })
+      harmonyShare.on('gesturesShare', async (sharableTarget) => {
+        await sharableTarget.share(shareData)
+      })
+      await promptAction.showDialog({
+        title: '提示',
+        message: '碰一碰/隔空传送邻近设备即可分享，关闭此弹窗后停止分享',
+        buttons: [
+          {
+            text: '关闭',
+            color: $r('sys.color.warning')
+          }
+        ],
+        onDidDisappear: async () => {
+          await fileIo.unlink(filePath)
+          harmonyShare.off('knockShare')
+          harmonyShare.off('gesturesShare')
+        }
+      })
+    }
+    if (data.index === 2) {
+      const filePath = this.context.tempDir + '/todo.ics'
+      await write(filePath, icsstringify(todos))
+      const shareData = new systemShare.SharedData({
+        utd: uniformTypeDescriptor.UniformDataType.ICS,
+        title: todos.length > 1 ? '“' + todos[0].content + '”等 ' + todos.length + ' 个待办' : todos[0].content,
+        description: getSizeString(fileIo.statSync(filePath).size),
+        uri: fileUri.getUriFromPath(filePath)
+      })
+      harmonyShare.on('knockShare', async (sharableTarget) => {
+        await sharableTarget.share(shareData)
+      })
+      harmonyShare.on('gesturesShare', async (sharableTarget) => {
+        await sharableTarget.share(shareData)
+      })
+      await promptAction.showDialog({
+        title: '提示',
+        message: '碰一碰/隔空传送邻近设备即可分享，关闭此弹窗后停止分享',
+        buttons: [
+          {
+            text: '关闭',
+            color: $r('sys.color.warning')
+          }
+        ],
+        onDidDisappear: async () => {
+          await fileIo.unlink(filePath)
+          harmonyShare.off('knockShare')
+          harmonyShare.off('gesturesShare')
+        }
+      })
+    }
+    if (data.index === 3 || data.index === 4) {
+      const urires = new uri.URI('https://www.zhangls2512.cn/product/todo')
+      const url = urires.addQueryValue('share', JSON.stringify(todos)).toString()
+      if (data.index === 3) {
+        const shareData = new systemShare.SharedData({
+          utd: uniformTypeDescriptor.UniformDataType.HYPERLINK,
+          title: todos.length > 1 ? '“' + todos[0].content + '”等 ' + todos.length + ' 个待办' : todos[0].content,
+          content: url
+        })
+        const shareController = new systemShare.ShareController(shareData)
+        await shareController.show(this.context, {})
+      }
+      if (data.index === 4) {
+        const qrcodePath = this.context.tempDir + '/todoqrcode.png'
+        let qrcodeUri = ''
+        try {
+          const qrcodePixelMap = await generateBarcode.createBarcode(url, {
+            scanType: scanCore.ScanType.QR_CODE,
+            width: 200,
+            height: 200
+          })
+          const qrcodeFile = fileIo.openSync(qrcodePath, fileIo.OpenMode.CREATE | fileIo.OpenMode.WRITE_ONLY)
+          const imagePacker = image.createImagePacker()
+          await imagePacker.packToFile(qrcodePixelMap, qrcodeFile.fd, {
+            format: 'image/png',
+            quality: 100
+          })
+          await imagePacker.release()
+          await qrcodePixelMap.release()
+          fileIo.closeSync(qrcodeFile)
+          const qrcodeFileUri = fileUri.getUriFromPath(qrcodePath)
+          qrcodeUri = qrcodeFileUri
+        } catch {
+          const qrcodeFile = fileIo.openSync(qrcodePath, fileIo.OpenMode.CREATE | fileIo.OpenMode.WRITE_ONLY)
+          const qrcodeFileStream = fileIo.fdopenStreamSync(qrcodeFile.fd, 'w+')
+          netBoost.setSceneDesc({
+            scene: 'download',
+            sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
+          })
+          const session = rcp.createSession({
+            requestConfiguration: {
+              tracing: {
+                httpEventsHandler: {
+                  onDataReceive: async (incomingData) => {
+                    await qrcodeFileStream.write(incomingData)
+                  },
+                  onDataEnd: () => {
+                    this.dialogControllerProgress.close()
+                    session.close()
+                    netBoost.setSceneDesc({
+                      scene: 'download',
+                      sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
+                    })
+                    qrcodeFileStream.closeSync()
+                  }
+                }
+              },
+              security: {
+                tlsRange: {
+                  min: 'TlsV1.2'
+                }
+              }
+            }
+          })
+          this.dialogControllerProgress.open()
+          try {
+            const response = await session.get('https://uapis.cn/api/v1/image/qrcode?text=' + encodeURIComponent(url))
+            session.close()
+            this.dialogControllerProgress.close()
+            if (response.statusCode >= 200 && response.statusCode < 300) {
+              qrcodeUri = fileUri.getUriFromPath(qrcodePath)
+            } else {
+              await promptAction.openToast({
+                message: 'HTTP 请求失败，状态码：' + response.statusCode
+              })
+            }
+          } catch (err) {
+            this.dialogControllerProgress.close()
+            session.close()
+            netBoost.setSceneDesc({
+              scene: 'download',
+              sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
+            })
+            qrcodeFileStream.closeSync()
+            await promptAction.openToast({
+              message: '发生错误，错误码：' + err.code
+            })
+          }
+        }
+        if (qrcodeUri) {
+          const shareData = new systemShare.SharedData({
+            utd: uniformTypeDescriptor.UniformDataType.IMAGE,
+            title: todos.length > 1 ? '“' + todos[0].content + '”等 ' + todos.length + ' 个待办' : todos[0].content,
+            thumbnailUri: qrcodeUri,
+            uri: qrcodeUri
+          })
+          const shareController = new systemShare.ShareController(shareData)
+          await shareController.show(this.context, {})
+        }
+      }
+    }
   }
 
   @Builder
@@ -113,6 +368,15 @@ export default struct TodoPage {
             this.todoId = item.id
             this.isShowInfoSheet = true
           })
+        if (!this.teamId) {
+          MenuItem({
+            startIcon: $r('app.media.share'),
+            content: '分享'
+          })
+            .onClick(async () => {
+              await this.shareTodo([item])
+            })
+        }
         MenuItem({
           startIcon: $r('app.media.edit'),
           content: '修改'
@@ -281,6 +545,37 @@ export default struct TodoPage {
               .margin({
                 right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
               })
+            if (!this.teamId) {
+              Column() {
+                Image($r('app.media.share'))
+              }
+              .borderRadius(20)
+              .height(40)
+              .margin({
+                right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+              })
+              .padding(11)
+              .stateStyles({
+                normal: {
+                  .backgroundColor($r('sys.color.interactive_hover'))
+                },
+                pressed: {
+                  .backgroundColor($r('sys.color.interactive_pressed'))
+                }
+              })
+              .visualEffect(new hdsEffect.HdsEffectBuilder()
+                .pointLight({
+                  sourceType: hdsEffect.PointLightSourceType.SOFT,
+                  illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
+                })
+                .buildEffect())
+              .width(40)
+              .onClick(async () => {
+                await this.shareTodo(this.multipleSelectArray)
+                this.multipleSelect = false
+                this.multipleSelectArray = []
+              })
+            }
             Column() {
               Image($r('app.media.delete'))
             }
