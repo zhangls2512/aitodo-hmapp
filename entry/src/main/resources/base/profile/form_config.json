@@ -2,16 +2,33 @@
   "forms": [
     {
       "name": "recommendtodo",
-      "displayName": "$string:card_displayname",
-      "description": "$string:card_displayname",
+      "displayName": "$string:recommendTodo",
+      "description": "$string:recommendTodo",
       "src": "./ets/form/pages/RecommendTodoCard.ets",
       "uiSyntax": "arkts",
       "isDefault": true,
       "supportDimensions": [
-        "1*2"
+        "6*4"
       ],
-      "defaultDimension": "1*2",
+      "defaultDimension": "6*4",
+      "updateEnabled": true,
+      "updateDuration": 1,
+      "enableBlurBackground": true,
+      "renderingMode": "autoColor"
+    },
+    {
+      "name": "newtodo",
+      "displayName": "$string:newTodo",
+      "description": "$string:newTodo",
+      "src": "./ets/form/pages/NewTodoCard.ets",
+      "uiSyntax": "arkts",
+      "isDefault": false,
+      "supportDimensions": [
+        "1*1"
+      ],
+      "defaultDimension": "1*1",
       "updateEnabled": false,
+      "enableBlurBackground": true,
       "renderingMode": "autoColor"
     }
   ]
