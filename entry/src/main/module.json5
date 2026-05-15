@@ -1,12 +1,13 @@
 {
   "module": {
-    "name": "default",
+    "name": "entry",
     "type": "entry",
     "mainElement": "EntryAbility",
     "deviceTypes": [
       "phone",
       "tablet",
-      "2in1"
+      "2in1",
+      "wearable"
     ],
     "deliveryWithInstall": true,
     "pages": "$profile:main_pages",

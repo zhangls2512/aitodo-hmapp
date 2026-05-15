@@ -2,6 +2,7 @@ import { common } from '@kit.AbilityKit'
 import { LengthMetrics, promptAction } from '@kit.ArkUI'
 import { fileShare, picker } from '@kit.CoreFileKit'
 import { sceneMap } from '@kit.MapKit'
+import { hdsEffect } from '@kit.UIDesignKit'
 import getCloudServiceStatus from '../common/Cloudservice'
 import { getKeyAlg } from '../common/Crypto'
 import { getCustomFreqList } from '../common/Customfreq'
@@ -16,6 +17,7 @@ import { getDateTimeStringFromTimeStamp } from '../common/Stringformat'
 export default struct Newtodo {
   @Consumer() isShowNewSheet: boolean = false
   @Param teamId: string = ''
+  @Param aiContent: string = ''
   @Local content: string = ''
   @Local priority: number = 0
   @Local startTime: number = Date.now()
@@ -61,20 +63,57 @@ export default struct Newtodo {
   }
   actionTypeMap: Record<string, string> = {
     'openApp': '打开应用',
+    'openAppByType': '打开指定类型应用',
     'openUrl': '打开链接',
-    'openFile': '打开文件'
+    'openFile': '打开文件',
+    'callTelephone': '拨号'
   }
 
   build() {
     List() {
       ListItem() {
         Column() {
+          TextArea({
+            placeholder: '输入文本，智能识别并填入内容、开始时间',
+            text: this.aiContent!!
+          })
+            .enableAutoSpacing(true)
+            .maxLength(1000)
+            .showCounter(true)
+            .visualEffect(new hdsEffect.HdsEffectBuilder()
+              .pointLight({
+                sourceType: hdsEffect.PointLightSourceType.SOFT,
+                illuminatedType: hdsEffect.PointLightIlluminatedType.CONTENT
+              })
+              .shaderEffect({
+                effectType: hdsEffect.EffectType.DUAL_EDGE_FLOW_LIGHT,
+                animation: {
+                  duration: 5000,
+                  iterations: -1
+                },
+                params: {
+                  firstEdgeFlowLight: {
+                    startPos: 0,
+                    endPos: 1.0,
+                    color: '#1AD0F1'
+                  },
+                  secondEdgeFlowLight: {
+                    startPos: 0.5,
+                    endPos: 1.5,
+                    color: '#FFA4E5'
+                  }
+                }
+              })
+              .buildEffect())
           TextInput({
             placeholder: '请输入内容',
             text: this.content!!
           })
             .defaultFocus(true)
             .enableAutoSpacing(true)
+            .margin({
+              top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+            })
           Row() {
             Text('优先级')
               .fontWeight(FontWeight.Medium)
@@ -665,8 +704,10 @@ export default struct Newtodo {
             })
           Select([
             { value: '打开应用' },
+            { value: '打开指定类型应用' },
             { value: '打开链接' },
-            { value: '打开文件' }
+            { value: '打开文件' },
+            { value: '拨号' }
           ])
             .margin({
               top: $r('sys.float.ohos_id_elements_margin_vertical_l')
@@ -715,6 +756,45 @@ export default struct Newtodo {
                 top: $r('sys.float.ohos_id_elements_margin_vertical_m')
               })
           }
+          if (this.actionTypeValue === '打开指定类型应用') {
+            TextInput({
+              placeholder: '请输入入参对象',
+              text: this.actionValue!!
+            })
+              .enableAutoSpacing(true)
+              .margin({
+                top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+              })
+              .onBlur(() => {
+                if (this.actionValue) {
+                  try {
+                    JSON.parse(this.actionValue)
+                    this.actionArray.push({
+                      type: 'openAppByType',
+                      value: this.actionValue
+                    })
+                    this.actionTypeIndex = 0
+                    this.actionTypeValue = '打开应用'
+                    this.actionValue = ''
+                  } catch {
+                  }
+                }
+              })
+            Text('入参对象介绍')
+              .enableAutoSpacing(true)
+              .fontColor($r('sys.color.font_emphasize'))
+              .margin({
+                top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+              })
+              .onClick(async () => {
+                await openLink(this.context,
+                  'https://developer.huawei.com/consumer/cn/doc/harmonyos-references/js-apis-inner-application-uiabilitycontext#startabilitybytype11-1')
+              })
+            Text('示例：{"type":"mail","wantParam":{"sceneType":1,"email":["2300990296@qq.com"],"subject":"主题","body":"正文"}}')
+              .margin({
+                top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+              })
+          }
           if (this.actionTypeValue === '打开链接') {
             TextInput({
               placeholder: '请输入链接',
@@ -757,6 +837,29 @@ export default struct Newtodo {
                   this.actionArray.push({
                     type: 'openFile',
                     value: uri
+                  })
+                  this.actionTypeIndex = 0
+                  this.actionTypeValue = '打开应用'
+                  this.actionValue = ''
+                }
+              })
+          }
+          if (this.actionTypeValue === '拨号') {
+            TextInput({
+              placeholder: '请输入手机号',
+              text: this.actionValue!!
+            })
+              .contentType(ContentType.PHONE_NUMBER)
+              .enableAutoSpacing(true)
+              .margin({
+                top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+              })
+              .type(InputType.PhoneNumber)
+              .onBlur(() => {
+                if (this.actionValue) {
+                  this.actionArray.push({
+                    type: 'callTelephone',
+                    value: this.actionValue
                   })
                   this.actionTypeIndex = 0
                   this.actionTypeValue = '打开应用'

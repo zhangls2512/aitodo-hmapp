@@ -63,8 +63,8 @@
   },
   "modules": [
     {
-      "name": "default",
-      "srcPath": "./products/default",
+      "name": "entry",
+      "srcPath": "./entry",
       "targets": [
         {
           "name": "default",

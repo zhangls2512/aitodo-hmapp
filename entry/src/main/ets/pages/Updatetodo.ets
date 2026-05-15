@@ -64,8 +64,10 @@ export default struct Updatetodo {
   }
   actionTypeMap: Record<string, string> = {
     'openApp': '打开应用',
+    'openAppByType': '打开指定类型应用',
     'openUrl': '打开链接',
-    'openFile': '打开文件'
+    'openFile': '打开文件',
+    'callTelephone': '拨号'
   }
 
   build() {
@@ -702,8 +704,10 @@ export default struct Updatetodo {
             })
           Select([
             { value: '打开应用' },
+            { value: '打开指定类型应用' },
             { value: '打开链接' },
-            { value: '打开文件' }
+            { value: '打开文件' },
+            { value: '拨号' }
           ])
             .margin({
               top: $r('sys.float.ohos_id_elements_margin_vertical_l')
@@ -774,6 +778,45 @@ export default struct Updatetodo {
                 }
               })
           }
+          if (this.actionTypeValue === '打开指定类型应用') {
+            TextInput({
+              placeholder: '请输入入参对象',
+              text: this.actionValue!!
+            })
+              .enableAutoSpacing(true)
+              .margin({
+                top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+              })
+              .onBlur(() => {
+                if (this.actionValue) {
+                  try {
+                    JSON.parse(this.actionValue)
+                    this.actionArray.push({
+                      type: 'openAppByType',
+                      value: this.actionValue
+                    })
+                    this.actionTypeIndex = 0
+                    this.actionTypeValue = '打开应用'
+                    this.actionValue = ''
+                  } catch {
+                  }
+                }
+              })
+            Text('入参对象介绍')
+              .enableAutoSpacing(true)
+              .fontColor($r('sys.color.font_emphasize'))
+              .margin({
+                top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+              })
+              .onClick(async () => {
+                await openLink(this.context,
+                  'https://developer.huawei.com/consumer/cn/doc/harmonyos-references/js-apis-inner-application-uiabilitycontext#startabilitybytype11-1')
+              })
+            Text('示例：{"type":"mail","wantParam":{"sceneType":1,"email":["2300990296@qq.com"],"subject":"主题","body":"正文"}}')
+              .margin({
+                top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+              })
+          }
           if (this.actionTypeValue === '打开文件') {
             Button('选择文件')
               .margin({
@@ -794,6 +837,29 @@ export default struct Updatetodo {
                   this.actionArray.push({
                     type: 'openFile',
                     value: uri
+                  })
+                  this.actionTypeIndex = 0
+                  this.actionTypeValue = '打开应用'
+                  this.actionValue = ''
+                }
+              })
+          }
+          if (this.actionTypeValue === '拨号') {
+            TextInput({
+              placeholder: '请输入手机号',
+              text: this.actionValue!!
+            })
+              .contentType(ContentType.PHONE_NUMBER)
+              .enableAutoSpacing(true)
+              .margin({
+                top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+              })
+              .type(InputType.PhoneNumber)
+              .onBlur(() => {
+                if (this.actionValue) {
+                  this.actionArray.push({
+                    type: 'callTelephone',
+                    value: this.actionValue
                   })
                   this.actionTypeIndex = 0
                   this.actionTypeValue = '打开应用'

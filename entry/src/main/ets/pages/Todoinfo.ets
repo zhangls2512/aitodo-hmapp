@@ -1,6 +1,7 @@
 import { common, Want, wantConstant } from '@kit.AbilityKit'
 import { mapCommon, MapComponent, petalMaps } from '@kit.MapKit'
 import { filePreview } from '@kit.PreviewKit'
+import { call } from '@kit.TelephonyKit'
 import { Action } from '../common/Datachange'
 import { getTodoInfo, Todo } from '../common/Dataget'
 import { icsTimeStringToTimeStamp } from '../common/Ics'
@@ -9,6 +10,12 @@ import copy from '../common/Pasteboard'
 import { getFlushPreference } from '../common/Preference'
 import { isProxyReminderOn } from '../common/Proxyreminder'
 import { getDateTimeStringFromTimeStamp } from '../common/Stringformat'
+import promptAction from '@ohos.promptAction'
+
+interface OpenAppByTypeValue {
+  type: string,
+  wantParam: Record<string, Object>
+}
 
 @ComponentV2
 export default struct Todoinfo {
@@ -55,8 +62,10 @@ export default struct Todoinfo {
   }
   actionTypeMap: Record<string, string> = {
     'openApp': '打开应用',
+    'openAppByType': '打开指定类型应用',
     'openUrl': '打开链接',
-    'openFile': '打开文件'
+    'openFile': '打开文件',
+    'callTelephone': '拨号'
   }
 
   getDayNightMode() {
@@ -385,7 +394,29 @@ export default struct Todoinfo {
             .onClick(async () => {
               if (item.type === 'openApp') {
                 const want = JSON.parse(item.value) as Want
-                await this.context.startAbility(want)
+                try {
+                  await this.context.startAbility(want)
+                } catch (err) {
+                  await promptAction.openToast({
+                    message: '发生错误，错误码：' + err.code
+                  })
+                }
+              }
+              if (item.type === 'openAppByType') {
+                const value = JSON.parse(item.value) as OpenAppByTypeValue
+                try {
+                  await this.context.startAbilityByType(value.type, value.wantParam, {
+                    onError: async (code, name, message) => {
+                      await promptAction.openToast({
+                        message: '发生错误，错误码：' + code + '，错误名称：' + name + '，错误信息：' + message
+                      })
+                    }
+                  })
+                } catch (err) {
+                  await promptAction.openToast({
+                    message: '发生错误，错误码：' + err.code
+                  })
+                }
               }
               if (item.type === 'openUrl') {
                 await openLink(this.context, item.value)
@@ -409,6 +440,9 @@ export default struct Todoinfo {
                     mimeType: ''
                   })
                 }
+              }
+              if (item.type === 'callTelephone') {
+                await call.makeCall(item.value)
               }
             })
             .gesture(
