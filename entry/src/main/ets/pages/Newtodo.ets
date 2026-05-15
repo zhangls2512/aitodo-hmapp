@@ -1,8 +1,20 @@
 import { common } from '@kit.AbilityKit'
-import { LengthMetrics, promptAction } from '@kit.ArkUI'
-import { fileShare, picker } from '@kit.CoreFileKit'
+import { util } from '@kit.ArkTS'
+import { LengthMetrics, LoadingDialog, promptAction } from '@kit.ArkUI'
+import { deviceInfo } from '@kit.BasicServicesKit'
+import { camera, cameraPicker } from '@kit.CameraKit'
+import { fileIo, fileShare, picker } from '@kit.CoreFileKit'
+import { speechRecognizer } from '@kit.CoreSpeechKit'
+import { textRecognition } from '@kit.CoreVisionKit'
+import { image } from '@kit.ImageKit'
 import { sceneMap } from '@kit.MapKit'
+import { photoAccessHelper } from '@kit.MediaLibraryKit'
 import { EntityType, textProcessing } from '@kit.NaturalLanguageKit'
+import {
+  CollaborationServiceFilter,
+  CollaborationServiceStateDialog,
+  createCollaborationServiceMenuItems
+} from '@kit.ServiceCollaborationKit'
 import { hdsEffect } from '@kit.UIDesignKit'
 import getCloudServiceStatus from '../common/Cloudservice'
 import { getKeyAlg } from '../common/Crypto'
@@ -10,6 +22,7 @@ import { getCustomFreqList } from '../common/Customfreq'
 import { Action, newTodo } from '../common/Datachange'
 import { icsTimeStringToTimeStamp, timeStampToIcsTimeString } from '../common/Ics'
 import openLink from '../common/Openlink'
+import { checkPermission } from '../common/Permission'
 import { getFlushPreference } from '../common/Preference'
 import { isProxyReminderEnabled } from '../common/Proxyreminder'
 import { getDateTimeStringFromTimeStamp } from '../common/Stringformat'
@@ -60,6 +73,11 @@ export default struct Newtodo {
   @Local alertText: string = ''
   UIContext = this.getUIContext()
   context = this.UIContext.getHostContext() as common.UIAbilityContext
+  dialogControllerProgress = new CustomDialogController({
+    builder: LoadingDialog({
+      content: '识别中...'
+    })
+  })
   dayMap: Record<string, string> = {
     'MO': '星期一',
     'TU': '星期二',
@@ -77,16 +95,343 @@ export default struct Newtodo {
     'callTelephone': '拨号'
   }
 
+  async dealWithAiContent() {
+    if (this.aiContent) {
+      const entity = await textProcessing.getEntity(this.aiContent, {
+        entityTypes: [
+          EntityType.DATETIME,
+          EntityType.EMAIL,
+          EntityType.EXPRESS_NO,
+          EntityType.FLIGHT_NO,
+          EntityType.LOCATION,
+          EntityType.PHONE_NO,
+          EntityType.URL
+        ]
+      })
+      const list: Action[] = []
+      entity.forEach(item => {
+        if (item.type === EntityType.DATETIME) {
+          const dateTime = JSON.parse(item.jsonObject) as DateTime
+          if (dateTime.startTimestamp) {
+            if (dateTime.startTimestamp > this.endTime && this.endTime !== -1) {
+              return
+            }
+            this.startTime = dateTime.startTimestamp
+          }
+          if (dateTime.endTimestamp) {
+            if (dateTime.endTimestamp < this.startTime) {
+              return
+            }
+            this.endTime = dateTime.endTimestamp
+          }
+          if (!dateTime.rrule) {
+            this.recurrence = false
+            this.recurrenceFreqIndex = 0
+            this.recurrenceFreqValue = '年'
+            this.recurrenceInterval = '1'
+            this.recurrenceUntil = -1
+            this.recurrenceCount = '0'
+            this.recurrenceByMonth = []
+            this.recurrenceByMonthDay = []
+            this.recurrenceByDay = []
+          }
+          if (dateTime.rrule) {
+            this.recurrence = true
+            this.recurrenceFreqIndex = 0
+            this.recurrenceFreqValue = '年'
+            this.recurrenceInterval = '1'
+            this.recurrenceUntil = -1
+            this.recurrenceCount = '0'
+            this.recurrenceByMonth = []
+            this.recurrenceByMonthDay = []
+            this.recurrenceByDay = []
+            const recurrenceRule = dateTime.rrule
+            const tokens = recurrenceRule.split(';')
+            const keyValues = tokens.map(item => item.split('=', 2))
+            keyValues.forEach(item => {
+              const key = item[0]
+              const value = item[1]
+              if (key === 'FREQ') {
+                const index = ['YEARLY', 'MONTHLY', 'WEEKLY', 'DAILY'].indexOf(value)
+                if (index !== -1) {
+                  this.recurrenceFreqIndex = index
+                  this.recurrenceFreqValue = this.freq[this.recurrenceFreqIndex].value as string
+                }
+                if (index === -1) {
+                  this.recurrence = false
+                }
+              }
+              if (key === 'INTERVAL') {
+                this.recurrenceInterval = value
+              }
+              if (key === 'UNTIL') {
+                this.recurrenceUntil = icsTimeStringToTimeStamp(value, true)
+              }
+              if (key === 'COUNT') {
+                this.recurrenceCount = value
+              }
+              if (key === 'BYMONTH') {
+                this.recurrenceByMonth = value.split(',').map(item => Number(item))
+              }
+              if (key === 'BYMONTHDAY') {
+                this.recurrenceByMonthDay = value.split(',').map(item => Number(item))
+              }
+              if (key === 'BYDAY') {
+                this.recurrenceByDay = value.split(',')
+              }
+            })
+          }
+        }
+        if (item.type === EntityType.EMAIL) {
+          const value: OpenAppByTypeValue = {
+            type: 'mail',
+            wantParam: {
+              'sceneType': 1,
+              'email': [encodeURI(item.text)]
+            }
+          }
+          list.push({
+            type: 'openAppByType',
+            value: JSON.stringify(value)
+          })
+        }
+        if (item.type === EntityType.EXPRESS_NO) {
+          const value: OpenAppByTypeValue = {
+            type: 'express',
+            wantParam: {
+              'sceneType': 1,
+              'expressNo': item.text
+            }
+          }
+          list.push({
+            type: 'openAppByType',
+            value: JSON.stringify(value)
+          })
+        }
+        if (item.type === EntityType.FLIGHT_NO) {
+          const value: OpenAppByTypeValue = {
+            type: 'flight',
+            wantParam: {
+              'sceneType': 1,
+              'flightNo': item.text
+            }
+          }
+          list.push({
+            type: 'openAppByType',
+            value: JSON.stringify(value)
+          })
+        }
+        if (item.type === EntityType.LOCATION) {
+          this.locationLocation = item.text
+        }
+        if (item.type === EntityType.PHONE_NO) {
+          list.push({
+            type: 'callTelephone',
+            value: item.text
+          })
+        }
+        if (item.type === EntityType.URL) {
+          list.push({
+            type: 'openUrl',
+            value: item.text
+          })
+        }
+      })
+      list.forEach(item => {
+        if (!this.actionArray.find(actionItem => actionItem.type === item.type &&
+          actionItem.value === item.value)) {
+          this.actionArray.push(item)
+        }
+      })
+    }
+  }
+
+  @Builder
+  ChooseImageMenu() {
+    Menu() {
+      MenuItem({ content: '拍照' })
+        .onClick(async () => {
+          try {
+            const pickerres = await cameraPicker.pick(this.context, [cameraPicker.PickerMediaType.PHOTO], {
+              cameraPosition: camera.CameraPosition.CAMERA_POSITION_BACK
+            })
+            const fileSource = fileIo.openSync(pickerres.resultUri)
+            const imageSource = image.createImageSource(fileSource.fd)
+            const imagePixelMap = await imageSource.createPixelMap()
+            await imageSource.release()
+            const initres = await textRecognition.init()
+            if (initres) {
+              this.dialogControllerProgress.open()
+              const textrecognitionres = await textRecognition.recognizeText({
+                pixelMap: imagePixelMap
+              })
+              await textRecognition.release()
+              await imagePixelMap.release()
+              this.dialogControllerProgress.close()
+              this.aiContent = textrecognitionres.value
+              await this.dealWithAiContent()
+            }
+          } catch {
+          }
+        })
+      MenuItem({ content: '从图库中选择' })
+        .onClick(async () => {
+          try {
+            const photoPicker = new photoAccessHelper.PhotoViewPicker()
+            const pickerres = await photoPicker.select({
+              MIMEType: photoAccessHelper.PhotoViewMIMETypes.IMAGE_TYPE,
+              maxSelectNumber: 1,
+              isPhotoTakingSupported: false,
+              isOriginalSupported: false
+            })
+            const fileSource = fileIo.openSync(pickerres.photoUris[0])
+            const imageSource = image.createImageSource(fileSource.fd)
+            const imagePixelMap = await imageSource.createPixelMap()
+            await imageSource.release()
+            const initres = await textRecognition.init()
+            if (initres) {
+              this.dialogControllerProgress.open()
+              const textrecognitionres = await textRecognition.recognizeText({
+                pixelMap: imagePixelMap
+              })
+              await textRecognition.release()
+              await imagePixelMap.release()
+              this.dialogControllerProgress.close()
+              this.aiContent = textrecognitionres.value
+              await this.dealWithAiContent()
+            }
+          } catch {
+          }
+        })
+      if (deviceInfo.deviceType !== 'phone') {
+        MenuItem({
+          content: '从其他设备导入',
+          builder: this.SubMenu()
+        })
+      }
+    }
+  }
+
+  @Builder
+  SubMenu() {
+    Menu() {
+      createCollaborationServiceMenuItems([CollaborationServiceFilter.TAKE_PHOTO,
+        CollaborationServiceFilter.IMAGE_PICKER], 1)
+    }
+  }
+
   build() {
     List() {
       ListItem() {
         Column() {
+          CollaborationServiceStateDialog({
+            async onState(stateCode: number, bufferType: string, buffer: ArrayBuffer) {
+              if (stateCode !== 0) {
+                await promptAction.openToast({
+                  message: '发生错误，错误码：' + stateCode
+                })
+                return
+              }
+              if (bufferType !== 'general.image') {
+                await promptAction.openToast({
+                  message: '请导入图片'
+                })
+                return
+              }
+              const imageSource = image.createImageSource(buffer)
+              const imagePixelMap = await imageSource.createPixelMap()
+              await imageSource.release()
+              const initres = await textRecognition.init()
+              if (initres) {
+                this.dialogControllerProgress.open()
+                const textrecognitionres = await textRecognition.recognizeText({
+                  pixelMap: imagePixelMap
+                })
+                await textRecognition.release()
+                await imagePixelMap.release()
+                this.dialogControllerProgress.close()
+                this.aiContent = textrecognitionres.value
+                await this.dealWithAiContent()
+              }
+            }
+          })
+          Row() {
+            Button('图片识别')
+              .layoutWeight(1)
+              .bindMenu(this.ChooseImageMenu, {
+                hapticFeedbackMode: HapticFeedbackMode.AUTO
+              })
+            Blank()
+              .width($r('sys.float.ohos_id_elements_margin_horizontal_m'))
+            Button('语音识别')
+              .layoutWeight(1)
+              .onClick(async () => {
+                const permission = await checkPermission(this.context, this.UIContext, 'ohos.permission.MICROPHONE')
+                if (permission) {
+                  const asrEngine = await speechRecognizer.createEngine({
+                    language: 'zh-CN',
+                    online: 1
+                  })
+                  const sessionId = util.generateRandomUUID()
+                  asrEngine.setListener({
+                    onStart() {
+                    },
+                    onEvent() {
+                    },
+                    onResult: (sessionId, result) => {
+                      this.aiContent = result.result
+                    },
+                    onComplete: async () => {
+                      asrEngine.shutdown()
+                      await this.dealWithAiContent()
+                    },
+                    async onError(sessionId, errorCode, errorMessage) {
+                      if (errorCode !== 1002200007) {
+                        await promptAction.openToast({
+                          message: '发生错误，错误码：' + errorCode + '，错误信息：' + errorMessage
+                        })
+                      }
+                    }
+                  })
+                  asrEngine.startListening({
+                    sessionId: sessionId,
+                    audioInfo: {
+                      audioType: 'pcm',
+                      sampleRate: 16000,
+                      sampleBit: 16,
+                      soundChannel: 1
+                    },
+                    extraParams: {
+                      recognitionMode: 0
+                    }
+                  })
+                  const promptAction = this.UIContext.getPromptAction()
+                  await promptAction.showDialog({
+                    title: '提示',
+                    message: '正在录音...',
+                    buttons: [
+                      {
+                        text: '结束录音',
+                        color: $r('sys.color.warning')
+                      }
+                    ],
+                    onDidDisappear: () => {
+                      asrEngine.finish(sessionId)
+                    }
+                  })
+                }
+              })
+          }
+
           TextArea({
             placeholder: '输入文本，智能识别其中的日期时间、电子邮件、快递单号、航班号、地址、手机号、网址并填入',
             text: this.aiContent!!
           })
             .defaultFocus(true)
             .enableAutoSpacing(true)
+            .margin({
+              top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+            })
             .maxLength(1000)
             .showCounter(true)
             .visualEffect(new hdsEffect.HdsEffectBuilder()
@@ -115,144 +460,7 @@ export default struct Newtodo {
               })
               .buildEffect())
             .onBlur(async () => {
-              if (this.aiContent) {
-                const entity = await textProcessing.getEntity(this.aiContent, {
-                  entityTypes: [
-                    EntityType.DATETIME,
-                    EntityType.EMAIL,
-                    EntityType.EXPRESS_NO,
-                    EntityType.FLIGHT_NO,
-                    EntityType.LOCATION,
-                    EntityType.PHONE_NO,
-                    EntityType.URL
-                  ]
-                })
-                const list: Action[] = []
-                entity.forEach(item => {
-                  if (item.type === EntityType.DATETIME) {
-                    const dateTime = JSON.parse(item.jsonObject) as DateTime
-                    if (dateTime.startTimestamp) {
-                      if (dateTime.startTimestamp > this.endTime && this.endTime !== -1) {
-                        return
-                      }
-                      this.startTime = dateTime.startTimestamp
-                    }
-                    if (dateTime.endTimestamp) {
-                      if (dateTime.endTimestamp < this.startTime) {
-                        return
-                      }
-                      this.endTime = dateTime.endTimestamp
-                    }
-                    if (!dateTime.rrule) {
-                      this.recurrence = false
-                    }
-                    if (dateTime.rrule) {
-                      this.recurrence = true
-                      this.recurrenceInterval = '1'
-                      this.recurrenceUntil = -1
-                      this.recurrenceCount = '0'
-                      this.recurrenceByMonth = []
-                      this.recurrenceByMonthDay = []
-                      this.recurrenceByDay = []
-                      const recurrenceRule = dateTime.rrule
-                      const tokens = recurrenceRule.split(';')
-                      const keyValues = tokens.map(item => item.split('=', 2))
-                      keyValues.forEach(item => {
-                        const key = item[0]
-                        const value = item[1]
-                        if (key === 'FREQ') {
-                          const index = ['YEARLY', 'MONTHLY', 'WEEKLY', 'DAILY'].indexOf(value)
-                          if (index !== -1) {
-                            this.recurrenceFreqIndex = index
-                            this.recurrenceFreqValue = this.freq[this.recurrenceFreqIndex].value as string
-                          }
-                          if (index === -1) {
-                            this.recurrence = false
-                          }
-                        }
-                        if (key === 'INTERVAL') {
-                          this.recurrenceInterval = value
-                        }
-                        if (key === 'UNTIL') {
-                          this.recurrenceUntil = icsTimeStringToTimeStamp(value, true)
-                        }
-                        if (key === 'COUNT') {
-                          this.recurrenceCount = value
-                        }
-                        if (key === 'BYMONTH') {
-                          this.recurrenceByMonth = value.split(',').map(item => Number(item))
-                        }
-                        if (key === 'BYMONTHDAY') {
-                          this.recurrenceByMonthDay = value.split(',').map(item => Number(item))
-                        }
-                        if (key === 'BYDAY') {
-                          this.recurrenceByDay = value.split(',')
-                        }
-                      })
-                    }
-                  }
-                  if (item.type === EntityType.EMAIL) {
-                    const value: OpenAppByTypeValue = {
-                      type: 'mail',
-                      wantParam: {
-                        'sceneType': 1,
-                        'email': [encodeURI(item.text)]
-                      }
-                    }
-                    list.push({
-                      type: 'openAppByType',
-                      value: JSON.stringify(value)
-                    })
-                  }
-                  if (item.type === EntityType.EXPRESS_NO) {
-                    const value: OpenAppByTypeValue = {
-                      type: 'express',
-                      wantParam: {
-                        'sceneType': 1,
-                        'expressNo': item.text
-                      }
-                    }
-                    list.push({
-                      type: 'openAppByType',
-                      value: JSON.stringify(value)
-                    })
-                  }
-                  if (item.type === EntityType.FLIGHT_NO) {
-                    const value: OpenAppByTypeValue = {
-                      type: 'flight',
-                      wantParam: {
-                        'sceneType': 1,
-                        'flightNo': item.text
-                      }
-                    }
-                    list.push({
-                      type: 'openAppByType',
-                      value: JSON.stringify(value)
-                    })
-                  }
-                  if (item.type === EntityType.LOCATION) {
-                    this.locationLocation = item.text
-                  }
-                  if (item.type === EntityType.PHONE_NO) {
-                    list.push({
-                      type: 'callTelephone',
-                      value: item.text
-                    })
-                  }
-                  if (item.type === EntityType.URL) {
-                    list.push({
-                      type: 'openUrl',
-                      value: item.text
-                    })
-                  }
-                })
-                list.forEach(item => {
-                  if (!this.actionArray.find(actionItem => actionItem.type === item.type &&
-                    actionItem.value === item.value)) {
-                    this.actionArray.push(item)
-                  }
-                })
-              }
+              await this.dealWithAiContent()
             })
           TextInput({
             placeholder: '请输入内容',

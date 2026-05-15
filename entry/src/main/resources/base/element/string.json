@@ -17,6 +17,10 @@
       "value": "用于获取当前位置以推荐地点在当前位置附近的待办。"
     },
     {
+      "name": "MICROPHONE_reason",
+      "value": "用于获取说话录音以将其转文字用于智能识别新增待办。"
+    },
+    {
       "name": "READ_CALENDAR_reason",
       "value": "用于同步系统日历到本应用待办。"
     },

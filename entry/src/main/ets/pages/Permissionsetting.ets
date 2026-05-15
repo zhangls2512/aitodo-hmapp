@@ -18,6 +18,7 @@ struct Permissionsetting {
   approximatelyLocation = getPermission('ohos.permission.APPROXIMATELY_LOCATION')
   dataSync = getPermission('ohos.permission.DISTRIBUTED_DATASYNC')
   location = getPermission('ohos.permission.LOCATION')
+  microphone = getPermission('ohos.permission.MICROPHONE')
   readCalendar = getPermission('ohos.permission.READ_CALENDAR')
   writeCalendar = getPermission('ohos.permission.WRITE_CALENDAR')
 
@@ -252,6 +253,63 @@ struct Permissionsetting {
 
             Text() {
               Span($r('app.string.LOCATION_reason'))
+                .fontColor($r('sys.color.font_secondary'))
+              Span('请前往')
+                .fontColor($r('sys.color.font_secondary'))
+              Span('系统设置')
+                .fontColor($r('sys.color.font_emphasize'))
+                .fontWeight(FontWeight.Medium)
+                .onClick(async () => {
+                  await this.context.startAbility({
+                    bundleName: 'com.huawei.hmos.settings',
+                    abilityName: 'com.huawei.hmos.settings.MainAbility',
+                    uri: 'application_info_entry',
+                    parameters: {
+                      pushParams: 'com.zhangxm.aitodo'
+                    }
+                  })
+                })
+              Span('管理此权限。')
+                .fontColor($r('sys.color.font_secondary'))
+            }
+            .fontSize($r('sys.float.ohos_id_text_size_body3'))
+            .margin({
+              top: 6,
+              left: 12,
+              right: 12
+            })
+          }
+          .alignItems(HorizontalAlign.Start)
+        }
+        .margin({
+          top: $r('sys.float.ohos_id_elements_margin_vertical_l')
+        })
+
+        ListItem() {
+          Column() {
+            Column() {
+              Row() {
+                Text('麦克风')
+                  .fontWeight(FontWeight.Medium)
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
+                Toggle({
+                  type: ToggleType.Switch,
+                  isOn: this.microphone
+                })
+                  .enabled(false)
+              }
+              .borderRadius(12)
+              .padding(12)
+            }
+            .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+            .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
+            .padding($r('sys.float.ohos_id_corner_radius_mark'))
+
+            Text() {
+              Span($r('app.string.MICROPHONE_reason'))
                 .fontColor($r('sys.color.font_secondary'))
               Span('请前往')
                 .fontColor($r('sys.color.font_secondary'))

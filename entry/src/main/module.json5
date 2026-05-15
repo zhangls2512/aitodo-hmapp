@@ -216,6 +216,16 @@
         }
       },
       {
+        "name": "ohos.permission.MICROPHONE",
+        "reason": "$string:MICROPHONE_reason",
+        "usedScene": {
+          "abilities": [
+            "EntryAbility"
+          ],
+          "when": "inuse"
+        }
+      },
+      {
         "name": "ohos.permission.READ_CALENDAR",
         "reason": "$string:READ_CALENDAR_reason",
         "usedScene": {
