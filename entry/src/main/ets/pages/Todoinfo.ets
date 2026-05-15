@@ -1,4 +1,5 @@
 import { common, Want, wantConstant } from '@kit.AbilityKit'
+import { promptAction } from '@kit.ArkUI'
 import { mapCommon, MapComponent, petalMaps } from '@kit.MapKit'
 import { filePreview } from '@kit.PreviewKit'
 import { call } from '@kit.TelephonyKit'
@@ -10,9 +11,8 @@ import copy from '../common/Pasteboard'
 import { getFlushPreference } from '../common/Preference'
 import { isProxyReminderOn } from '../common/Proxyreminder'
 import { getDateTimeStringFromTimeStamp } from '../common/Stringformat'
-import promptAction from '@ohos.promptAction'
 
-interface OpenAppByTypeValue {
+export interface OpenAppByTypeValue {
   type: string,
   wantParam: Record<string, Object>
 }
@@ -394,29 +394,17 @@ export default struct Todoinfo {
             .onClick(async () => {
               if (item.type === 'openApp') {
                 const want = JSON.parse(item.value) as Want
-                try {
-                  await this.context.startAbility(want)
-                } catch (err) {
-                  await promptAction.openToast({
-                    message: '发生错误，错误码：' + err.code
-                  })
-                }
+                await this.context.startAbility(want)
               }
               if (item.type === 'openAppByType') {
                 const value = JSON.parse(item.value) as OpenAppByTypeValue
-                try {
-                  await this.context.startAbilityByType(value.type, value.wantParam, {
-                    onError: async (code, name, message) => {
-                      await promptAction.openToast({
-                        message: '发生错误，错误码：' + code + '，错误名称：' + name + '，错误信息：' + message
-                      })
-                    }
-                  })
-                } catch (err) {
-                  await promptAction.openToast({
-                    message: '发生错误，错误码：' + err.code
-                  })
-                }
+                await this.context.startAbilityByType(value.type, value.wantParam, {
+                  onError: async (code, name, message) => {
+                    await promptAction.openToast({
+                      message: '发生错误，错误码：' + code + '，错误名称：' + name + '，错误信息：' + message
+                    })
+                  }
+                })
               }
               if (item.type === 'openUrl') {
                 await openLink(this.context, item.value)

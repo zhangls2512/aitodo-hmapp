@@ -719,7 +719,7 @@ export default struct Updatetodo {
             })
           if (this.actionTypeValue === '打开应用') {
             TextInput({
-              placeholder: '请输入Want',
+              placeholder: '请输入Want对象序列化字符串',
               text: this.actionValue!!
             })
               .enableAutoSpacing(true)
@@ -756,31 +756,9 @@ export default struct Updatetodo {
                 top: $r('sys.float.ohos_id_elements_margin_vertical_m')
               })
           }
-          if (this.actionTypeValue === '打开链接') {
-            TextInput({
-              placeholder: '请输入链接',
-              text: this.actionValue!!
-            })
-              .enableAutoSpacing(true)
-              .margin({
-                top: $r('sys.float.ohos_id_elements_margin_vertical_m')
-              })
-              .type(InputType.URL)
-              .onBlur(() => {
-                if (this.actionValue) {
-                  this.actionArray.push({
-                    type: 'openUrl',
-                    value: this.actionValue
-                  })
-                  this.actionTypeIndex = 0
-                  this.actionTypeValue = '打开应用'
-                  this.actionValue = ''
-                }
-              })
-          }
           if (this.actionTypeValue === '打开指定类型应用') {
             TextInput({
-              placeholder: '请输入入参对象',
+              placeholder: '请输入入参JSON对象序列化字符串',
               text: this.actionValue!!
             })
               .enableAutoSpacing(true)
@@ -803,7 +781,6 @@ export default struct Updatetodo {
                 }
               })
             Text('入参对象介绍')
-              .enableAutoSpacing(true)
               .fontColor($r('sys.color.font_emphasize'))
               .margin({
                 top: $r('sys.float.ohos_id_elements_margin_vertical_m')
@@ -815,6 +792,28 @@ export default struct Updatetodo {
             Text('示例：{"type":"mail","wantParam":{"sceneType":1,"email":["2300990296@qq.com"],"subject":"主题","body":"正文"}}')
               .margin({
                 top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+              })
+          }
+          if (this.actionTypeValue === '打开链接') {
+            TextInput({
+              placeholder: '请输入链接',
+              text: this.actionValue!!
+            })
+              .enableAutoSpacing(true)
+              .margin({
+                top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+              })
+              .type(InputType.URL)
+              .onBlur(() => {
+                if (this.actionValue) {
+                  this.actionArray.push({
+                    type: 'openUrl',
+                    value: this.actionValue
+                  })
+                  this.actionTypeIndex = 0
+                  this.actionTypeValue = '打开应用'
+                  this.actionValue = ''
+                }
               })
           }
           if (this.actionTypeValue === '打开文件') {

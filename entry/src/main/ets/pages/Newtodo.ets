@@ -2,22 +2,30 @@ import { common } from '@kit.AbilityKit'
 import { LengthMetrics, promptAction } from '@kit.ArkUI'
 import { fileShare, picker } from '@kit.CoreFileKit'
 import { sceneMap } from '@kit.MapKit'
+import { EntityType, textProcessing } from '@kit.NaturalLanguageKit'
 import { hdsEffect } from '@kit.UIDesignKit'
 import getCloudServiceStatus from '../common/Cloudservice'
 import { getKeyAlg } from '../common/Crypto'
 import { getCustomFreqList } from '../common/Customfreq'
 import { Action, newTodo } from '../common/Datachange'
-import { timeStampToIcsTimeString } from '../common/Ics'
+import { icsTimeStringToTimeStamp, timeStampToIcsTimeString } from '../common/Ics'
 import openLink from '../common/Openlink'
 import { getFlushPreference } from '../common/Preference'
 import { isProxyReminderEnabled } from '../common/Proxyreminder'
 import { getDateTimeStringFromTimeStamp } from '../common/Stringformat'
+import { OpenAppByTypeValue } from './Todoinfo'
+
+interface DateTime {
+  startTimestamp: number,
+  endTimestamp: number,
+  rrule: string
+}
 
 @ComponentV2
 export default struct Newtodo {
   @Consumer() isShowNewSheet: boolean = false
   @Param teamId: string = ''
-  @Param aiContent: string = ''
+  @Local aiContent: string = ''
   @Local content: string = ''
   @Local priority: number = 0
   @Local startTime: number = Date.now()
@@ -74,9 +82,10 @@ export default struct Newtodo {
       ListItem() {
         Column() {
           TextArea({
-            placeholder: '输入文本，智能识别并填入内容、开始时间',
+            placeholder: '输入文本，智能识别其中的日期时间、电子邮件、快递单号、航班号、地址、手机号、网址并填入',
             text: this.aiContent!!
           })
+            .defaultFocus(true)
             .enableAutoSpacing(true)
             .maxLength(1000)
             .showCounter(true)
@@ -105,11 +114,150 @@ export default struct Newtodo {
                 }
               })
               .buildEffect())
+            .onBlur(async () => {
+              if (this.aiContent) {
+                const entity = await textProcessing.getEntity(this.aiContent, {
+                  entityTypes: [
+                    EntityType.DATETIME,
+                    EntityType.EMAIL,
+                    EntityType.EXPRESS_NO,
+                    EntityType.FLIGHT_NO,
+                    EntityType.LOCATION,
+                    EntityType.PHONE_NO,
+                    EntityType.URL
+                  ]
+                })
+                const list: Action[] = []
+                entity.forEach(item => {
+                  if (item.type === EntityType.DATETIME) {
+                    const dateTime = JSON.parse(item.jsonObject) as DateTime
+                    if (dateTime.startTimestamp) {
+                      if (dateTime.startTimestamp > this.endTime && this.endTime !== -1) {
+                        return
+                      }
+                      this.startTime = dateTime.startTimestamp
+                    }
+                    if (dateTime.endTimestamp) {
+                      if (dateTime.endTimestamp < this.startTime) {
+                        return
+                      }
+                      this.endTime = dateTime.endTimestamp
+                    }
+                    if (!dateTime.rrule) {
+                      this.recurrence = false
+                    }
+                    if (dateTime.rrule) {
+                      this.recurrence = true
+                      this.recurrenceInterval = '1'
+                      this.recurrenceUntil = -1
+                      this.recurrenceCount = '0'
+                      this.recurrenceByMonth = []
+                      this.recurrenceByMonthDay = []
+                      this.recurrenceByDay = []
+                      const recurrenceRule = dateTime.rrule
+                      const tokens = recurrenceRule.split(';')
+                      const keyValues = tokens.map(item => item.split('=', 2))
+                      keyValues.forEach(item => {
+                        const key = item[0]
+                        const value = item[1]
+                        if (key === 'FREQ') {
+                          const index = ['YEARLY', 'MONTHLY', 'WEEKLY', 'DAILY'].indexOf(value)
+                          if (index !== -1) {
+                            this.recurrenceFreqIndex = index
+                            this.recurrenceFreqValue = this.freq[this.recurrenceFreqIndex].value as string
+                          }
+                          if (index === -1) {
+                            this.recurrence = false
+                          }
+                        }
+                        if (key === 'INTERVAL') {
+                          this.recurrenceInterval = value
+                        }
+                        if (key === 'UNTIL') {
+                          this.recurrenceUntil = icsTimeStringToTimeStamp(value, true)
+                        }
+                        if (key === 'COUNT') {
+                          this.recurrenceCount = value
+                        }
+                        if (key === 'BYMONTH') {
+                          this.recurrenceByMonth = value.split(',').map(item => Number(item))
+                        }
+                        if (key === 'BYMONTHDAY') {
+                          this.recurrenceByMonthDay = value.split(',').map(item => Number(item))
+                        }
+                        if (key === 'BYDAY') {
+                          this.recurrenceByDay = value.split(',')
+                        }
+                      })
+                    }
+                  }
+                  if (item.type === EntityType.EMAIL) {
+                    const value: OpenAppByTypeValue = {
+                      type: 'mail',
+                      wantParam: {
+                        'sceneType': 1,
+                        'email': [encodeURI(item.text)]
+                      }
+                    }
+                    list.push({
+                      type: 'openAppByType',
+                      value: JSON.stringify(value)
+                    })
+                  }
+                  if (item.type === EntityType.EXPRESS_NO) {
+                    const value: OpenAppByTypeValue = {
+                      type: 'express',
+                      wantParam: {
+                        'sceneType': 1,
+                        'expressNo': item.text
+                      }
+                    }
+                    list.push({
+                      type: 'openAppByType',
+                      value: JSON.stringify(value)
+                    })
+                  }
+                  if (item.type === EntityType.FLIGHT_NO) {
+                    const value: OpenAppByTypeValue = {
+                      type: 'flight',
+                      wantParam: {
+                        'sceneType': 1,
+                        'flightNo': item.text
+                      }
+                    }
+                    list.push({
+                      type: 'openAppByType',
+                      value: JSON.stringify(value)
+                    })
+                  }
+                  if (item.type === EntityType.LOCATION) {
+                    this.locationLocation = item.text
+                  }
+                  if (item.type === EntityType.PHONE_NO) {
+                    list.push({
+                      type: 'callTelephone',
+                      value: item.text
+                    })
+                  }
+                  if (item.type === EntityType.URL) {
+                    list.push({
+                      type: 'openUrl',
+                      value: item.text
+                    })
+                  }
+                })
+                list.forEach(item => {
+                  if (!this.actionArray.find(actionItem => actionItem.type === item.type &&
+                    actionItem.value === item.value)) {
+                    this.actionArray.push(item)
+                  }
+                })
+              }
+            })
           TextInput({
             placeholder: '请输入内容',
             text: this.content!!
           })
-            .defaultFocus(true)
             .enableAutoSpacing(true)
             .margin({
               top: $r('sys.float.ohos_id_elements_margin_vertical_m')
@@ -719,7 +867,7 @@ export default struct Newtodo {
             })
           if (this.actionTypeValue === '打开应用') {
             TextInput({
-              placeholder: '请输入Want',
+              placeholder: '请输入Want对象序列化字符串',
               text: this.actionValue!!
             })
               .enableAutoSpacing(true)
@@ -758,7 +906,7 @@ export default struct Newtodo {
           }
           if (this.actionTypeValue === '打开指定类型应用') {
             TextInput({
-              placeholder: '请输入入参对象',
+              placeholder: '请输入入参JSON对象序列化字符串',
               text: this.actionValue!!
             })
               .enableAutoSpacing(true)
@@ -781,7 +929,6 @@ export default struct Newtodo {
                 }
               })
             Text('入参对象介绍')
-              .enableAutoSpacing(true)
               .fontColor($r('sys.color.font_emphasize'))
               .margin({
                 top: $r('sys.float.ohos_id_elements_margin_vertical_m')
@@ -1073,6 +1220,7 @@ export default struct Newtodo {
       right: $r('sys.float.ohos_id_elements_margin_horizontal_l')
     })
     .onAppear(async () => {
+      await textProcessing.init()
       this.freq = ['年', '月', '周', '日'].concat(getCustomFreqList(this.context).map(item => item.name))
         .map((item): SelectOption => {
           return {
@@ -1094,6 +1242,9 @@ export default struct Newtodo {
           this.cloudBackup = getFlushPreference(this.context, 'cloudbackupSetting', 'autoOn', false) as boolean
         }
       }
+    })
+    .onDisAppear(async () => {
+      await textProcessing.release()
     })
   }
 }
