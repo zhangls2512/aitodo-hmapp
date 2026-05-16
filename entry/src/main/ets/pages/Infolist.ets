@@ -734,7 +734,7 @@ struct Infolist {
               Column() {
                 Text('信息内容')
                   .fontWeight(FontWeight.Medium)
-                Text('数据类型、数据行ID、数据密文、密钥初始向量')
+                Text('数据ID、数据密文、密钥初始向量')
                   .enableAutoSpacing(true)
                   .fontColor($r('sys.color.font_secondary'))
                   .fontSize($r('sys.float.ohos_id_text_size_body2'))

@@ -11,6 +11,11 @@
       "buildFunction": "TagBuilder"
     },
     {
+      "name": "Dumpjsrawheapdata",
+      "pageSourceFile": "src/main/ets/pages/Dumpjsrawheapdata.ets",
+      "buildFunction": "DumpjsrawheapdataBuilder"
+    },
+    {
       "name": "Remind",
       "pageSourceFile": "src/main/ets/pages/Remind.ets",
       "buildFunction": "RemindBuilder"
