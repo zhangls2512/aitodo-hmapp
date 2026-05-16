@@ -1,5 +1,4 @@
 import { common } from '@kit.AbilityKit'
-import { LoadingDialog } from '@kit.ArkUI'
 import { formProvider } from '@kit.FormKit'
 import { completeTodo } from '../common/Datachange'
 import { getRecommendTodoList, Todo } from '../common/Dataget'
@@ -20,12 +19,6 @@ export default struct Recommendtodo {
   UIContext = this.getUIContext()
   context = this.UIContext.getHostContext() as common.UIAbilityContext
   todoId = ''
-  teamId = ''
-  dialogControllerProgress = new CustomDialogController({
-    builder: LoadingDialog({
-      content: '请求中...'
-    })
-  })
 
   getDateFromTimeStamp(timeStamp: number) {
     const date = new Date(timeStamp)
@@ -41,7 +34,6 @@ export default struct Recommendtodo {
       })
         .onClick(() => {
           this.todoId = item.id
-          this.teamId = item.teamId
           this.isShowInfoSheet = true
         })
     }
@@ -50,7 +42,7 @@ export default struct Recommendtodo {
   @Builder
   NewSheetBuilder() {
     NewTodo({
-      teamId: this.teamId
+      teamId: ''
     })
   }
 
@@ -58,7 +50,7 @@ export default struct Recommendtodo {
   InfoSheetBuilder() {
     TodoInfo({
       todoId: this.todoId,
-      teamId: this.teamId
+      teamId: ''
     })
   }
 
@@ -282,7 +274,9 @@ export default struct Recommendtodo {
           this.isShowInfoSheet = false
         }
         this.todoId = todoId
-        this.isShowInfoSheet = true
+        setTimeout(() => {
+          this.isShowInfoSheet = true
+        }, 100)
       })
       await checkPermission(this.context, this.UIContext, 'ohos.permission.APPROXIMATELY_LOCATION')
       await checkPermission(this.context, this.UIContext, 'ohos.permission.LOCATION')

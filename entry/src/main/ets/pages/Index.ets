@@ -314,8 +314,7 @@ struct Index {
             await importTodo(this.context, JSON.stringify({
               encrypted: false,
               data: icsparse(filestring)
-            }),
-              relationalStore.ConflictResolution.ON_CONFLICT_IGNORE)
+            }), relationalStore.ConflictResolution.ON_CONFLICT_IGNORE)
             this.context.eventHub.emit('refreshTodo')
             await promptAction.openToast({
               message: '导入成功'

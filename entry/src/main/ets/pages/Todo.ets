@@ -1039,8 +1039,21 @@ export default struct TodoPage {
                 .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
                 .padding($r('sys.float.ohos_id_corner_radius_mark'))
               }
+              .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
+              .selected(this.multipleSelectArray.some(selectItem => selectItem.id === item.id))
               .margin({
                 top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+              })
+              .onSelect(isSelected => {
+                if (!isSelected) {
+                  this.multipleSelectArray = this.multipleSelectArray.filter(selectItem => selectItem.id !== item.id)
+                }
+                if (isSelected) {
+                  this.multipleSelect = true
+                  if (!this.multipleSelectArray.find(selectItem => selectItem.id === item.id)) {
+                    this.multipleSelectArray.push(item)
+                  }
+                }
               })
             })
             ListItem()
@@ -1048,12 +1061,15 @@ export default struct TodoPage {
                 bottom: this.preferType === 0 ? 80 : 0
               })
           }
+          .multiSelectable(true)
         }
         .layoutWeight(1)
         .onRefreshing(async () => {
-          this.todoArray = []
           this.tag = []
           this.tags = []
+          this.multipleSelect = false
+          this.multipleSelectArray = []
+          this.todoArray = []
           if (!this.teamId) {
             this.todoArray = await getCurrentTimePersonalTodoList(this.context, this.currentTime)
             const allTagArray: string[] = []

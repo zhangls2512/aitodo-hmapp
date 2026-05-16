@@ -59,7 +59,7 @@ struct License {
     {
       key: '大小屏',
       value: '轩铭2512适备13号-3P',
-      desc: '适配平板、PC 大屏和智能手表小屏'
+      desc: '适配平板、PC 大屏'
     },
     {
       key: '特殊网络环境',

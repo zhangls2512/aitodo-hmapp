@@ -46,12 +46,7 @@ export default class EntryFormAbility extends FormExtensionAbility {
       await this.refresh(formId)
     }
     if (messageObject.params.action === 'complete') {
-      if (!messageObject.params.todo.teamId) {
-        completeTodo(this.context, messageObject.params.todo.id, messageObject.params.isOn)
-      }
-      if (messageObject.params.todo.teamId) {
-        //请求团队完成待办API
-      }
+      completeTodo(this.context, messageObject.params.todo.id, messageObject.params.isOn)
       setTimeout(async () => {
         await this.refresh(formId)
       }, 100)
