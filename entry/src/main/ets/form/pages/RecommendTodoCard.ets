@@ -32,6 +32,7 @@ struct RecommendTodoCard {
               type: ToggleType.Checkbox,
               isOn: item.isCompleted
             })
+              .enabled(item.teamId === '')
               .margin({
                 right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
               })

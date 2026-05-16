@@ -135,7 +135,7 @@ export default struct Newtodo {
             this.recurrenceByMonthDay = []
             this.recurrenceByDay = []
           }
-          if (dateTime.rrule) {
+          if (dateTime.rrule && !this.teamId) {
             this.recurrence = true
             this.recurrenceFreqIndex = 0
             this.recurrenceFreqValue = '年'
