@@ -912,7 +912,7 @@ export default struct Newtodo {
             top: $r('sys.float.ohos_id_elements_margin_vertical_m')
           })
 
-          TextInput({
+          TextArea({
             placeholder: '请输入备注',
             text: this.bz!!
           })

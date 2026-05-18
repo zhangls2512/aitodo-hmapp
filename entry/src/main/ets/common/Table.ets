@@ -229,16 +229,20 @@ export async function autoBackupTable(context: Context) {
     await backupTable(context)
   }
   const autoFileBackup = getFlushPreference(context, 'dataSetting', 'autoFileBackup', true)
-  if (autoFileBackup) {
-    await fileBackupTable(context)
-  }
   const autoWebdavBackup = getFlushPreference(context, 'dataSetting', 'autoWebdavBackup', true)
-  if (autoWebdavBackup) {
-    await webdavBackupTable(context)
-  }
   const autoCaldavBackup = getFlushPreference(context, 'dataSetting', 'autoCaldavBackup', true)
+  let array: TodoItem[] = []
+  if (autoFileBackup || autoWebdavBackup || autoCaldavBackup) {
+    array = await getPersonalTodoList(context)
+  }
+  if (autoFileBackup) {
+    await fileBackupTable(context, array)
+  }
+  if (autoWebdavBackup) {
+    await webdavBackupTable(context, array)
+  }
   if (autoCaldavBackup) {
-    await caldavBackupTable(context)
+    await caldavBackupTable(context, array)
   }
 }
 
@@ -252,18 +256,17 @@ export async function backupTable(context: Context) {
   await rdbStore.backup('todobackup.db')
 }
 
-async function getFileBackupString(context: Context, encrypted: boolean): Promise<string> {
-  const array = await getPersonalTodoList(context)
-  if (array.length > 0) {
+async function getFileBackupString(todoArray: TodoItem[], encrypted: boolean): Promise<string> {
+  if (todoArray.length > 0) {
     if (!encrypted) {
       return JSON.stringify({
         encrypted: false,
-        data: array
+        data: todoArray
       })
     }
     if (encrypted) {
       const encryptedArray: EncryptData[] = []
-      const promises = array.map(async (item) => {
+      const promises = todoArray.map(async (item) => {
         const res = await encrypt(JSON.stringify(item))
         encryptedArray.push({
           content: res.content,
@@ -280,19 +283,26 @@ async function getFileBackupString(context: Context, encrypted: boolean): Promis
   return 'fail'
 }
 
-export async function fileBackupTable(context: Context) {
+export async function fileBackupTable(context: Context, todoArray?: TodoItem[]) {
   const encryptFileBackup = getFlushPreference(context, 'dataSetting', 'encryptFileBackup', true)
   let encrypted = false
   if (encryptFileBackup && getKeyAlg()) {
     encrypted = true
   }
-  const datastring = await getFileBackupString(context, encrypted)
+  let array: TodoItem[] = []
+  if (!todoArray) {
+    array = await getPersonalTodoList(context)
+  }
+  if (todoArray) {
+    array = todoArray
+  }
+  const datastring = await getFileBackupString(array, encrypted)
   if (datastring !== 'fail') {
     await write(context.filesDir + '/backup/todo.txt', datastring)
   }
 }
 
-export async function webdavBackupTable(context: Context) {
+export async function webdavBackupTable(context: Context, todoArray?: TodoItem[]) {
   const webdavServerInfo = await getWebdavServerInfo()
   if (!webdavServerInfo.path) {
     return 'fail'
@@ -302,7 +312,14 @@ export async function webdavBackupTable(context: Context) {
   if (encryptWebdavBackup && getKeyAlg()) {
     encrypted = true
   }
-  const datastring = await getFileBackupString(context, encrypted)
+  let array: TodoItem[] = []
+  if (!todoArray) {
+    array = await getPersonalTodoList(context)
+  }
+  if (todoArray) {
+    array = todoArray
+  }
+  const datastring = await getFileBackupString(array, encrypted)
   if (datastring !== 'fail') {
     const session = rcp.createSession({
       requestConfiguration: {
@@ -351,12 +368,18 @@ export async function webdavBackupTable(context: Context) {
   return 'success'
 }
 
-export async function caldavBackupTable(context: Context) {
+export async function caldavBackupTable(context: Context, todoArray?: TodoItem[]) {
   const caldavServerInfo = await getCaldavServerInfo()
   if (!caldavServerInfo.path) {
     return 'fail'
   }
-  const array = await getPersonalTodoList(context)
+  let array: TodoItem[] = []
+  if (!todoArray) {
+    array = await getPersonalTodoList(context)
+  }
+  if (todoArray) {
+    array = todoArray
+  }
   if (array.length > 0) {
     const icsstring = icsstringify(array)
     const session = rcp.createSession({
