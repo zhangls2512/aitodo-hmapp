@@ -625,8 +625,6 @@ export default struct TodoPage {
                   await deleteTodo(this.context, item.id)
                 })
                 await Promise.all(promises)
-                this.multipleSelect = false
-                this.multipleSelectArray = []
                 this.loading = true
               }
             })
@@ -692,8 +690,6 @@ export default struct TodoPage {
                   })
                   dialogControllerProgress.close()
                 }
-                this.multipleSelect = false
-                this.multipleSelectArray = []
                 this.loading = true
               })
             }
