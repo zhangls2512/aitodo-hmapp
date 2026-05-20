@@ -2,8 +2,11 @@ import { relationalStore } from '@kit.ArkData'
 import { util } from '@kit.ArkTS'
 import { promptAction } from '@kit.ArkUI'
 import { getPersonalAccountAccessToken, getPersonalAccountInfo } from './Account'
+import { caldavBackup, caldavDelete } from './Caldav'
 import { encrypt } from './Crypto'
 import { CloudBackupTimeItem, getTodoInfo, isTodoCompleted } from './Dataget'
+import { TodoItem } from './Dataimport'
+import { getFlushPreference } from './Preference'
 import { cancelProxyReminder, setProxyReminder } from './Proxyreminder'
 import request from './Request'
 import { getRecentTodoFromFreq } from './Rrule'
@@ -40,10 +43,6 @@ export interface TodoInput {
 interface CloudBackupItem {
   id: string,
   content: string
-}
-
-interface Content {
-  cloudBackupTime: CloudBackupTimeItem[]
 }
 
 export async function newTodo(context: Context, data: TodoInput) {
@@ -89,9 +88,6 @@ export async function newTodo(context: Context, data: TodoInput) {
     updateTime: updateTime,
     cloudBackupTime: JSON.stringify([])
   })
-  await promptAction.openToast({
-    message: '新增成功'
-  })
   huaweiCloudSyncRdbStore.insertSync('todo', {
     id: id,
     content: data.content,
@@ -111,7 +107,28 @@ export async function newTodo(context: Context, data: TodoInput) {
     cloudBackupTime: JSON.stringify([])
   })
   await autoSyncTable(context)
-  await autoBackupTable(context)
+  await autoBackupTable(context, false)
+  const autoCaldavBackup = getFlushPreference(context, 'dataSetting', 'autoCaldavBackup', true)
+  if (autoCaldavBackup) {
+    await caldavBackup([{
+      id: id,
+      content: data.content,
+      priority: data.priority,
+      startTime: data.startTime,
+      endTime: data.endTime,
+      duration: data.duration,
+      recurrenceRule: data.recurrenceRule,
+      excludeTime: [],
+      tag: data.tag,
+      dependency: data.dependency,
+      location: data.location,
+      action: data.action,
+      bz: data.bz,
+      recentCompletedTime: -1,
+      updateTime: updateTime,
+      cloudBackupTime: []
+    }])
+  }
   if (data.cloudBackup) {
     await setCloudBackup(context, {
       id: id,
@@ -187,9 +204,6 @@ export async function updateTodo(context: Context, id: string, data: TodoInput) 
     bz: data.bz,
     updateTime: updateTime
   }, predicates)
-  await promptAction.openToast({
-    message: '修改成功'
-  })
   huaweiCloudSyncRdbStore.updateSync({
     content: data.content,
     priority: data.priority,
@@ -206,7 +220,28 @@ export async function updateTodo(context: Context, id: string, data: TodoInput) 
     updateTime: updateTime
   }, predicates)
   await autoSyncTable(context)
-  await autoBackupTable(context)
+  await autoBackupTable(context, false)
+  const autoCaldavBackup = getFlushPreference(context, 'dataSetting', 'autoCaldavBackup', true)
+  if (autoCaldavBackup) {
+    await caldavBackup([{
+      id: id,
+      content: data.content,
+      priority: data.priority,
+      startTime: data.startTime,
+      endTime: data.endTime,
+      duration: data.duration,
+      recurrenceRule: data.recurrenceRule,
+      excludeTime: data.excludeTime,
+      tag: data.tag,
+      dependency: data.dependency,
+      location: data.location,
+      action: data.action,
+      bz: data.bz,
+      recentCompletedTime: recentCompletedTime,
+      updateTime: updateTime,
+      cloudBackupTime: cloudBackupTime
+    }])
+  }
   if (data.cloudBackup) {
     await setCloudBackup(context, {
       id: id,
@@ -357,9 +392,6 @@ export async function completeTodo(context: Context, id: string, complete: boole
         recentCompletedTime: -1,
         updateTime: updateTime
       }, predicates)
-      await promptAction.openToast({
-        message: '已取消完成'
-      })
     }
     if (complete) {
       rdbStore.updateSync({
@@ -370,12 +402,33 @@ export async function completeTodo(context: Context, id: string, complete: boole
         recentCompletedTime: updateTime,
         updateTime: updateTime
       }, predicates)
-      await promptAction.openToast({
-        message: '已完成'
-      })
     }
     await autoSyncTable(context)
-    await autoBackupTable(context)
+    await autoBackupTable(context, false)
+    const autoCaldavBackup = getFlushPreference(context, 'dataSetting', 'autoCaldavBackup', true)
+    if (autoCaldavBackup) {
+      const data = await getTodoInfo(context, id)
+      if (data !== 'fail') {
+        await caldavBackup([{
+          id: id,
+          content: data.content,
+          priority: data.priority,
+          startTime: data.startTime,
+          endTime: data.endTime,
+          duration: data.duration,
+          recurrenceRule: data.recurrenceRule,
+          excludeTime: data.excludeTime,
+          tag: data.tag,
+          dependency: data.dependency,
+          location: data.location,
+          action: data.action,
+          bz: data.bz,
+          recentCompletedTime: data.recentCompletedTime,
+          updateTime: updateTime,
+          cloudBackupTime: data.cloudBackupTime
+        }])
+      }
+    }
   }
 }
 
@@ -410,15 +463,16 @@ export async function deleteTodo(context: Context, id: string, single = false, e
       updateTime: updateTime
     }, predicates)
   }
-  await promptAction.openToast({
-    message: '删除成功'
-  })
   await autoSyncTable(context)
-  await autoBackupTable(context)
+  await autoBackupTable(context, false)
+  const autoCaldavBackup = getFlushPreference(context, 'dataSetting', 'autoCaldavBackup', true)
+  if (autoCaldavBackup) {
+    await caldavDelete([id])
+  }
 }
 
 export async function setCloudBackup(context: Context, data: CloudBackupItem) {
-  const content = JSON.parse(data.content as string) as Content
+  const content = JSON.parse(data.content as string) as TodoItem
   const accountInfo = await getPersonalAccountInfo()
   const cloudBackupTimeItem = content.cloudBackupTime.find(item => item.uid === accountInfo.uid)
   if (cloudBackupTimeItem) {
@@ -460,11 +514,29 @@ export async function setCloudBackup(context: Context, data: CloudBackupItem) {
       huaweiCloudSyncRdbStore.updateSync({
         cloudBackupTime: JSON.stringify(content.cloudBackupTime)
       }, predicates)
-      await promptAction.openToast({
-        message: '云备份成功'
-      })
       await autoSyncTable(context)
-      await autoBackupTable(context)
+      await autoBackupTable(context, false)
+      const autoCaldavBackup = getFlushPreference(context, 'dataSetting', 'autoCaldavBackup', true)
+      if (autoCaldavBackup) {
+        await caldavBackup([{
+          id: data.id,
+          content: content.content,
+          priority: content.priority,
+          startTime: content.startTime,
+          endTime: content.endTime,
+          duration: content.duration,
+          recurrenceRule: content.recurrenceRule,
+          excludeTime: content.excludeTime,
+          tag: content.tag,
+          dependency: content.dependency,
+          location: content.location,
+          action: content.action,
+          bz: content.bz,
+          recentCompletedTime: content.recentCompletedTime,
+          updateTime: content.updateTime,
+          cloudBackupTime: content.cloudBackupTime
+        }])
+      }
     }
   }
 }
@@ -510,11 +582,12 @@ export async function deleteCloudBackup(context: Context, id: string) {
       huaweiCloudSyncRdbStore.updateSync({
         cloudBackupTime: JSON.stringify(cloudBackupTime)
       }, predicates)
-      await promptAction.openToast({
-        message: '取消云备份成功'
-      })
       await autoSyncTable(context)
-      await autoBackupTable(context)
+      await autoBackupTable(context, false)
+      const autoCaldavBackup = getFlushPreference(context, 'dataSetting', 'autoCaldavBackup', true)
+      if (autoCaldavBackup) {
+        await caldavDelete([id])
+      }
     }
   }
 }

@@ -83,7 +83,7 @@ struct Webdavserver {
                   }
                   if (this.path.endsWith('/')) {
                     await promptAction.openToast({
-                      message: '系统自动添加目录分隔符，无需手动在地址末尾添加'
+                      message: '系统自动添加路径分隔符，无需手动在地址末尾添加'
                     })
                     return
                   }

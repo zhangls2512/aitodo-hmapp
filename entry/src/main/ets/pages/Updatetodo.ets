@@ -1,5 +1,5 @@
 import { common } from '@kit.AbilityKit'
-import { LengthMetrics, promptAction } from '@kit.ArkUI'
+import { LengthMetrics, LoadingDialog, promptAction } from '@kit.ArkUI'
 import { fileShare, picker } from '@kit.CoreFileKit'
 import { sceneMap } from '@kit.MapKit'
 import getCloudServiceStatus from '../common/Cloudservice'
@@ -158,7 +158,8 @@ export default struct Updatetodo {
             })
 
             if (!this.remindEnabled) {
-              Text('当前已存在的有效提醒数量已达到系统最大限制，不可开启提醒。可前往“我的”>“设置”>“通用”>“通用”>“功能”>“提醒管理”删除不必要的提醒后再开启提醒。')
+              Text(
+                '当前已存在的有效提醒数量已达到系统最大限制，不可开启提醒。可前往“我的”>“设置”>“通用”>“通用”>“功能”>“提醒管理”删除不必要的提醒后再开启提醒。')
                 .fontColor($r('sys.color.warning'))
                 .margin({
                   top: $r('sys.float.ohos_id_elements_margin_vertical_m')
@@ -751,7 +752,8 @@ export default struct Updatetodo {
                 await openLink(this.context,
                   'https://developer.huawei.com/consumer/cn/doc/harmonyos-references/js-apis-app-ability-want')
               })
-            Text('示例：{"bundleName":"com.huawei.hmos.settings","abilityName":"com.huawei.hmos.settings.MainAbility","uri":"application_info_entry","parameters":{"pushParams":"com.zhangxm.aitodo"}}（打开系统“设置”应用的“轩铭智能待办”应用权限管理页面）')
+            Text(
+              '示例：{"bundleName":"com.huawei.hmos.settings","abilityName":"com.huawei.hmos.settings.MainAbility","uri":"application_info_entry","parameters":{"pushParams":"com.zhangxm.aitodo"}}（打开系统“设置”应用的“轩铭智能待办”应用权限管理页面）')
               .margin({
                 top: $r('sys.float.ohos_id_elements_margin_vertical_m')
               })
@@ -789,7 +791,8 @@ export default struct Updatetodo {
                 await openLink(this.context,
                   'https://developer.huawei.com/consumer/cn/doc/harmonyos-references/js-apis-inner-application-uiabilitycontext#startabilitybytype11-1')
               })
-            Text('示例：{"type":"mail","wantParam":{"sceneType":1,"email":["2300990296@qq.com"],"subject":"主题","body":"正文"}}')
+            Text(
+              '示例：{"type":"mail","wantParam":{"sceneType":1,"email":["2300990296@qq.com"],"subject":"主题","body":"正文"}}')
               .margin({
                 top: $r('sys.float.ohos_id_elements_margin_vertical_m')
               })
@@ -1035,6 +1038,12 @@ export default struct Updatetodo {
               }
             }
             if (!this.teamId) {
+              const dialogControllerProgress = new CustomDialogController({
+                builder: LoadingDialog({
+                  content: '修改中...'
+                })
+              })
+              dialogControllerProgress.open()
               await updateTodo(this.context, this.todoId, {
                 content: this.content,
                 priority: this.priority,
@@ -1054,6 +1063,10 @@ export default struct Updatetodo {
                 bz: this.bz,
                 cloudBackup: this.cloudBackup,
                 remind: this.remind
+              })
+              dialogControllerProgress.close()
+              await promptAction.openToast({
+                message: '修改成功'
               })
             }
             if (this.teamId) {

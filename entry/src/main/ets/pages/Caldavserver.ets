@@ -3,6 +3,7 @@ import { LengthMetrics, promptAction } from '@kit.ArkUI'
 import { appAccount } from '@kit.BasicServicesKit'
 import { hdsMaterial, HdsNavDestination, HdsNavDestinationTitleMode, ScrollEffectType } from '@kit.UIDesignKit'
 import { getCaldavServerInfo, setCaldavServer } from '../common/Caldavserver'
+import openLink from '../common/Openlink'
 
 @Builder
 export function CaldavserverBuilder() {
@@ -83,7 +84,7 @@ struct Caldavserver {
                   }
                   if (this.path.endsWith('/')) {
                     await promptAction.openToast({
-                      message: '系统自动添加目录分隔符，无需手动在地址末尾添加'
+                      message: '系统自动添加路径分隔符，无需手动在地址末尾添加'
                     })
                     return
                   }
@@ -111,10 +112,14 @@ struct Caldavserver {
                 this.pageInfos.pop()
                 this.context.eventHub.emit('refreshDataBackupRecovery')
               })
-            Text('地址示例：https://example.com:5001/caldav')
+            Text('地址格式')
+              .fontColor($r('sys.color.font_emphasize'))
               .fontWeight(FontWeight.Medium)
               .margin({
                 top: $r('sys.float.ohos_id_elements_margin_vertical_l')
+              })
+              .onClick(async () => {
+                await openLink(this.context, 'https://docs.qq.com/doc/p/02656488205ab26d2c89b4c47d65c1e9793b8679')
               })
           }
           .alignItems(HorizontalAlign.Start)

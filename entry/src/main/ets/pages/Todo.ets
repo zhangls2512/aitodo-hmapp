@@ -407,7 +407,12 @@ export default struct TodoPage {
                 ]
               })
               if (data.index === 1) {
+                this.dialogControllerProgress.open()
                 await deleteTodo(this.context, item.id)
+                this.dialogControllerProgress.close()
+                await promptAction.openToast({
+                  message: '删除成功'
+                })
               }
             }
             if (item.recurrenceRule) {
@@ -425,10 +430,20 @@ export default struct TodoPage {
                 ]
               })
               if (data.index === 0) {
+                this.dialogControllerProgress.open()
                 await deleteTodo(this.context, item.id, true, item.excludeTime.concat([item.startTime]))
+                this.dialogControllerProgress.close()
+                await promptAction.openToast({
+                  message: '删除成功'
+                })
               }
               if (data.index === 1) {
+                this.dialogControllerProgress.open()
                 await deleteTodo(this.context, item.id)
+                this.dialogControllerProgress.close()
+                await promptAction.openToast({
+                  message: '删除成功'
+                })
               }
             }
             this.loading = true
@@ -462,6 +477,9 @@ export default struct TodoPage {
                   })
                 })
                 this.dialogControllerProgress.close()
+                await promptAction.openToast({
+                  message: '云备份成功'
+                })
                 this.loading = true
               })
           }
@@ -474,6 +492,9 @@ export default struct TodoPage {
                 this.dialogControllerProgress.open()
                 await deleteCloudBackup(this.context, item.id)
                 this.dialogControllerProgress.close()
+                await promptAction.openToast({
+                  message: '取消云备份成功'
+                })
                 this.loading = true
               })
           }
@@ -621,10 +642,19 @@ export default struct TodoPage {
                 ]
               })
               if (data.index === 1) {
-                const promises = this.multipleSelectArray.map(async (item) => {
-                  await deleteTodo(this.context, item.id)
-                })
-                await Promise.all(promises)
+                for (let i = 0; i < this.multipleSelectArray.length; i++) {
+                  const dialogControllerProgress = new CustomDialogController({
+                    builder: LoadingDialog({
+                      content: '批量删除中，进度：' + (i + 1) + '/' + this.multipleSelectArray.length
+                    })
+                  })
+                  dialogControllerProgress.open()
+                  await deleteTodo(this.context, this.multipleSelectArray[i].id)
+                  dialogControllerProgress.close()
+                  await promptAction.openToast({
+                    message: '删除成功'
+                  })
+                }
                 this.loading = true
               }
             })
@@ -664,7 +694,7 @@ export default struct TodoPage {
                 for (let i = 0; i < this.multipleSelectArray.length; i++) {
                   const dialogControllerProgress = new CustomDialogController({
                     builder: LoadingDialog({
-                      content: '批量云备份中，进度：' + i + '/' + this.multipleSelectArray.length
+                      content: '批量云备份中，进度：' + (i + 1) + '/' + this.multipleSelectArray.length
                     })
                   })
                   dialogControllerProgress.open()
@@ -689,6 +719,9 @@ export default struct TodoPage {
                     })
                   })
                   dialogControllerProgress.close()
+                  await promptAction.openToast({
+                    message: '云备份成功'
+                  })
                 }
                 this.loading = true
               })
@@ -776,7 +809,7 @@ export default struct TodoPage {
             if (deviceInfo.deviceType !== '2in1') {
               Column() {
                 FunctionComponent({
-                  agentId: '',
+                  agentId: 'agent5e4f855080cf442ebf578126e9117b4a',
                   onError: () => {
                   }
                 })
@@ -892,8 +925,9 @@ export default struct TodoPage {
                         })
                         .onChange(isOn => {
                           if (!isOn) {
-                            this.multipleSelectArray.splice(this.multipleSelectArray.findIndex(selectItem => selectItem.id ===
-                              item.id), 1)
+                            this.multipleSelectArray.splice(
+                              this.multipleSelectArray.findIndex(selectItem => selectItem.id ===
+                                item.id), 1)
                           }
                           if (isOn) {
                             this.multipleSelectArray.push(item)
@@ -911,7 +945,9 @@ export default struct TodoPage {
                         })
                         .onChange(async (isOn) => {
                           if (!this.teamId) {
+                            this.dialogControllerProgress.open()
                             await completeTodo(this.context, item.id, isOn)
+                            this.dialogControllerProgress.close()
                           }
                           if (this.teamId) {
                             //请求团队完成待办API

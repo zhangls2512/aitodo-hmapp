@@ -6,10 +6,10 @@ import { appAccount } from '@kit.BasicServicesKit'
 import { fileIo, picker } from '@kit.CoreFileKit'
 import { rcp } from '@kit.RemoteCommunicationKit'
 import { hdsMaterial, HdsNavDestination, HdsNavDestinationTitleMode, ScrollEffectType } from '@kit.UIDesignKit'
+import { caldavDeleteAll, caldavRecovery } from '../common/Caldav'
 import { getCaldavServerInfo } from '../common/Caldavserver'
 import { importTodo } from '../common/Dataimport'
 import { read } from '../common/File'
-import { icsparse } from '../common/Ics'
 import { checkPermission } from '../common/Permission'
 import { getFlushPreference, setFlushPreference } from '../common/Preference'
 import { backupTable, caldavBackupTable, fileBackupTable, recoveryTable, webdavBackupTable } from '../common/Table'
@@ -140,59 +140,6 @@ struct DataBackupRecovery {
     }
   }
 
-  async getCaldavBackup() {
-    const caldavServerInfo = await getCaldavServerInfo()
-    const session = rcp.createSession({
-      requestConfiguration: {
-        security: {
-          tlsRange: {
-            min: 'TlsV1.2'
-          }
-        }
-      },
-      headers: {
-        Authorization: 'Basic ' +
-          new util.Base64Helper().encodeToStringSync(new util.TextEncoder().encodeInto(caldavServerInfo.username + ':' +
-            caldavServerInfo.password))
-      }
-    })
-    try {
-      const response = await session.get(caldavServerInfo.path + '/todo.ics')
-      session.close()
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        const body = String(response)
-        if (!body) {
-          await promptAction.openToast({
-            message: '备份文件内容为空，无法恢复'
-          })
-          return 'fail'
-        }
-        return body
-      }
-      const statusCodeMap: Record<number, string> = {
-        401: '账号密码错误',
-        403: '备份不存在或无权限'
-      }
-      const reason = statusCodeMap[response.statusCode]
-      if (reason) {
-        await promptAction.openToast({
-          message: '恢复失败，原因：' + reason
-        })
-        return 'fail'
-      }
-      await promptAction.openToast({
-        message: 'HTTP 请求失败，状态码：' + response.statusCode
-      })
-      return 'fail'
-    } catch (err) {
-      session.close()
-      await promptAction.openToast({
-        message: '发生错误，错误码：' + err.code
-      })
-      return 'fail'
-    }
-  }
-
   async deleteWebdavBackup() {
     const webdavServerInfo = await getWebdavServerInfo()
     const session = rcp.createSession({
@@ -219,52 +166,6 @@ struct DataBackupRecovery {
         401: '账号密码错误',
         404: '无备份文件',
         405: '目录不存在或无权限'
-      }
-      const reason = statusCodeMap[response.statusCode]
-      if (reason) {
-        await promptAction.openToast({
-          message: '删除失败，原因：' + reason
-        })
-        return 'fail'
-      }
-      await promptAction.openToast({
-        message: 'HTTP 请求失败，状态码：' + response.statusCode
-      })
-      return 'fail'
-    } catch (err) {
-      session.close()
-      await promptAction.openToast({
-        message: '发生错误，错误码：' + err.code
-      })
-      return 'fail'
-    }
-  }
-
-  async deleteCaldavBackup() {
-    const caldavServerInfo = await getCaldavServerInfo()
-    const session = rcp.createSession({
-      requestConfiguration: {
-        security: {
-          tlsRange: {
-            min: 'TlsV1.2'
-          }
-        }
-      },
-      headers: {
-        Authorization: 'Basic ' +
-          new util.Base64Helper().encodeToStringSync(new util.TextEncoder().encodeInto(caldavServerInfo.username + ':' +
-            caldavServerInfo.password))
-      }
-    })
-    try {
-      const response = await session.delete(caldavServerInfo.path + '/todo.ics')
-      session.close()
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        return 'success'
-      }
-      const statusCodeMap: Record<number, string> = {
-        401: '账号密码错误',
-        403: '备份不存在或无权限'
       }
       const reason = statusCodeMap[response.statusCode]
       if (reason) {
@@ -1326,23 +1227,17 @@ struct DataBackupRecovery {
                   })
                   return
                 }
+                let conflictResolution = relationalStore.ConflictResolution.ON_CONFLICT_IGNORE
+                if (this.index === 1) {
+                  conflictResolution = relationalStore.ConflictResolution.ON_CONFLICT_REPLACE
+                }
                 this.dialogControllerProgress.open()
-                const filestring = await this.getCaldavBackup()
+                const res = await caldavRecovery(this.context, conflictResolution)
                 this.dialogControllerProgress.close()
-                if (filestring !== 'fail') {
-                  let conflictResolution = relationalStore.ConflictResolution.ON_CONFLICT_IGNORE
-                  if (this.index === 1) {
-                    conflictResolution = relationalStore.ConflictResolution.ON_CONFLICT_REPLACE
-                  }
-                  const res = await importTodo(this.context, JSON.stringify({
-                    encrypted: false,
-                    data: icsparse(filestring)
-                  }), conflictResolution)
-                  if (res === 'success') {
-                    await promptAction.openToast({
-                      message: '恢复成功'
-                    })
-                  }
+                if (res !== 'fail') {
+                  await promptAction.openToast({
+                    message: '恢复成功'
+                  })
                 }
               })
 
@@ -1407,7 +1302,7 @@ struct DataBackupRecovery {
                 })
                 if (data.index === 1) {
                   this.dialogControllerProgress.open()
-                  const res = await this.deleteCaldavBackup()
+                  const res = await caldavDeleteAll()
                   this.dialogControllerProgress.close()
                   if (res !== 'fail') {
                     await promptAction.openToast({

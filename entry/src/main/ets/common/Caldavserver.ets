@@ -1,7 +1,7 @@
 import { promptAction } from '@kit.ArkUI'
 import { appAccount } from '@kit.BasicServicesKit'
 
-interface CaldavServerInfo {
+export interface CaldavServerInfo {
   path: string,
   username: string,
   password: string

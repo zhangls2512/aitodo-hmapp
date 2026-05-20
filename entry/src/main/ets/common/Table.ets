@@ -5,13 +5,12 @@ import { batteryInfo, power } from '@kit.BasicServicesKit'
 import { calendarManager } from '@kit.CalendarKit'
 import { distributedDeviceManager } from '@kit.DistributedServiceKit'
 import { rcp } from '@kit.RemoteCommunicationKit'
-import { getCaldavServerInfo } from './Caldavserver'
+import { caldavBackup, caldavDelete, caldavGet } from './Caldav'
 import { encrypt, EncryptData, getKeyAlg } from './Crypto'
 import { deleteTodo } from './Datachange'
 import { getPersonalTodoList } from './Dataget'
 import { importTodoArray, TodoItem } from './Dataimport'
 import { write } from './File'
-import { icsstringify } from './Ics'
 import { getPermission } from './Permission'
 import { getFlushPreference } from './Preference'
 import { parseRRule, stringifyRRule } from './Rrule'
@@ -210,7 +209,7 @@ export async function systemCalendarSyncTable(context: Context, mode: 'push' | '
   return 'fail'
 }
 
-export async function autoBackupTable(context: Context) {
+export async function autoBackupTable(context: Context, caldav = true) {
   const pauseAutoBackupWhenLowBatteryCapacityLevel =
     getFlushPreference(context, 'dataSetting', 'pauseAutoSyncWhenLowBatteryCapacityLevel', false)
   const pauseAutoBackupWhenPowerSave = getFlushPreference(context, 'dataSetting', 'pauseAutoSyncWhenPowerSave', false)
@@ -232,7 +231,7 @@ export async function autoBackupTable(context: Context) {
   const autoWebdavBackup = getFlushPreference(context, 'dataSetting', 'autoWebdavBackup', true)
   const autoCaldavBackup = getFlushPreference(context, 'dataSetting', 'autoCaldavBackup', true)
   let array: TodoItem[] = []
-  if (autoFileBackup || autoWebdavBackup || autoCaldavBackup) {
+  if (autoFileBackup || autoWebdavBackup || (autoCaldavBackup && caldav)) {
     array = await getPersonalTodoList(context)
   }
   if (autoFileBackup) {
@@ -241,7 +240,7 @@ export async function autoBackupTable(context: Context) {
   if (autoWebdavBackup) {
     await webdavBackupTable(context, array)
   }
-  if (autoCaldavBackup) {
+  if (autoCaldavBackup && caldav) {
     await caldavBackupTable(context, array)
   }
 }
@@ -257,28 +256,26 @@ export async function backupTable(context: Context) {
 }
 
 async function getFileBackupString(todoArray: TodoItem[], encrypted: boolean): Promise<string> {
-  if (todoArray.length > 0) {
-    if (!encrypted) {
-      return JSON.stringify({
-        encrypted: false,
-        data: todoArray
+  if (!encrypted) {
+    return JSON.stringify({
+      encrypted: false,
+      data: todoArray
+    })
+  }
+  if (encrypted) {
+    const encryptedArray: EncryptData[] = []
+    const promises = todoArray.map(async (item) => {
+      const res = await encrypt(JSON.stringify(item))
+      encryptedArray.push({
+        content: res.content,
+        iv: res.iv
       })
-    }
-    if (encrypted) {
-      const encryptedArray: EncryptData[] = []
-      const promises = todoArray.map(async (item) => {
-        const res = await encrypt(JSON.stringify(item))
-        encryptedArray.push({
-          content: res.content,
-          iv: res.iv
-        })
-      })
-      await Promise.all(promises)
-      return JSON.stringify({
-        encrypted: true,
-        data: encryptedArray
-      })
-    }
+    })
+    await Promise.all(promises)
+    return JSON.stringify({
+      encrypted: true,
+      data: encryptedArray
+    })
   }
   return 'fail'
 }
@@ -365,14 +362,10 @@ export async function webdavBackupTable(context: Context, todoArray?: TodoItem[]
       return 'fail'
     }
   }
-  return 'success'
+  return 'fail'
 }
 
 export async function caldavBackupTable(context: Context, todoArray?: TodoItem[]) {
-  const caldavServerInfo = await getCaldavServerInfo()
-  if (!caldavServerInfo.path) {
-    return 'fail'
-  }
   let array: TodoItem[] = []
   if (!todoArray) {
     array = await getPersonalTodoList(context)
@@ -380,54 +373,17 @@ export async function caldavBackupTable(context: Context, todoArray?: TodoItem[]
   if (todoArray) {
     array = todoArray
   }
-  if (array.length > 0) {
-    const icsstring = icsstringify(array)
-    const session = rcp.createSession({
-      requestConfiguration: {
-        security: {
-          tlsRange: {
-            min: 'TlsV1.2'
-          }
-        }
-      },
-      headers: {
-        'content-type': 'text/calendar',
-        Authorization: 'Basic ' +
-          new util.Base64Helper().encodeToStringSync(new util.TextEncoder().encodeInto(caldavServerInfo.username + ':' +
-            caldavServerInfo.password))
-      }
-    })
-    try {
-      const response = await session.put(caldavServerInfo.path + '/todo.ics', icsstring)
-      session.close()
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        return 'success'
-      } else {
-        const statusCodeMap: Record<number, string> = {
-          401: '账号密码错误',
-          403: '备份不存在或无权限'
-        }
-        const reason = statusCodeMap[response.statusCode]
-        if (reason) {
-          await promptAction.openToast({
-            message: '备份失败，原因：' + reason
-          })
-          return 'fail'
-        }
-        await promptAction.openToast({
-          message: 'HTTP 请求失败，状态码：' + response.statusCode
-        })
-        return 'fail'
-      }
-    } catch (err) {
-      session.close()
-      await promptAction.openToast({
-        message: '发生错误，错误码：' + err.code
-      })
-      return 'fail'
+  const res = await caldavGet()
+  if (res !== 'fail') {
+    const todoIdArray = array.map(item => item.id)
+    const deleteTodoIdArray = res.map(item => item.id).filter(item => todoIdArray.includes(item))
+    const deleteres = await caldavDelete(deleteTodoIdArray)
+    if (deleteres !== 'fail') {
+      const backupres = await caldavBackup(array)
+      return backupres
     }
   }
-  return 'success'
+  return 'fail'
 }
 
 export async function recoveryTable(context: Context) {

@@ -1,4 +1,5 @@
 import { common } from '@kit.AbilityKit'
+import { LoadingDialog } from '@kit.ArkUI'
 import { formProvider } from '@kit.FormKit'
 import { completeTodo } from '../common/Datachange'
 import { getRecommendTodoList, Todo } from '../common/Dataget'
@@ -19,6 +20,11 @@ export default struct Recommendtodo {
   UIContext = this.getUIContext()
   context = this.UIContext.getHostContext() as common.UIAbilityContext
   todoId = ''
+  dialogControllerProgress = new CustomDialogController({
+    builder: LoadingDialog({
+      content: '请求中...'
+    })
+  })
 
   getDateFromTimeStamp(timeStamp: number) {
     const date = new Date(timeStamp)
@@ -78,7 +84,9 @@ export default struct Recommendtodo {
                   })
                   .onChange(async (isOn) => {
                     if (!item.teamId) {
+                      this.dialogControllerProgress.open()
                       await completeTodo(this.context, item.id, isOn)
+                      this.dialogControllerProgress.close()
                     }
                     if (item.teamId) {
                       //请求团队完成待办API
