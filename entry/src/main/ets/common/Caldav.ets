@@ -169,11 +169,10 @@ export async function caldavGet() {
 export async function caldavRecovery(context: Context, conflictResolution: relationalStore.ConflictResolution) {
   const res = await caldavGet()
   if (res !== 'fail') {
-    const importres = await importTodo(context, JSON.stringify({
+    return await importTodo(context, JSON.stringify({
       encrypted: false,
       data: res
     }), conflictResolution)
-    return importres
   }
   return 'fail'
 }
@@ -233,8 +232,7 @@ export async function caldavDeleteAll() {
   const res = await caldavGet()
   if (res !== 'fail') {
     const idArray = res.map(item => item.id)
-    const deleteres = await caldavDelete(idArray)
-    return deleteres
+    return await caldavDelete(idArray)
   }
   return 'fail'
 }

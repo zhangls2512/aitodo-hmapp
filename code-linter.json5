@@ -43,6 +43,7 @@
       "error",
       "single"
     ],
+    "@typescript-eslint/return-await": "off",
     "@typescript-eslint/semi": [
       "error",
       "never"

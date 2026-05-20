@@ -379,8 +379,7 @@ export async function caldavBackupTable(context: Context, todoArray?: TodoItem[]
     const deleteTodoIdArray = res.map(item => item.id).filter(item => todoIdArray.includes(item))
     const deleteres = await caldavDelete(deleteTodoIdArray)
     if (deleteres !== 'fail') {
-      const backupres = await caldavBackup(array)
-      return backupres
+      return await caldavBackup(array)
     }
   }
   return 'fail'
