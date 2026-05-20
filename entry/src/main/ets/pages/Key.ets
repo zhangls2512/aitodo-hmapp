@@ -124,11 +124,7 @@ struct Keypage {
                         color: $r('sys.color.font_primary')
                       },
                       {
-                        text: '自定义 (2.0.8.8 及之后版本导出的)',
-                        color: $r('sys.color.font_primary')
-                      },
-                      {
-                        text: '自定义 (2.0.8.8 之前版本复制的)',
+                        text: '自定义',
                         color: $r('sys.color.font_primary')
                       }
                     ]
@@ -152,11 +148,6 @@ struct Keypage {
                     }
                   }
                   this.keyAlg = getKeyAlg()
-                  if (data.index === 3) {
-                    this.pageInfos.pushPath({
-                      name: 'Importkey'
-                    })
-                  }
                 }
               })
 
