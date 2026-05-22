@@ -1,6 +1,6 @@
 import { FormTodo } from '../../entryformability/EntryFormAbility'
 
-@Entry
+@Entry(new LocalStorage())
 @Component
 struct RecommendTodoCard {
   @LocalStorageProp('todoArray') todoArray: FormTodo[] = []

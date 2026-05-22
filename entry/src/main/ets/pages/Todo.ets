@@ -1093,6 +1093,7 @@ export default struct TodoPage {
                 bottom: this.preferType === 0 ? 80 : 0
               })
           }
+          .height('100%')
           .multiSelectable(true)
         }
         .layoutWeight(1)

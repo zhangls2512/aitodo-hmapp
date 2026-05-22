@@ -183,7 +183,7 @@ struct About {
               Column() {
                 Text('邀请测试')
                   .fontWeight(FontWeight.Medium)
-                Text('https://appgallery.huawei.com/apptest/待补充')
+                Text('https://appgallery.huawei.com/apptest/8kQQiCWVrVf')
                   .fontColor($r('sys.color.font_secondary'))
                   .fontSize($r('sys.float.ohos_id_text_size_body2'))
                   .margin({
@@ -221,10 +221,7 @@ struct About {
               }
             })
             .onClick(async () => {
-              await promptAction.openToast({
-                message: '敬请期待'
-              })
-              //await openLink(this.context, 'https://appgallery.huawei.com/apptest/待补充')
+              await openLink(this.context, 'https://appgallery.huawei.com/apptest/8kQQiCWVrVf')
             })
 
             Divider()
@@ -722,7 +719,8 @@ struct About {
                 }
               })
               .onClick(async () => {
-                await this.context.openLink('https://www.chuckfang.com/MeoW/appLinking?channelId=2387a702d29448a7bb1bd552c6d67830')
+                await this.context.openLink(
+                  'https://www.chuckfang.com/MeoW/appLinking?channelId=2387a702d29448a7bb1bd552c6d67830')
               })
             }
             .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
