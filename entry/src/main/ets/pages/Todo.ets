@@ -659,9 +659,9 @@ export default struct TodoPage {
                     message: '删除成功'
                   })
                 }
+                this.loading = true
                 await autoSyncTable(this.context)
                 await autoBackupTable(this.context)
-                this.loading = true
               }
             })
 
