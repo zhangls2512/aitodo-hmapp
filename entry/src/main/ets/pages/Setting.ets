@@ -12,7 +12,7 @@ import { getKeyAlg } from '../common/Crypto'
 import openLink from '../common/Openlink'
 import { checkPermission } from '../common/Permission'
 import { getFlushPreference, setFlushPreference } from '../common/Preference'
-import request from '../common/Request'
+import { developerRequest } from '../common/Request'
 import { Account } from './Huaweiaccount'
 
 @ComponentV2
@@ -33,6 +33,7 @@ export default struct Setting {
   pageInfos = new NavPathStack()
   accountDataSync = false
   autoCloudBackupOn = false
+  autoCloudBackupImport = false
   dialogControllerProgress = new CustomDialogController({
     builder: LoadingDialog({
       content: '请求中...'
@@ -64,10 +65,9 @@ export default struct Setting {
         getFlushPreference(this.context, 'commonSetting', 'autoLoginByHuaweiAccount', false) as boolean
       this.autoLoginByPasskey =
         getFlushPreference(this.context, 'commonSetting', 'autoLoginByPasskey', false) as boolean
-      this.autoCloudBackupOn = getFlushPreference(this.context, 'cloudbackupSetting', 'autoOn', false) as boolean
       if (this.allService) {
         this.accountLoading = true
-        const accountres = await request(this.context, '/account/getExternalAccount', {
+        const accountres = await developerRequest(this.context, '/account/getExternalAccount', {
           accessToken: this.accessToken
         })
         if (accountres !== 'fail') {
@@ -75,6 +75,9 @@ export default struct Setting {
           this.isBindHuaweiAccount = account.some(item => item.platform === 'huawei')
         }
         this.cloudService = await getCloudServiceStatus(this.context)
+        this.autoCloudBackupOn = getFlushPreference(this.context, 'cloudbackupSetting', 'autoOn', false) as boolean
+        this.autoCloudBackupImport =
+          getFlushPreference(this.context, 'cloudbackupSetting', 'autoImport', false) as boolean
         this.accountLoading = false
       }
     }
@@ -404,10 +407,33 @@ export default struct Setting {
                       })
                     Toggle({
                       type: ToggleType.Switch,
-                      isOn: this.autoCloudBackupOn
+                      isOn: this.autoCloudBackupOn!!
                     })
                       .onChange(isOn => {
                         setFlushPreference(this.context, 'cloudbackupSetting', 'autoOn', isOn)
+                      })
+                  }
+                  .borderRadius(12)
+                  .padding(12)
+
+                  Divider()
+                    .padding({
+                      left: 12,
+                      right: 12
+                    })
+                  Row() {
+                    Text('自动导入')
+                      .fontWeight(FontWeight.Medium)
+                      .layoutWeight(1)
+                      .margin({
+                        right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                      })
+                    Toggle({
+                      type: ToggleType.Switch,
+                      isOn: this.autoCloudBackupImport!!
+                    })
+                      .onChange(isOn => {
+                        setFlushPreference(this.context, 'cloudbackupSetting', 'autoImport', isOn)
                       })
                   }
                   .borderRadius(12)
@@ -567,7 +593,7 @@ export default struct Setting {
                     })
                     if (data.index === 1) {
                       this.dialogControllerProgress.open()
-                      const res = await request(this.context, '/todo/clearBackup', {
+                      const res = await developerRequest(this.context, '/todo/clearBackup', {
                         accessToken: this.accessToken
                       })
                       this.dialogControllerProgress.close()

@@ -3,7 +3,7 @@ import { LoadingDialog, promptAction } from '@kit.ArkUI'
 import { fileIo, fileUri } from '@kit.CoreFileKit'
 import { filePreview } from '@kit.PreviewKit'
 import { write } from '../common/File'
-import request from '../common/Request'
+import { developerRequest } from '../common/Request'
 
 @ComponentV2
 export default struct Uploaderrorlog {
@@ -152,9 +152,9 @@ export default struct Uploaderrorlog {
                 })
               })
               dialogControllerProgress.open()
-              const res = await request(this.context, '/product/newErrorLog', {
+              const res = await developerRequest(this.context, '/product/newErrorLog', {
                 product: 'todo',
-                version: '1.0.0.0',
+                version: '1.0.0.1',
                 errorDesc: this.errorDesc,
                 errorObject: this.uploadErrorObject ? this.errorObject : false,
                 contactType: this.contactType,

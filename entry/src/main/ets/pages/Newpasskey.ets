@@ -4,7 +4,7 @@ import { LengthMetrics, LoadingDialog, promptAction } from '@kit.ArkUI'
 import { fido2 } from '@kit.OnlineAuthenticationKit'
 import { hdsMaterial, HdsNavDestination, HdsNavDestinationTitleMode, ScrollEffectType } from '@kit.UIDesignKit'
 import { getPersonalAccountInfo } from '../common/Account'
-import request from '../common/Request'
+import { developerRequest } from '../common/Request'
 
 @Builder
 export function NewpasskeyBuilder() {
@@ -289,7 +289,7 @@ struct Newpasskey {
                   .width('100%')
                   .onClick(async () => {
                     this.dialogControllerProgress.open()
-                    const res = await request(this.context, '/account/sendEmailCode', {
+                    const res = await developerRequest(this.context, '/account/sendEmailCode', {
                       email: this.email
                     })
                     this.dialogControllerProgress.close()
@@ -338,7 +338,7 @@ struct Newpasskey {
                     code = this.emailcode
                   }
                   this.dialogControllerProgress.open()
-                  const res = await request(this.context, '/account/bindExternalAccount', {
+                  const res = await developerRequest(this.context, '/account/bindExternalAccount', {
                     email: this.email,
                     verifyType: this.type,
                     verifyCode: code,

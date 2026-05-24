@@ -22,7 +22,7 @@ import getDeviceToken from '../common/Devicetoken'
 import { readUri } from '../common/File'
 import { icsparse } from '../common/Ics'
 import { getPreferType } from '../common/Prefertype'
-import request from '../common/Request'
+import { developerRequest } from '../common/Request'
 import Cleardata from './Cleardata'
 import Me from './Me'
 import Notice from './Notice'
@@ -356,7 +356,7 @@ struct Index {
               const deviceToken = await getDeviceToken()
               if (deviceToken) {
                 dialogControllerProgress.open()
-                const res = await request(this.context, '/product/useInvitationcode', {
+                const res = await developerRequest(this.context, '/product/useInvitationcode', {
                   accessToken: accessToken,
                   deviceToken: deviceToken,
                   product: 'todo',
@@ -393,7 +393,7 @@ struct Index {
             }
             if (accessToken) {
               dialogControllerProgress.open()
-              const res = await request(this.context, '/product/useVipcode', {
+              const res = await developerRequest(this.context, '/product/useVipcode', {
                 accessToken: accessToken,
                 vipcode: vipCode
               })
@@ -459,7 +459,7 @@ struct Index {
               })
               if (confirm.index === 1) {
                 dialogControllerProgress.open()
-                const res = await request(this.context, '/account/confirmTicket', {
+                const res = await developerRequest(this.context, '/account/confirmTicket', {
                   accessToken: accessToken,
                   ticket: ticket
                 })

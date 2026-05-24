@@ -18,6 +18,11 @@ struct Infolist {
   UIContext = this.getUIContext()
   context = this.UIContext.getHostContext() as common.UIAbilityContext
   pageInfos = new NavPathStack()
+  dialogControllerProgress = new CustomDialogController({
+    builder: LoadingDialog({
+      content: '请求中...'
+    })
+  })
 
   build() {
     HdsNavDestination() {
@@ -606,14 +611,9 @@ struct Infolist {
                 }
               })
               .onClick(async () => {
-                const dialogControllerProgress = new CustomDialogController({
-                  builder: LoadingDialog({
-                    content: '请求中...'
-                  })
-                })
-                dialogControllerProgress.open()
+                this.dialogControllerProgress.open()
                 const deviceToken = await getDeviceToken()
-                dialogControllerProgress.close()
+                this.dialogControllerProgress.close()
                 if (deviceToken) {
                   const promptAction = this.UIContext.getPromptAction()
                   await promptAction.showDialog({
@@ -882,7 +882,9 @@ struct Infolist {
               })
               .onClick(async () => {
                 try {
+                  this.dialogControllerProgress.open()
                   const pushToken = await pushService.getToken()
+                  this.dialogControllerProgress.open()
                   const promptAction = this.UIContext.getPromptAction()
                   await promptAction.showDialog({
                     title: 'PushToken',
@@ -895,6 +897,7 @@ struct Infolist {
                     ]
                   })
                 } catch (err) {
+                  this.dialogControllerProgress.close()
                   await promptAction.openToast({
                     message: '发生错误，错误码：' + err.code
                   })

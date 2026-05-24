@@ -5,7 +5,7 @@ export function getTimeStringFromTimeStamp(timeStamp: number): string {
     String(date.getMinutes()).padStart(2, '0') + ':' + String(date.getSeconds()).padStart(2, '0')
 }
 
-export function getDateStringFromTimeStamp(timeStamp: number): string {
+export function getDateStringFromTimeStamp(timeStamp: number) {
   const date = new Date(timeStamp)
   const dayMap: Record<number, string> = {
     0: '星期日',
@@ -20,7 +20,7 @@ export function getDateStringFromTimeStamp(timeStamp: number): string {
     dayMap[date.getDay()]
 }
 
-export function getDateTimeStringFromTimeStamp(timeStamp: number): string {
+export function getDateTimeStringFromTimeStamp(timeStamp: number) {
   const date = new Date(timeStamp)
   return date.getFullYear() + '年' + String(date.getMonth() + 1) + '月' + String(date.getDate()) + '日' +
     String(date.getHours()) + ':' +

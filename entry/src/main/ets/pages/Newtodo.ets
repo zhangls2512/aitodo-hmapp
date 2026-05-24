@@ -1083,10 +1083,16 @@ export default struct Newtodo {
               .margin({
                 top: $r('sys.float.ohos_id_elements_margin_vertical_m')
               })
-              .onBlur(() => {
+              .onBlur(async () => {
                 if (this.actionValue) {
                   try {
                     JSON.parse(this.actionValue)
+                    if (this.actionArray.find(item => item.type === 'openApp' && item.value === this.actionValue)) {
+                      await promptAction.openToast({
+                        message: '已添加此动作'
+                      })
+                      return
+                    }
                     this.actionArray.push({
                       type: 'openApp',
                       value: this.actionValue
@@ -1123,10 +1129,17 @@ export default struct Newtodo {
               .margin({
                 top: $r('sys.float.ohos_id_elements_margin_vertical_m')
               })
-              .onBlur(() => {
+              .onBlur(async () => {
                 if (this.actionValue) {
                   try {
                     JSON.parse(this.actionValue)
+                    if (this.actionArray.find(
+                      item => item.type === 'openAppByType' && item.value === this.actionValue)) {
+                      await promptAction.openToast({
+                        message: '已添加此动作'
+                      })
+                      return
+                    }
                     this.actionArray.push({
                       type: 'openAppByType',
                       value: this.actionValue
@@ -1163,8 +1176,14 @@ export default struct Newtodo {
                 top: $r('sys.float.ohos_id_elements_margin_vertical_m')
               })
               .type(InputType.URL)
-              .onBlur(() => {
+              .onBlur(async () => {
                 if (this.actionValue) {
+                  if (this.actionArray.find(item => item.type === 'openUrl' && item.value === this.actionValue)) {
+                    await promptAction.openToast({
+                      message: '已添加此动作'
+                    })
+                    return
+                  }
                   this.actionArray.push({
                     type: 'openUrl',
                     value: this.actionValue
@@ -1188,6 +1207,12 @@ export default struct Newtodo {
                 const uris = await documentViewPicker.select(documentSelectOptions)
                 if (uris.length === 1) {
                   const uri = uris[0]
+                  if (this.actionArray.find(item => item.type === 'openFile' && item.value === uri)) {
+                    await promptAction.openToast({
+                      message: '已添加此动作'
+                    })
+                    return
+                  }
                   await fileShare.persistPermission([{
                     uri: uri,
                     operationMode: fileShare.OperationMode.READ_MODE
@@ -1213,8 +1238,14 @@ export default struct Newtodo {
                 top: $r('sys.float.ohos_id_elements_margin_vertical_m')
               })
               .type(InputType.PhoneNumber)
-              .onBlur(() => {
+              .onBlur(async () => {
                 if (this.actionValue) {
+                  if (this.actionArray.find(item => item.type === 'callTelephone' && item.value === this.actionValue)) {
+                    await promptAction.openToast({
+                      message: '已添加此动作'
+                    })
+                    return
+                  }
                   this.actionArray.push({
                     type: 'callTelephone',
                     value: this.actionValue
@@ -1339,6 +1370,7 @@ export default struct Newtodo {
 
       ListItem() {
         Button('新增')
+          .keyboardShortcut('S', [ModifierKey.CTRL])
           .width('100%')
           .onClick(async () => {
             if (!this.content) {

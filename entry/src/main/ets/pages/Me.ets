@@ -8,7 +8,7 @@ import getCloudServiceStatus from '../common/Cloudservice'
 import openLink from '../common/Openlink'
 import copy from '../common/Pasteboard'
 import { getPreferType } from '../common/Prefertype'
-import request from '../common/Request'
+import { developerRequest } from '../common/Request'
 import { getTimeStringFromTimeStamp } from '../common/Stringformat'
 import Cloudservice from './Cloudservice'
 import Login from './Login'
@@ -249,7 +249,7 @@ export default struct Me {
                           })
                         })
                         dialogControllerProgress.open()
-                        const res = await request(this.context, '/account/confirmTicket', {
+                        const res = await developerRequest(this.context, '/account/confirmTicket', {
                           accessToken: accessToken,
                           ticket: ticket
                         })
@@ -528,8 +528,11 @@ export default struct Me {
               this.hoverId = 6
             }
           })
-          .onClick(() => {
-            this.isShowTeamSheet = true
+          .onClick(async () => {
+            await promptAction.openToast({
+              message: '敬请期待'
+            })
+            //this.isShowTeamSheet = true
           })
           .bindSheet(this.isShowTeamSheet!!, this.TeamSheetBuilder(), {
             preferType: this.preferType

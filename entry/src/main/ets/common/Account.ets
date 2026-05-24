@@ -5,7 +5,7 @@ import { appAccount } from '@kit.BasicServicesKit'
 import { netBoost } from '@kit.NetworkBoostKit'
 import { fido2 } from '@kit.OnlineAuthenticationKit'
 import { getFlushPreference } from './Preference'
-import request from './Request'
+import { developerRequest } from './Request'
 
 interface PersonalAccountInfo {
   uid: string,
@@ -22,6 +22,10 @@ interface TeamAccountInfo {
   authorization: string
 }
 
+let globalPersonalAccountAccessToken: string | undefined = undefined
+let globalPersonalAccountInfo: PersonalAccountInfo | undefined = undefined
+let globalTeamAccountList: TeamAccountInfo[] | undefined = undefined
+
 export async function setPersonalAccount(accessToken: string, accountInfo: PersonalAccountInfo) {
   const appAccountManager = appAccount.createAppAccountManager()
   try {
@@ -33,6 +37,8 @@ export async function setPersonalAccount(accessToken: string, accountInfo: Perso
       }
     })
     await appAccountManager.setCredential('personal', 'accessToken', accessToken)
+    globalPersonalAccountAccessToken = accessToken
+    globalPersonalAccountInfo = accountInfo
   } catch (err) {
     await promptAction.openToast({
       message: '发生错误，错误码：' + err.code
@@ -41,48 +47,47 @@ export async function setPersonalAccount(accessToken: string, accountInfo: Perso
 }
 
 export async function getPersonalAccountAccessToken() {
-  const appAccountManager = appAccount.createAppAccountManager()
-  try {
-    const endDate = Number(appAccountManager.getCustomDataSync('personal', 'endDate'))
-    if (endDate < Date.now() && endDate !== 0) {
-      await removeAccount('personal')
-      await promptAction.openToast({
-        message: '登录态过期，请重新登录'
-      })
-      return ''
-    }
-    const accessToken = await appAccountManager.getCredential('personal', 'accessToken')
-    return accessToken
-  } catch {
-    return ''
+  if (globalPersonalAccountInfo === undefined) {
+    await getPersonalAccountInfo()
   }
+  if (globalPersonalAccountAccessToken && globalPersonalAccountInfo) {
+    await removePersonalAccountWhenExpire()
+  }
+  return globalPersonalAccountAccessToken ?? ''
 }
 
-export async function getPersonalAccountInfo(): Promise<PersonalAccountInfo> {
-  const appAccountManager = appAccount.createAppAccountManager()
-  try {
-    const endDate = Number(appAccountManager.getCustomDataSync('personal', 'endDate'))
-    if (endDate < Date.now()) {
-      await removeAccount('personal')
-      await promptAction.openToast({
-        message: '登录态过期，请重新登录'
-      })
-      return {
+export async function getPersonalAccountInfo() {
+  if (!globalPersonalAccountInfo) {
+    const appAccountManager = appAccount.createAppAccountManager()
+    try {
+      const endDate = Number(appAccountManager.getCustomDataSync('personal', 'endDate'))
+      globalPersonalAccountAccessToken = await appAccountManager.getCredential('personal', 'accessToken')
+      globalPersonalAccountInfo = {
+        uid: appAccountManager.getCustomDataSync('personal', 'uid'),
+        email: appAccountManager.getCustomDataSync('personal', 'email'),
+        endDate: endDate
+      }
+      await removePersonalAccountWhenExpire()
+    } catch {
+      globalPersonalAccountAccessToken = ''
+      globalPersonalAccountInfo = {
         uid: '',
         email: '',
         endDate: 0
       }
     }
-    return {
-      uid: appAccountManager.getCustomDataSync('personal', 'uid'),
-      email: appAccountManager.getCustomDataSync('personal', 'email'),
-      endDate: endDate
-    }
-  } catch {
-    return {
-      uid: '',
-      email: '',
-      endDate: 0
+  }
+  return globalPersonalAccountInfo
+}
+
+async function removePersonalAccountWhenExpire() {
+  if (globalPersonalAccountInfo) {
+    const currentTime = Date.now()
+    if (globalPersonalAccountInfo.endDate <= currentTime) {
+      await removeAccount('personal')
+      await promptAction.openToast({
+        message: '登录态过期，请重新登录'
+      })
     }
   }
 }
@@ -103,7 +108,7 @@ export async function autoLoginPersonalAccount(context: Context) {
           scene: 'login',
           sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
         })
-        const loginResponse = await request(context, '/account/getAccessToken', {
+        const loginResponse = await developerRequest(context, '/account/getAccessToken', {
           verifyType: 'huaweiaitodoapp',
           verifyCode: authenticationResponse.data?.authorizationCode
         })
@@ -139,7 +144,7 @@ export async function autoLoginPersonalAccount(context: Context) {
           scene: 'login',
           sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
         })
-        const loginResponse = await request(context, '/account/getAccessToken', {
+        const loginResponse = await developerRequest(context, '/account/getAccessToken', {
           verifyType: 'passkey',
           credentialId: new util.Base64Helper().encodeToStringSync(publicKeyAssertionCredential.rawId,
             util.Type.BASIC_URL_SAFE),
@@ -185,7 +190,8 @@ export async function autoLoginPersonalAccount(context: Context) {
 export async function newTeamAccount(accountInfo: TeamAccountInfo) {
   const appAccountManager = appAccount.createAppAccountManager()
   try {
-    await appAccountManager.createAccount(accountInfo.id, {
+    const id = util.generateRandomUUID()
+    await appAccountManager.createAccount(id, {
       customData: {
         path: accountInfo.path,
         name: accountInfo.name,
@@ -193,7 +199,12 @@ export async function newTeamAccount(accountInfo: TeamAccountInfo) {
         teamName: accountInfo.teamName
       }
     })
-    await appAccountManager.setCredential(accountInfo.id, 'authorization', accountInfo.authorization)
+    await appAccountManager.setCredential(id, 'authorization', accountInfo.authorization)
+    if (globalTeamAccountList) {
+      globalTeamAccountList.push(accountInfo)
+    } else {
+      globalTeamAccountList = [accountInfo]
+    }
   } catch (err) {
     await promptAction.openToast({
       message: '发生错误，错误码：' + err.code
@@ -222,31 +233,40 @@ export async function getTeamAccountAuthorization(teamId: string) {
   return ''
 }
 
-export async function getTeamAccountList(): Promise<TeamAccountInfo[]> {
-  const appAccountManager = appAccount.createAppAccountManager()
-  const appAccountIds = await appAccountManager.getAccountsByOwner('com.zhangxm.aitodo')
-  const appAccounts: TeamAccountInfo[] = []
-  const promises = appAccountIds.map(async (item) => {
-    const id = item.name
-    if (id !== 'personal') {
-      appAccounts.push({
-        id: id,
-        path: appAccountManager.getCustomDataSync(id, 'path'),
-        name: appAccountManager.getCustomDataSync(id, 'name'),
-        teamId: appAccountManager.getCustomDataSync(id, 'teamId'),
-        teamName: appAccountManager.getCustomDataSync(id, 'teamName'),
-        authorization: await appAccountManager.getCredential(id, 'authorization')
-      })
-    }
-  })
-  await Promise.all(promises)
-  return appAccounts
+export async function getTeamAccountList() {
+  if (!globalTeamAccountList) {
+    const appAccountManager = appAccount.createAppAccountManager()
+    const appAccountIds = await appAccountManager.getAccountsByOwner('com.zhangxm.aitodo')
+    const appAccounts: TeamAccountInfo[] = []
+    const promises = appAccountIds.map(async (item) => {
+      const id = item.name
+      if (id !== 'personal') {
+        appAccounts.push({
+          id: id,
+          path: appAccountManager.getCustomDataSync(id, 'path'),
+          name: appAccountManager.getCustomDataSync(id, 'name'),
+          teamId: appAccountManager.getCustomDataSync(id, 'teamId'),
+          teamName: appAccountManager.getCustomDataSync(id, 'teamName'),
+          authorization: await appAccountManager.getCredential(id, 'authorization')
+        })
+      }
+    })
+    await Promise.all(promises)
+    globalTeamAccountList = appAccounts
+  }
+  return globalTeamAccountList
 }
 
 export async function updateTeamAccountAuthorization(id: string, authorization: string) {
   const appAccountManager = appAccount.createAppAccountManager()
   try {
     await appAccountManager.setCredential(id, 'authorization', authorization)
+    if (globalTeamAccountList) {
+      const item = globalTeamAccountList.find(item => item.id === id)
+      if (item) {
+        item.authorization = authorization
+      }
+    }
   } catch (err) {
     await promptAction.openToast({
       message: '发生错误，错误码：' + err.code
@@ -257,4 +277,15 @@ export async function updateTeamAccountAuthorization(id: string, authorization: 
 export async function removeAccount(id: string) {
   const appAccountManager = appAccount.createAppAccountManager()
   await appAccountManager.removeAccount(id)
+  if (id !== 'personal' && globalTeamAccountList) {
+    globalTeamAccountList = globalTeamAccountList.filter(item => item.id !== id)
+  }
+  if (id === 'personal') {
+    globalPersonalAccountAccessToken = ''
+    globalPersonalAccountInfo = {
+      uid: '',
+      email: '',
+      endDate: 0
+    }
+  }
 }

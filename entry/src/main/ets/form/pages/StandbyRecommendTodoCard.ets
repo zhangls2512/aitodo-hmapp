@@ -2,24 +2,11 @@ import { FormTodo } from '../../entryformability/EntryFormAbility'
 
 @Entry(new LocalStorage())
 @Component
-struct RecommendTodoCard {
+struct StandbyRecommendTodoCard {
   @LocalStorageProp('todoArray') todoArray: FormTodo[] = []
 
   build() {
     Column() {
-      Button('刷新')
-        .margin({
-          bottom: $r('sys.float.ohos_id_elements_margin_vertical_m'),
-          top: $r('sys.float.ohos_id_elements_margin_vertical_m')
-        })
-        .onClick(() => {
-          postCardAction(this, {
-            action: 'message',
-            params: {
-              action: 'refresh'
-            }
-          })
-        })
       if (this.todoArray.length === 0) {
         Text('无数据')
           .margin({

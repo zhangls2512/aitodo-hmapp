@@ -7,7 +7,7 @@ import { netBoost } from '@kit.NetworkBoostKit'
 import { fido2 } from '@kit.OnlineAuthenticationKit'
 import { setPersonalAccount } from '../common/Account'
 import openLink from '../common/Openlink'
-import request from '../common/Request'
+import { developerRequest } from '../common/Request'
 
 @ComponentV2
 export default struct Login {
@@ -35,7 +35,7 @@ export default struct Login {
             scene: 'login',
             sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
           })
-          const res = await request(this.context, '/account/getAccessToken', {
+          const res = await developerRequest(this.context, '/account/getAccessToken', {
             verifyType: 'huaweiaitodoapp',
             verifyCode: response.authorizationCode
           })
@@ -224,7 +224,7 @@ export default struct Login {
                   return
                 }
                 this.dialogControllerProgress.open()
-                const res = await request(this.context, '/account/sendEmailCode', {
+                const res = await developerRequest(this.context, '/account/sendEmailCode', {
                   email: this.email
                 })
                 this.dialogControllerProgress.close()
@@ -293,7 +293,7 @@ export default struct Login {
                 scene: 'login',
                 sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
               })
-              const res = await request(this.context, '/account/getAccessToken', {
+              const res = await developerRequest(this.context, '/account/getAccessToken', {
                 verifyType: this.type,
                 verifyCode: code,
                 email: this.email
@@ -354,7 +354,7 @@ export default struct Login {
                   scene: 'login',
                   sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
                 })
-                const loginResponse = await request(this.context, '/account/getAccessToken', {
+                const loginResponse = await developerRequest(this.context, '/account/getAccessToken', {
                   verifyType: 'passkey',
                   credentialId: new util.Base64Helper().encodeToStringSync(publicKeyAssertionCredential.rawId,
                     util.Type.BASIC_URL_SAFE),

@@ -8,7 +8,7 @@ import { CloudBackupTimeItem, getTodoInfo, isTodoCompleted } from './Dataget'
 import { TodoItem } from './Dataimport'
 import { getFlushPreference } from './Preference'
 import { cancelProxyReminder, setProxyReminder } from './Proxyreminder'
-import request from './Request'
+import { developerRequest } from './Request'
 import { getRecentTodoFromFreq } from './Rrule'
 import { autoBackupTable, autoSyncTable } from './Table'
 
@@ -432,7 +432,8 @@ export async function completeTodo(context: Context, id: string, complete: boole
   }
 }
 
-export async function deleteTodo(context: Context, id: string, single = false, excludeTime: number[] = []) {
+export async function deleteTodo(context: Context, id: string, single = false, excludeTime: number[] = [],
+  autoSyncBackup = true) {
   const rdbStore = await relationalStore.getRdbStore(context, {
     name: 'todo',
     securityLevel: relationalStore.SecurityLevel.S1,
@@ -463,15 +464,17 @@ export async function deleteTodo(context: Context, id: string, single = false, e
       updateTime: updateTime
     }, predicates)
   }
-  await autoSyncTable(context)
-  await autoBackupTable(context, false)
-  const autoCaldavBackup = getFlushPreference(context, 'dataSetting', 'autoCaldavBackup', true)
-  if (autoCaldavBackup) {
-    await caldavDelete([id])
+  if (autoSyncBackup) {
+    await autoSyncTable(context)
+    await autoBackupTable(context, false)
+    const autoCaldavBackup = getFlushPreference(context, 'dataSetting', 'autoCaldavBackup', true)
+    if (autoCaldavBackup) {
+      await caldavDelete([id])
+    }
   }
 }
 
-export async function setCloudBackup(context: Context, data: CloudBackupItem) {
+export async function setCloudBackup(context: Context, data: CloudBackupItem, autoSyncBackup = true) {
   const content = JSON.parse(data.content as string) as TodoItem
   const accountInfo = await getPersonalAccountInfo()
   const cloudBackupTimeItem = content.cloudBackupTime.find(item => item.uid === accountInfo.uid)
@@ -487,7 +490,7 @@ export async function setCloudBackup(context: Context, data: CloudBackupItem) {
   const encryptres = await encrypt(JSON.stringify(content))
   const accessToken = await getPersonalAccountAccessToken()
   if (accessToken) {
-    const res = await request(context, '/todo/setBackup', {
+    const res = await developerRequest(context, '/todo/setBackup', {
       accessToken: accessToken,
       id: data.id,
       content: encryptres.content,
@@ -514,28 +517,30 @@ export async function setCloudBackup(context: Context, data: CloudBackupItem) {
       huaweiCloudSyncRdbStore.updateSync({
         cloudBackupTime: JSON.stringify(content.cloudBackupTime)
       }, predicates)
-      await autoSyncTable(context)
-      await autoBackupTable(context, false)
-      const autoCaldavBackup = getFlushPreference(context, 'dataSetting', 'autoCaldavBackup', true)
-      if (autoCaldavBackup) {
-        await caldavBackup([{
-          id: data.id,
-          content: content.content,
-          priority: content.priority,
-          startTime: content.startTime,
-          endTime: content.endTime,
-          duration: content.duration,
-          recurrenceRule: content.recurrenceRule,
-          excludeTime: content.excludeTime,
-          tag: content.tag,
-          dependency: content.dependency,
-          location: content.location,
-          action: content.action,
-          bz: content.bz,
-          recentCompletedTime: content.recentCompletedTime,
-          updateTime: content.updateTime,
-          cloudBackupTime: content.cloudBackupTime
-        }])
+      if (autoSyncBackup) {
+        await autoSyncTable(context)
+        await autoBackupTable(context, false)
+        const autoCaldavBackup = getFlushPreference(context, 'dataSetting', 'autoCaldavBackup', true)
+        if (autoCaldavBackup) {
+          await caldavBackup([{
+            id: data.id,
+            content: content.content,
+            priority: content.priority,
+            startTime: content.startTime,
+            endTime: content.endTime,
+            duration: content.duration,
+            recurrenceRule: content.recurrenceRule,
+            excludeTime: content.excludeTime,
+            tag: content.tag,
+            dependency: content.dependency,
+            location: content.location,
+            action: content.action,
+            bz: content.bz,
+            recentCompletedTime: content.recentCompletedTime,
+            updateTime: content.updateTime,
+            cloudBackupTime: content.cloudBackupTime
+          }])
+        }
       }
     }
   }
@@ -545,7 +550,7 @@ export async function deleteCloudBackup(context: Context, id: string) {
   const accessToken = await getPersonalAccountAccessToken()
   const accountInfo = await getPersonalAccountInfo()
   if (accessToken) {
-    const res = await request(context, '/todo/deleteBackup', {
+    const res = await developerRequest(context, '/todo/deleteBackup', {
       accessToken: accessToken,
       id: id
     })

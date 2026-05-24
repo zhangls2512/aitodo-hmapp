@@ -5,32 +5,23 @@ import { rcp } from '@kit.RemoteCommunicationKit'
 import { getCaldavServerInfo } from './Caldavserver'
 import { importTodo, TodoItem } from './Dataimport'
 import { icsparse, icsstringify } from './Ics'
+import { globalDefaultSession } from './Request'
 
 export async function caldavBackup(todoArray: TodoItem[]) {
   const caldavServerInfo = await getCaldavServerInfo()
   if (!caldavServerInfo.path) {
     return 'fail'
   }
-  const session = rcp.createSession({
-    requestConfiguration: {
-      security: {
-        tlsRange: {
-          min: 'TlsV1.2'
-        }
-      }
-    },
-    headers: {
-      'content-type': 'text/calendar',
-      Authorization: 'Basic ' +
-        new util.Base64Helper().encodeToStringSync(new util.TextEncoder().encodeInto(caldavServerInfo.username + ':' +
-          caldavServerInfo.password))
-    }
-  })
   for (let i = 0; i < todoArray.length; i++) {
     const item = todoArray[i]
     const icsstring = icsstringify([item])
     try {
-      const response = await session.put(caldavServerInfo.path + '/' + item.id + '.ics', icsstring)
+      const response =
+        await globalDefaultSession.fetch(new rcp.Request(caldavServerInfo.path + '/' + item.id + '.ics', 'PUT', {
+          'content-type': 'text/calendar',
+          Authorization: 'Basic ' + new util.Base64Helper().encodeToStringSync(
+            new util.TextEncoder().encodeInto(caldavServerInfo.username + ':' + caldavServerInfo.password))
+        }, icsstring))
       if (response.statusCode < 200 || response.statusCode >= 300) {
         const statusCodeMap: Record<number, string> = {
           401: '账号密码错误',
@@ -49,14 +40,12 @@ export async function caldavBackup(todoArray: TodoItem[]) {
         return 'fail'
       }
     } catch (err) {
-      session.close()
       await promptAction.openToast({
         message: '发生错误，错误码：' + err.code
       })
       return 'fail'
     }
   }
-  session.close()
   return 'success'
 }
 
@@ -67,46 +56,23 @@ export async function caldavGet() {
   }
   const authorization = 'Basic ' + new util.Base64Helper().encodeToStringSync(
     new util.TextEncoder().encodeInto(caldavServerInfo.username + ':' + caldavServerInfo.password))
-  const session = rcp.createSession({
-    requestConfiguration: {
-      security: {
-        tlsRange: {
-          min: 'TlsV1.2'
-        }
-      }
-    },
-    headers: {
-      Authorization: authorization,
-      Depth: '1'
-    }
-  })
   try {
-    const response = await session.fetch(new rcp.Request(caldavServerInfo.path + '/', 'PROPFIND', {
+    const response = await globalDefaultSession.fetch(new rcp.Request(caldavServerInfo.path + '/', 'PROPFIND', {
       Authorization: authorization,
       Depth: '1'
     }))
-    session.close()
     if (response.statusCode >= 200 && response.statusCode < 300) {
       const icsPathArray = Array.from(String(response).matchAll(/<href>(.*?)<\/href>/g))
         .map(item => item[1])
         .filter(item => item.endsWith('.ics'))
         .map(item => item.substring(item.lastIndexOf('/')))
       const todoArray: TodoItem[] = []
-      const sessionb = rcp.createSession({
-        requestConfiguration: {
-          security: {
-            tlsRange: {
-              min: 'TlsV1.2'
-            }
-          }
-        },
-        headers: {
-          Authorization: authorization
-        }
-      })
       for (let i = 0; i < icsPathArray.length; i++) {
         try {
-          const response = await sessionb.get(caldavServerInfo.path + icsPathArray[i])
+          const response =
+            await globalDefaultSession.fetch(new rcp.Request(caldavServerInfo.path + icsPathArray[i], 'GET', {
+              Authorization: authorization
+            }))
           if (response.statusCode >= 200 && response.statusCode < 300) {
             const icsstring = String(response)
             if (!icsstring.includes('\r\nPRODID:') ||
@@ -131,14 +97,12 @@ export async function caldavGet() {
             return 'fail'
           }
         } catch (err) {
-          sessionb.close()
           await promptAction.openToast({
             message: '发生错误，错误码：' + err.code
           })
           return 'fail'
         }
       }
-      sessionb.close()
       return todoArray
     } else {
       const statusCodeMap: Record<number, string> = {
@@ -158,7 +122,6 @@ export async function caldavGet() {
       return 'fail'
     }
   } catch (err) {
-    session.close()
     await promptAction.openToast({
       message: '发生错误，错误码：' + err.code
     })
@@ -182,23 +145,13 @@ export async function caldavDelete(idArray: string[]) {
   if (!caldavServerInfo.path) {
     return 'fail'
   }
-  const session = rcp.createSession({
-    requestConfiguration: {
-      security: {
-        tlsRange: {
-          min: 'TlsV1.2'
-        }
-      }
-    },
-    headers: {
-      Authorization: 'Basic ' +
-        new util.Base64Helper().encodeToStringSync(new util.TextEncoder().encodeInto(caldavServerInfo.username + ':' +
-          caldavServerInfo.password))
-    }
-  })
   for (let i = 0; i < idArray.length; i++) {
     try {
-      const response = await session.delete(caldavServerInfo.path + '/' + idArray[i] + '.ics')
+      const response =
+        await globalDefaultSession.fetch(new rcp.Request(caldavServerInfo.path + '/' + idArray[i] + '.ics', 'DELETE', {
+          Authorization: 'Basic ' + new util.Base64Helper().encodeToStringSync(
+            new util.TextEncoder().encodeInto(caldavServerInfo.username + ':' + caldavServerInfo.password))
+        }))
       if ((response.statusCode < 200 || response.statusCode >= 300) && response.statusCode !== 404) {
         const statusCodeMap: Record<number, string> = {
           401: '账号密码错误',
@@ -217,14 +170,12 @@ export async function caldavDelete(idArray: string[]) {
         return 'fail'
       }
     } catch (err) {
-      session.close()
       await promptAction.openToast({
         message: '发生错误，错误码：' + err.code
       })
       return 'fail'
     }
   }
-  session.close()
   return 'success'
 }
 

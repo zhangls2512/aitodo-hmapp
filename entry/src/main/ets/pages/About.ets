@@ -69,7 +69,6 @@ struct About {
               .margin({
                 top: $r('sys.float.ohos_id_elements_margin_vertical_m')
               })
-              .textAlign(TextAlign.Center)
           }
           .width('100%')
         }
@@ -919,7 +918,6 @@ struct About {
               .margin({
                 top: $r('sys.float.ohos_id_text_margin_vertical')
               })
-              .textAlign(TextAlign.Center)
           }
           .width('100%')
         }

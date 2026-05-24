@@ -5,7 +5,7 @@ import { netBoost } from '@kit.NetworkBoostKit'
 import { hdsMaterial, HdsNavigation, HdsNavigationTitleMode, ScrollEffectType } from '@kit.UIDesignKit'
 import { getPersonalAccountAccessToken, getPersonalAccountInfo } from '../common/Account'
 import openLink from '../common/Openlink'
-import request from '../common/Request'
+import { developerRequest } from '../common/Request'
 
 interface VipItem {
   id: string,
@@ -37,7 +37,7 @@ export default struct Vip {
 
   async getVipStatus() {
     this.vipStatusLoading = true
-    const userres = await request(this.context, '/product/getUserInfo', {
+    const userres = await developerRequest(this.context, '/product/getUserInfo', {
       accessToken: this.accessToken,
       product: 'todo'
     })
