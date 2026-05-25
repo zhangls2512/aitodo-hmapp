@@ -5,6 +5,7 @@ import { webview } from '@kit.ArkWeb'
 import { batteryInfo, deviceInfo } from '@kit.BasicServicesKit'
 import { hdsMaterial, HdsNavDestination, HdsNavDestinationTitleMode, ScrollEffectType } from '@kit.UIDesignKit'
 import { getFlushPreference, setFlushPreference } from '../common/Preference'
+import { restartApp } from '../common/Restartapp'
 
 declare class ArkTools {
   static hintGC(): void
@@ -451,11 +452,7 @@ struct Debugsetting {
                         ]
                       })
                       if (data.index === 1) {
-                        const applicationContext = this.context.getApplicationContext()
-                        applicationContext.restartApp({
-                          bundleName: 'com.zhangxm.aitodo',
-                          abilityName: 'EntryAbility'
-                        })
+                        await restartApp(this.context, this.UIContext)
                       }
                     })
                 }

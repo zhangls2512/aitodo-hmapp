@@ -8,11 +8,12 @@ import getCloudServiceStatus from '../common/Cloudservice'
 import openLink from '../common/Openlink'
 import copy from '../common/Pasteboard'
 import { getPreferType } from '../common/Prefertype'
-import request from '../common/Request'
+import { developerRequest } from '../common/Request'
 import { getTimeStringFromTimeStamp } from '../common/Stringformat'
 import Cloudservice from './Cloudservice'
 import Login from './Login'
 import Setting from './Setting'
+import Team from './Team'
 import Vip from './Vip'
 
 @ComponentV2
@@ -21,6 +22,7 @@ export default struct Me {
   @Provider() isShowCloudserviceSheet: boolean = false
   @Local preferType: number = 1
   @Local isShowVipSheet: boolean = false
+  @Local isShowTeamSheet: boolean = false
   @Local isShowSettingSheet: boolean = false
   @Local uid: string = ''
   @Local email: string = ''
@@ -57,6 +59,11 @@ export default struct Me {
   @Builder
   VipSheetBuilder() {
     Vip()
+  }
+
+  @Builder
+  TeamSheetBuilder() {
+    Team()
   }
 
   @Builder
@@ -242,7 +249,7 @@ export default struct Me {
                           })
                         })
                         dialogControllerProgress.open()
-                        const res = await request(this.context, '/account/confirmTicket', {
+                        const res = await developerRequest(this.context, '/account/confirmTicket', {
                           accessToken: accessToken,
                           ticket: ticket
                         })
@@ -484,14 +491,14 @@ export default struct Me {
       ListItem() {
         Column() {
           Row() {
-            Image($r('app.media.setting'))
+            Image($r('app.media.users'))
               .fillColor($r('sys.color.icon_primary'))
               .height(24)
               .margin({
                 right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
               })
               .width(24)
-            Text('设置')
+            Text('团队')
               .fontWeight(FontWeight.Medium)
               .layoutWeight(1)
               .margin({
@@ -519,6 +526,64 @@ export default struct Me {
             }
             if (isHover) {
               this.hoverId = 6
+            }
+          })
+          .onClick(async () => {
+            await promptAction.openToast({
+              message: '敬请期待'
+            })
+            //this.isShowTeamSheet = true
+          })
+          .bindSheet(this.isShowTeamSheet!!, this.TeamSheetBuilder(), {
+            preferType: this.preferType
+          })
+        }
+        .backgroundColor($r('sys.color.comp_background_primary'))
+        .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
+        .padding($r('sys.float.ohos_id_corner_radius_mark'))
+      }
+      .margin({
+        top: $r('sys.float.ohos_id_elements_margin_vertical_l')
+      })
+
+      ListItem() {
+        Column() {
+          Row() {
+            Image($r('app.media.setting'))
+              .fillColor($r('sys.color.icon_primary'))
+              .height(24)
+              .margin({
+                right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+              })
+              .width(24)
+            Text('设置')
+              .fontWeight(FontWeight.Medium)
+              .layoutWeight(1)
+              .margin({
+                right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+              })
+            Image($r('app.media.right'))
+              .fillColor($r('sys.color.icon_fourth'))
+              .height(12)
+              .width(12)
+          }
+          .borderRadius(12)
+          .padding(12)
+          .stateStyles({
+            normal: {
+              .backgroundColor(this.hoverId === 7 ? $r('sys.color.interactive_hover') :
+                $r('sys.color.comp_background_primary'))
+            },
+            pressed: {
+              .backgroundColor($r('sys.color.comp_background_secondary'))
+            }
+          })
+          .onHover(isHover => {
+            if (!isHover) {
+              this.hoverId = -1
+            }
+            if (isHover) {
+              this.hoverId = 7
             }
           })
           .onClick(() => {

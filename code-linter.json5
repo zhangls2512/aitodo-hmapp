@@ -43,6 +43,7 @@
       "error",
       "single"
     ],
+    "@typescript-eslint/return-await": "off",
     "@typescript-eslint/semi": [
       "error",
       "never"
@@ -54,6 +55,7 @@
     "@performance/avoid-overusing-custom-component-check": "off",
     "@performance/bad-deep-clone-check": "off",
     "@performance/foreach-args-check": "off",
+    "@performance/hp-performance-no-closures": "off",
     "@performance/init-list-component": "off",
     "@performance/js-code-cache-by-precompile-check": "off",
     "@performance/reuse-date-instances-check": "off",

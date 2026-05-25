@@ -4,7 +4,7 @@ import { decrypt, getKeyAlg } from './Crypto'
 import { Action, Location } from './Datachange'
 import { CloudBackupTimeItem } from './Dataget'
 import { importTodo, TodoItem } from './Dataimport'
-import request from './Request'
+import { developerRequest } from './Request'
 
 interface Item {
   id: string,
@@ -33,13 +33,13 @@ interface TodoCloudBackup {
 export async function importCloudBackupTodo(context: Context, conflict: relationalStore.ConflictResolution) {
   const accessToken = await getPersonalAccountAccessToken()
   if (accessToken && getKeyAlg()) {
-    const countResponse = await request(context, '/todo/getBackupCount', {
+    const countResponse = await developerRequest(context, '/todo/getBackupCount', {
       accessToken: accessToken
     })
     if (countResponse !== 'fail') {
       const total = JSON.parse(countResponse).count as number
       for (let i = 0; i < total; i += 50) {
-        const listResponse = await request(context, '/todo/getBackupList', {
+        const listResponse = await developerRequest(context, '/todo/getBackupList', {
           accessToken: accessToken,
           skip: i,
           limit: 50

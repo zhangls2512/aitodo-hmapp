@@ -41,6 +41,7 @@ struct Tablesync {
   autoSystemCalendarSync = false
   pauseAutoSyncWhenLowBatteryCapacityLevel = false
   pauseAutoSyncWhenPowerSave = false
+  deviceManager = distributedDeviceManager.createDeviceManager('com.zhangxm.aitodo')
   dialogControllerProgress = new CustomDialogController({
     builder: LoadingDialog({
       content: '进行中...'
@@ -320,12 +321,13 @@ struct Tablesync {
               })
             Button('刷新')
               .onClick(async () => {
-                this.availableDeviceArray =
-                  distributedDeviceManager.createDeviceManager('com.zhangxm.aitodo')
-                    .getAvailableDeviceListSync() as Item[]
-                await promptAction.openToast({
-                  message: '刷新成功'
-                })
+                const res = await checkPermission(this.context, this.UIContext, 'ohos.permission.DISTRIBUTED_DATASYNC')
+                if (res) {
+                  this.availableDeviceArray = await this.deviceManager.getAvailableDeviceList() as Item[]
+                  await promptAction.openToast({
+                    message: '刷新成功'
+                  })
+                }
               })
           }
         }
@@ -1175,11 +1177,13 @@ struct Tablesync {
       this.getSetting()
       const res = await checkPermission(this.context, this.UIContext, 'ohos.permission.DISTRIBUTED_DATASYNC')
       if (res) {
-        this.availableDeviceArray = distributedDeviceManager.createDeviceManager('com.zhangxm.aitodo')
-          .getAvailableDeviceListSync() as Item[]
+        this.availableDeviceArray = await this.deviceManager.getAvailableDeviceList() as Item[]
       }
       await checkPermission(this.context, this.UIContext, 'ohos.permission.READ_CALENDAR')
       await checkPermission(this.context, this.UIContext, 'ohos.permission.WRITE_CALENDAR')
+    })
+    .onDisAppear(() => {
+      distributedDeviceManager.releaseDeviceManager(this.deviceManager)
     })
   }
 }

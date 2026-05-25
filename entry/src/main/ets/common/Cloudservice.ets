@@ -1,10 +1,10 @@
 import { getPersonalAccountAccessToken } from './Account'
-import request from './Request'
+import { developerRequest } from './Request'
 
 export default async function getCloudServiceStatus(context: Context) {
   const accessToken = await getPersonalAccountAccessToken()
   if (accessToken) {
-    const accountInfoResponse = await request(context, '/account/getAccountInfo', {
+    const accountInfoResponse = await developerRequest(context, '/account/getAccountInfo', {
       accessToken: accessToken
     })
     if (accountInfoResponse !== 'fail') {

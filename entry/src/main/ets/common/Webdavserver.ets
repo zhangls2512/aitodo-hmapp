@@ -7,24 +7,29 @@ interface WebdavServerInfo {
   password: string
 }
 
+let globalWebdavServerInfo: WebdavServerInfo | undefined = undefined
+
 export async function getWebdavServerInfo(): Promise<WebdavServerInfo> {
-  const appAccountManager = appAccount.createAppAccountManager()
-  try {
-    const path = appAccountManager.getCustomDataSync('webdavserver', 'path')
-    const username = appAccountManager.getCustomDataSync('webdavserver', 'username')
-    const password = await appAccountManager.getCredential('webdavserver', 'password')
-    return {
-      path: path,
-      username: username,
-      password: password
-    }
-  } catch {
-    return {
-      path: '',
-      username: '',
-      password: ''
+  if (!globalWebdavServerInfo) {
+    const appAccountManager = appAccount.createAppAccountManager()
+    try {
+      const path = appAccountManager.getCustomDataSync('webdavserver', 'path')
+      const username = appAccountManager.getCustomDataSync('webdavserver', 'username')
+      const password = await appAccountManager.getCredential('webdavserver', 'password')
+      globalWebdavServerInfo = {
+        path: path,
+        username: username,
+        password: password
+      }
+    } catch {
+      globalWebdavServerInfo = {
+        path: '',
+        username: '',
+        password: ''
+      }
     }
   }
+  return globalWebdavServerInfo
 }
 
 export async function setWebdavServer(webdavServerInfo: WebdavServerInfo) {
@@ -37,6 +42,7 @@ export async function setWebdavServer(webdavServerInfo: WebdavServerInfo) {
       }
     })
     await appAccountManager.setCredential('webdavserver', 'password', webdavServerInfo.password)
+    globalWebdavServerInfo = webdavServerInfo
     return 'success'
   } catch (err) {
     if (err.code !== 12300004) {
@@ -49,6 +55,7 @@ export async function setWebdavServer(webdavServerInfo: WebdavServerInfo) {
       await appAccountManager.setCustomData('webdavserver', 'path', webdavServerInfo.path)
       await appAccountManager.setCustomData('webdavserver', 'username', webdavServerInfo.username)
       await appAccountManager.setCredential('webdavserver', 'password', webdavServerInfo.password)
+      globalWebdavServerInfo = webdavServerInfo
     }
     return 'success'
   }

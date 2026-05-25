@@ -1,7 +1,7 @@
 import { common } from '@kit.AbilityKit'
 import { LengthMetrics, LoadingDialog, promptAction } from '@kit.ArkUI'
 import { hdsMaterial, HdsNavDestination, HdsNavDestinationTitleMode, ScrollEffectType } from '@kit.UIDesignKit'
-import request from '../common/Request'
+import { developerRequest } from '../common/Request'
 
 @Builder
 export function FeedbackBuilder() {
@@ -108,9 +108,9 @@ struct Feedback {
                   })
                 })
                 dialogControllerProgress.open()
-                const res = await request(this.context, '/product/sendFeedbackEmail', {
+                const res = await developerRequest(this.context, '/product/sendFeedbackEmail', {
                   product: 'todo',
-                  version: '1.0.0.0',
+                  version: '1.0.0.1',
                   content: this.content,
                   contactType: this.contactType,
                   contactValue: this.contactValue

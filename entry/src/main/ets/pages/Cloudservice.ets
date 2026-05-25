@@ -2,7 +2,7 @@ import { common } from '@kit.AbilityKit'
 import { LoadingDialog, promptAction } from '@kit.ArkUI'
 import { getPersonalAccountAccessToken } from '../common/Account'
 import getCloudServiceStatus from '../common/Cloudservice'
-import request from '../common/Request'
+import { developerRequest } from '../common/Request'
 
 @ComponentV2
 export default struct Cloudservice {
@@ -48,7 +48,7 @@ export default struct Cloudservice {
                 .width('100%')
                 .onClick(async () => {
                   this.dialogControllerProgress.open()
-                  const res = await request(this.context, '/account/openService', {
+                  const res = await developerRequest(this.context, '/account/openService', {
                     accessToken: this.accessToken,
                     service: 'todo'
                   })
@@ -85,7 +85,7 @@ export default struct Cloudservice {
                 .width('100%')
                 .onClick(async () => {
                   this.dialogControllerProgress.open()
-                  const res = await request(this.context, '/account/closeService', {
+                  const res = await developerRequest(this.context, '/account/closeService', {
                     accessToken: this.accessToken,
                     service: 'todo'
                   })

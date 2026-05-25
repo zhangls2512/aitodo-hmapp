@@ -2,7 +2,7 @@ import { common } from '@kit.AbilityKit'
 import { LengthMetrics, LoadingDialog, promptAction } from '@kit.ArkUI'
 import { hdsMaterial, HdsNavDestination, HdsNavDestinationTitleMode, ScrollEffectType } from '@kit.UIDesignKit'
 import { getPersonalAccountAccessToken } from '../common/Account'
-import request from '../common/Request'
+import { developerRequest } from '../common/Request'
 
 @Builder
 export function VipcodeBuilder() {
@@ -47,7 +47,7 @@ struct Vipcode {
                     })
                   })
                   dialogControllerProgress.open()
-                  const res = await request(this.context, '/product/useVipcode', {
+                  const res = await developerRequest(this.context, '/product/useVipcode', {
                     accessToken: accessToken,
                     vipcode: this.vipCode
                   })

@@ -550,7 +550,8 @@ export default struct Newtodo {
             })
 
             if (!this.remindEnabled) {
-              Text('当前已存在的有效提醒数量已达到系统最大限制，不可开启提醒。可前往“我的”>“设置”>“通用”>“通用”>“功能”>“提醒管理”删除不必要的提醒后再开启提醒。')
+              Text(
+                '当前已存在的有效提醒数量已达到系统最大限制，不可开启提醒。可前往“我的”>“设置”>“通用”>“通用”>“功能”>“提醒管理”删除不必要的提醒后再开启提醒。')
                 .fontColor($r('sys.color.warning'))
                 .margin({
                   top: $r('sys.float.ohos_id_elements_margin_vertical_m')
@@ -912,7 +913,7 @@ export default struct Newtodo {
             top: $r('sys.float.ohos_id_elements_margin_vertical_m')
           })
 
-          TextInput({
+          TextArea({
             placeholder: '请输入备注',
             text: this.bz!!
           })
@@ -1082,10 +1083,16 @@ export default struct Newtodo {
               .margin({
                 top: $r('sys.float.ohos_id_elements_margin_vertical_m')
               })
-              .onBlur(() => {
+              .onBlur(async () => {
                 if (this.actionValue) {
                   try {
                     JSON.parse(this.actionValue)
+                    if (this.actionArray.find(item => item.type === 'openApp' && item.value === this.actionValue)) {
+                      await promptAction.openToast({
+                        message: '已添加此动作'
+                      })
+                      return
+                    }
                     this.actionArray.push({
                       type: 'openApp',
                       value: this.actionValue
@@ -1107,7 +1114,8 @@ export default struct Newtodo {
                 await openLink(this.context,
                   'https://developer.huawei.com/consumer/cn/doc/harmonyos-references/js-apis-app-ability-want')
               })
-            Text('示例：{"bundleName":"com.huawei.hmos.settings","abilityName":"com.huawei.hmos.settings.MainAbility","uri":"application_info_entry","parameters":{"pushParams":"com.zhangxm.aitodo"}}（打开系统“设置”应用的“轩铭智能待办”应用权限管理页面）')
+            Text(
+              '示例：{"bundleName":"com.huawei.hmos.settings","abilityName":"com.huawei.hmos.settings.MainAbility","uri":"application_info_entry","parameters":{"pushParams":"com.zhangxm.aitodo"}}（打开系统“设置”应用的“轩铭智能待办”应用权限管理页面）')
               .margin({
                 top: $r('sys.float.ohos_id_elements_margin_vertical_m')
               })
@@ -1121,10 +1129,17 @@ export default struct Newtodo {
               .margin({
                 top: $r('sys.float.ohos_id_elements_margin_vertical_m')
               })
-              .onBlur(() => {
+              .onBlur(async () => {
                 if (this.actionValue) {
                   try {
                     JSON.parse(this.actionValue)
+                    if (this.actionArray.find(
+                      item => item.type === 'openAppByType' && item.value === this.actionValue)) {
+                      await promptAction.openToast({
+                        message: '已添加此动作'
+                      })
+                      return
+                    }
                     this.actionArray.push({
                       type: 'openAppByType',
                       value: this.actionValue
@@ -1145,7 +1160,8 @@ export default struct Newtodo {
                 await openLink(this.context,
                   'https://developer.huawei.com/consumer/cn/doc/harmonyos-references/js-apis-inner-application-uiabilitycontext#startabilitybytype11-1')
               })
-            Text('示例：{"type":"mail","wantParam":{"sceneType":1,"email":["2300990296@qq.com"],"subject":"主题","body":"正文"}}')
+            Text(
+              '示例：{"type":"mail","wantParam":{"sceneType":1,"email":["2300990296@qq.com"],"subject":"主题","body":"正文"}}')
               .margin({
                 top: $r('sys.float.ohos_id_elements_margin_vertical_m')
               })
@@ -1160,8 +1176,14 @@ export default struct Newtodo {
                 top: $r('sys.float.ohos_id_elements_margin_vertical_m')
               })
               .type(InputType.URL)
-              .onBlur(() => {
+              .onBlur(async () => {
                 if (this.actionValue) {
+                  if (this.actionArray.find(item => item.type === 'openUrl' && item.value === this.actionValue)) {
+                    await promptAction.openToast({
+                      message: '已添加此动作'
+                    })
+                    return
+                  }
                   this.actionArray.push({
                     type: 'openUrl',
                     value: this.actionValue
@@ -1185,6 +1207,12 @@ export default struct Newtodo {
                 const uris = await documentViewPicker.select(documentSelectOptions)
                 if (uris.length === 1) {
                   const uri = uris[0]
+                  if (this.actionArray.find(item => item.type === 'openFile' && item.value === uri)) {
+                    await promptAction.openToast({
+                      message: '已添加此动作'
+                    })
+                    return
+                  }
                   await fileShare.persistPermission([{
                     uri: uri,
                     operationMode: fileShare.OperationMode.READ_MODE
@@ -1210,8 +1238,14 @@ export default struct Newtodo {
                 top: $r('sys.float.ohos_id_elements_margin_vertical_m')
               })
               .type(InputType.PhoneNumber)
-              .onBlur(() => {
+              .onBlur(async () => {
                 if (this.actionValue) {
+                  if (this.actionArray.find(item => item.type === 'callTelephone' && item.value === this.actionValue)) {
+                    await promptAction.openToast({
+                      message: '已添加此动作'
+                    })
+                    return
+                  }
                   this.actionArray.push({
                     type: 'callTelephone',
                     value: this.actionValue
@@ -1336,6 +1370,7 @@ export default struct Newtodo {
 
       ListItem() {
         Button('新增')
+          .keyboardShortcut('S', [ModifierKey.CTRL])
           .width('100%')
           .onClick(async () => {
             if (!this.content) {
@@ -1391,6 +1426,12 @@ export default struct Newtodo {
               }
             }
             if (!this.teamId) {
+              const dialogControllerProgress = new CustomDialogController({
+                builder: LoadingDialog({
+                  content: '新增中...'
+                })
+              })
+              dialogControllerProgress.open()
               await newTodo(this.context, {
                 content: this.content,
                 priority: this.priority,
@@ -1410,6 +1451,10 @@ export default struct Newtodo {
                 bz: this.bz,
                 cloudBackup: this.cloudBackup,
                 remind: this.remind
+              })
+              dialogControllerProgress.close()
+              await promptAction.openToast({
+                message: '新增成功'
               })
             }
             if (this.teamId) {

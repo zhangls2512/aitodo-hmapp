@@ -2,7 +2,7 @@ import { common } from '@kit.AbilityKit'
 import { LoadingDialog, promptAction } from '@kit.ArkUI'
 import { notificationManager } from '@kit.NotificationKit'
 import { pushService } from '@kit.PushKit'
-import request from '../common/Request'
+import { developerRequest } from '../common/Request'
 
 interface NoticeItem {
   _id: string,
@@ -127,7 +127,7 @@ export default struct Notice {
                         })
                       })
                       dialogControllerProgress.open()
-                      const res = await request(this.context, '/product/updatePushStatus', {
+                      const res = await developerRequest(this.context, '/product/updatePushStatus', {
                         id: item._id,
                         pushToken: this.pushToken
                       })
@@ -168,7 +168,7 @@ export default struct Notice {
         })
       }
       this.loading = true
-      const res = await request(this.context, '/product/getPushList', {
+      const res = await developerRequest(this.context, '/product/getPushList', {
         product: 'todo',
         pushToken: this.pushToken
       })
