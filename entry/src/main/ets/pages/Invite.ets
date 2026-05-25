@@ -17,7 +17,7 @@ import {
 import { getPersonalAccountAccessToken } from '../common/Account'
 import getDeviceToken from '../common/Devicetoken'
 import copy from '../common/Pasteboard'
-import request from '../common/Request'
+import { developerRequest } from '../common/Request'
 
 @Builder
 export function InviteBuilder() {
@@ -224,7 +224,7 @@ struct Invite {
                   })
                 })
                 dialogControllerProgress.open()
-                const res = await request(this.context, '/product/useInvitationcode', {
+                const res = await developerRequest(this.context, '/product/useInvitationcode', {
                   accessToken: this.accessToken,
                   deviceToken: this.deviceToken,
                   product: 'todo',
@@ -358,7 +358,7 @@ struct Invite {
       if (this.accessToken) {
         this.loading = true
         this.deviceToken = await getDeviceToken()
-        const userres = await request(this.context, '/product/getUserInfo', {
+        const userres = await developerRequest(this.context, '/product/getUserInfo', {
           accessToken: this.accessToken,
           product: 'todo'
         })
@@ -380,7 +380,7 @@ struct Invite {
             })
           }
         }
-        const countres = await request(this.context, '/product/getInviteUserCount', {
+        const countres = await developerRequest(this.context, '/product/getInviteUserCount', {
           accessToken: this.accessToken,
           product: 'todo'
         })

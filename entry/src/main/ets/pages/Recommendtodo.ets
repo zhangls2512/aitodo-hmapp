@@ -1,8 +1,11 @@
 import { common } from '@kit.AbilityKit'
+import { LoadingDialog } from '@kit.ArkUI'
 import { formProvider } from '@kit.FormKit'
+import { notificationManager } from '@kit.NotificationKit'
 import { completeTodo } from '../common/Datachange'
 import { getRecommendTodoList, Todo } from '../common/Dataget'
 import { checkPermission } from '../common/Permission'
+import { getFlushPreference } from '../common/Preference'
 import { getPreferType } from '../common/Prefertype'
 import { getDateTimeStringFromTimeStamp } from '../common/Stringformat'
 import NewTodo from './Newtodo'
@@ -19,6 +22,11 @@ export default struct Recommendtodo {
   UIContext = this.getUIContext()
   context = this.UIContext.getHostContext() as common.UIAbilityContext
   todoId = ''
+  dialogControllerProgress = new CustomDialogController({
+    builder: LoadingDialog({
+      content: '请求中...'
+    })
+  })
 
   getDateFromTimeStamp(timeStamp: number) {
     const date = new Date(timeStamp)
@@ -78,7 +86,9 @@ export default struct Recommendtodo {
                   })
                   .onChange(async (isOn) => {
                     if (!item.teamId) {
+                      this.dialogControllerProgress.open()
                       await completeTodo(this.context, item.id, isOn)
+                      this.dialogControllerProgress.close()
                     }
                     if (item.teamId) {
                       //请求团队完成待办API
@@ -206,7 +216,7 @@ export default struct Recommendtodo {
               const promptAction = this.UIContext.getPromptAction()
               await promptAction.showDialog({
                 title: '推荐算法逻辑说明',
-                message: '先过滤出未完成且可完成，再根据当前位置与地点之间的距离、结束时间、预计耗时、优先级、标签等对其进行排序。全程离线不联网。',
+                message: '先过滤出可完成的待办，再根据当前位置与地点之间的距离、结束时间、预计耗时、优先级、标签等对其进行排序。全程离线不联网。',
                 buttons: [
                   {
                     text: '确定',
@@ -254,6 +264,9 @@ export default struct Recommendtodo {
       }
     }
     .height('100%')
+    .keyboardShortcut('R', [ModifierKey.CTRL], () => {
+      this.loading = true
+    })
     .padding({
       left: $r('sys.float.ohos_id_elements_margin_horizontal_l'),
       right: $r('sys.float.ohos_id_elements_margin_horizontal_l'),
@@ -290,7 +303,18 @@ export default struct Recommendtodo {
     .onRefreshing(async () => {
       this.todoArray = []
       this.todoArray = await getRecommendTodoList(this.context)
+      if (notificationManager.isNotificationEnabledSync()) {
+        const showCanCompletedTodoCountInBadge =
+          getFlushPreference(this.context, 'commonSetting', 'showCanCompletedTodoCountInBadge', false)
+        if (!showCanCompletedTodoCountInBadge) {
+          await notificationManager.setBadgeNumber(0)
+        }
+        if (showCanCompletedTodoCountInBadge) {
+          await notificationManager.setBadgeNumber(this.todoArray.length)
+        }
+      }
       await formProvider.reloadForms(this.context, 'entry', 'EntryFormAbility', 'recommendtodo')
+      await formProvider.reloadForms(this.context, 'entry', 'EntryFormAbility', 'standbyrecommendtodo')
       this.loading = false
     })
     .bindSheet(this.isShowInfoSheet!!, this.InfoSheetBuilder(), {

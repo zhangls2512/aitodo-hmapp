@@ -3,17 +3,16 @@ import { util } from '@kit.ArkTS'
 import { promptAction } from '@kit.ArkUI'
 import { batteryInfo, power } from '@kit.BasicServicesKit'
 import { calendarManager } from '@kit.CalendarKit'
-import { distributedDeviceManager } from '@kit.DistributedServiceKit'
 import { rcp } from '@kit.RemoteCommunicationKit'
-import { getCaldavServerInfo } from './Caldavserver'
+import { caldavBackup, caldavDelete, caldavGet } from './Caldav'
 import { encrypt, EncryptData, getKeyAlg } from './Crypto'
 import { deleteTodo } from './Datachange'
 import { getPersonalTodoList } from './Dataget'
 import { importTodoArray, TodoItem } from './Dataimport'
 import { write } from './File'
-import { icsstringify } from './Ics'
 import { getPermission } from './Permission'
 import { getFlushPreference } from './Preference'
+import { globalDefaultSession } from './Request'
 import { parseRRule, stringifyRRule } from './Rrule'
 import { getWebdavServerInfo } from './Webdavserver'
 
@@ -41,9 +40,8 @@ export async function autoSyncTable(context: Context, fromDeviceId?: string) {
   const autoSync = getFlushPreference(context, 'dataSetting', 'autoSync', false)
   if (autoSync) {
     const autoSyncDevices: Item[] = getFlushPreference(context, 'dataSetting', 'autoSyncDevices', []) as Item[]
-    const devices = distributedDeviceManager.createDeviceManager('com.zhangxm.aitodo').getAvailableDeviceListSync()
     const promises = autoSyncDevices.map(async (item) => {
-      if (!devices.find(item => item.deviceId === fromDeviceId)) {
+      if (item.deviceId !== fromDeviceId) {
         await syncTable(context, item.networkId, relationalStore.SyncMode.SYNC_MODE_PUSH)
       }
     })
@@ -57,30 +55,38 @@ export async function autoSyncTable(context: Context, fromDeviceId?: string) {
 }
 
 export async function syncTable(context: Context, networkId: string, syncMode: relationalStore.SyncMode) {
-  const rdbStore = await relationalStore.getRdbStore(context, {
-    name: 'todo',
-    securityLevel: relationalStore.SecurityLevel.S1,
-    encrypt: true,
-    allowRebuild: true
-  })
-  const predicates = new relationalStore.RdbPredicates('todo')
-  predicates.inDevices([networkId])
-  try {
-    const res = await rdbStore.sync(syncMode, predicates)
-    if (res[0][1] !== 0) {
-      await promptAction.openToast({
-        message: '同步失败，设备 ID：' + res[0][0] + '，错误码：' + res[0][1]
-      })
-    }
-    if (res[0][1] === 0) {
-      await promptAction.openToast({
-        message: '同步成功，设备 ID：' + res[0][0]
-      })
-    }
-  } catch (err) {
+  const permission = getPermission('ohos.permission.DISTRIBUTED_DATASYNC')
+  if (!permission) {
     await promptAction.openToast({
-      message: '发生错误，错误码：' + err.code
+      message: '同步失败，原因：无权限'
     })
+  }
+  if (permission) {
+    const rdbStore = await relationalStore.getRdbStore(context, {
+      name: 'todo',
+      securityLevel: relationalStore.SecurityLevel.S1,
+      encrypt: true,
+      allowRebuild: true
+    })
+    const predicates = new relationalStore.RdbPredicates('todo')
+    predicates.inDevices([networkId])
+    try {
+      const res = await rdbStore.sync(syncMode, predicates)
+      if (res[0][1] !== 0) {
+        await promptAction.openToast({
+          message: '同步失败，设备 ID：' + res[0][0] + '，错误码：' + res[0][1]
+        })
+      }
+      if (res[0][1] === 0) {
+        await promptAction.openToast({
+          message: '同步成功，设备 ID：' + res[0][0]
+        })
+      }
+    } catch (err) {
+      await promptAction.openToast({
+        message: '发生错误，错误码：' + err.code
+      })
+    }
   }
 }
 
@@ -210,7 +216,7 @@ export async function systemCalendarSyncTable(context: Context, mode: 'push' | '
   return 'fail'
 }
 
-export async function autoBackupTable(context: Context) {
+export async function autoBackupTable(context: Context, caldav = true) {
   const pauseAutoBackupWhenLowBatteryCapacityLevel =
     getFlushPreference(context, 'dataSetting', 'pauseAutoSyncWhenLowBatteryCapacityLevel', false)
   const pauseAutoBackupWhenPowerSave = getFlushPreference(context, 'dataSetting', 'pauseAutoSyncWhenPowerSave', false)
@@ -229,16 +235,20 @@ export async function autoBackupTable(context: Context) {
     await backupTable(context)
   }
   const autoFileBackup = getFlushPreference(context, 'dataSetting', 'autoFileBackup', true)
-  if (autoFileBackup) {
-    await fileBackupTable(context)
-  }
   const autoWebdavBackup = getFlushPreference(context, 'dataSetting', 'autoWebdavBackup', true)
-  if (autoWebdavBackup) {
-    await webdavBackupTable(context)
-  }
   const autoCaldavBackup = getFlushPreference(context, 'dataSetting', 'autoCaldavBackup', true)
-  if (autoCaldavBackup) {
-    await caldavBackupTable(context)
+  let array: TodoItem[] = []
+  if (autoFileBackup || autoWebdavBackup || (autoCaldavBackup && caldav)) {
+    array = await getPersonalTodoList(context)
+  }
+  if (autoFileBackup) {
+    await fileBackupTable(context, array)
+  }
+  if (autoWebdavBackup) {
+    await webdavBackupTable(context, array)
+  }
+  if (autoCaldavBackup && caldav) {
+    await caldavBackupTable(context, array)
   }
 }
 
@@ -252,47 +262,51 @@ export async function backupTable(context: Context) {
   await rdbStore.backup('todobackup.db')
 }
 
-async function getFileBackupString(context: Context, encrypted: boolean): Promise<string> {
-  const array = await getPersonalTodoList(context)
-  if (array.length > 0) {
-    if (!encrypted) {
-      return JSON.stringify({
-        encrypted: false,
-        data: array
+async function getFileBackupString(todoArray: TodoItem[], encrypted: boolean) {
+  if (!encrypted) {
+    return JSON.stringify({
+      encrypted: false,
+      data: todoArray
+    })
+  }
+  if (encrypted) {
+    const encryptedArray: EncryptData[] = []
+    const promises = todoArray.map(async (item) => {
+      const res = await encrypt(JSON.stringify(item))
+      encryptedArray.push({
+        content: res.content,
+        iv: res.iv
       })
-    }
-    if (encrypted) {
-      const encryptedArray: EncryptData[] = []
-      const promises = array.map(async (item) => {
-        const res = await encrypt(JSON.stringify(item))
-        encryptedArray.push({
-          content: res.content,
-          iv: res.iv
-        })
-      })
-      await Promise.all(promises)
-      return JSON.stringify({
-        encrypted: true,
-        data: encryptedArray
-      })
-    }
+    })
+    await Promise.all(promises)
+    return JSON.stringify({
+      encrypted: true,
+      data: encryptedArray
+    })
   }
   return 'fail'
 }
 
-export async function fileBackupTable(context: Context) {
+export async function fileBackupTable(context: Context, todoArray?: TodoItem[]) {
   const encryptFileBackup = getFlushPreference(context, 'dataSetting', 'encryptFileBackup', true)
   let encrypted = false
   if (encryptFileBackup && getKeyAlg()) {
     encrypted = true
   }
-  const datastring = await getFileBackupString(context, encrypted)
+  let array: TodoItem[] = []
+  if (!todoArray) {
+    array = await getPersonalTodoList(context)
+  }
+  if (todoArray) {
+    array = todoArray
+  }
+  const datastring = await getFileBackupString(array, encrypted)
   if (datastring !== 'fail') {
     await write(context.filesDir + '/backup/todo.txt', datastring)
   }
 }
 
-export async function webdavBackupTable(context: Context) {
+export async function webdavBackupTable(context: Context, todoArray?: TodoItem[]) {
   const webdavServerInfo = await getWebdavServerInfo()
   if (!webdavServerInfo.path) {
     return 'fail'
@@ -302,25 +316,20 @@ export async function webdavBackupTable(context: Context) {
   if (encryptWebdavBackup && getKeyAlg()) {
     encrypted = true
   }
-  const datastring = await getFileBackupString(context, encrypted)
+  let array: TodoItem[] = []
+  if (!todoArray) {
+    array = await getPersonalTodoList(context)
+  }
+  if (todoArray) {
+    array = todoArray
+  }
+  const datastring = await getFileBackupString(array, encrypted)
   if (datastring !== 'fail') {
-    const session = rcp.createSession({
-      requestConfiguration: {
-        security: {
-          tlsRange: {
-            min: 'TlsV1.2'
-          }
-        }
-      },
-      headers: {
-        Authorization: 'Basic ' +
-          new util.Base64Helper().encodeToStringSync(new util.TextEncoder().encodeInto(webdavServerInfo.username + ':' +
-            webdavServerInfo.password))
-      }
-    })
     try {
-      const response = await session.put(webdavServerInfo.path + '/todo.txt', datastring)
-      session.close()
+      const response = await globalDefaultSession.fetch(new rcp.Request(webdavServerInfo.path + '/todo.txt', 'PUT', {
+        Authorization: 'Basic ' + new util.Base64Helper().encodeToStringSync(
+          new util.TextEncoder().encodeInto(webdavServerInfo.username + ':' + webdavServerInfo.password))
+      }, datastring))
       if (response.statusCode >= 200 && response.statusCode < 300) {
         return 'success'
       } else {
@@ -341,70 +350,33 @@ export async function webdavBackupTable(context: Context) {
         return 'fail'
       }
     } catch (err) {
-      session.close()
       await promptAction.openToast({
         message: '发生错误，错误码：' + err.code
       })
       return 'fail'
     }
   }
-  return 'success'
+  return 'fail'
 }
 
-export async function caldavBackupTable(context: Context) {
-  const caldavServerInfo = await getCaldavServerInfo()
-  if (!caldavServerInfo.path) {
-    return 'fail'
+export async function caldavBackupTable(context: Context, todoArray?: TodoItem[]) {
+  let array: TodoItem[] = []
+  if (!todoArray) {
+    array = await getPersonalTodoList(context)
   }
-  const array = await getPersonalTodoList(context)
-  if (array.length > 0) {
-    const icsstring = icsstringify(array)
-    const session = rcp.createSession({
-      requestConfiguration: {
-        security: {
-          tlsRange: {
-            min: 'TlsV1.2'
-          }
-        }
-      },
-      headers: {
-        'content-type': 'text/calendar',
-        Authorization: 'Basic ' +
-          new util.Base64Helper().encodeToStringSync(new util.TextEncoder().encodeInto(caldavServerInfo.username + ':' +
-            caldavServerInfo.password))
-      }
-    })
-    try {
-      const response = await session.put(caldavServerInfo.path + '/todo.ics', icsstring)
-      session.close()
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        return 'success'
-      } else {
-        const statusCodeMap: Record<number, string> = {
-          401: '账号密码错误',
-          403: '备份不存在或无权限'
-        }
-        const reason = statusCodeMap[response.statusCode]
-        if (reason) {
-          await promptAction.openToast({
-            message: '备份失败，原因：' + reason
-          })
-          return 'fail'
-        }
-        await promptAction.openToast({
-          message: 'HTTP 请求失败，状态码：' + response.statusCode
-        })
-        return 'fail'
-      }
-    } catch (err) {
-      session.close()
-      await promptAction.openToast({
-        message: '发生错误，错误码：' + err.code
-      })
-      return 'fail'
+  if (todoArray) {
+    array = todoArray
+  }
+  const res = await caldavGet()
+  if (res !== 'fail') {
+    const todoIdArray = array.map(item => item.id)
+    const deleteTodoIdArray = res.map(item => item.id).filter(item => todoIdArray.includes(item))
+    const deleteres = await caldavDelete(deleteTodoIdArray)
+    if (deleteres !== 'fail') {
+      return await caldavBackup(array)
     }
   }
-  return 'success'
+  return 'fail'
 }
 
 export async function recoveryTable(context: Context) {

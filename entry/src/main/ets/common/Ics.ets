@@ -38,7 +38,7 @@ export function icsTimeStringToTimeStamp(icsTimeString: string, end = false) {
 
 export function icsstringify(todoArray: TodoItem[]) {
   let result = ''
-  result += 'BEGIN:VCALENDAR\r\nVERSION:2.0\r\n'
+  result += 'BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//xm2512//com.zhangxm.aitodo//CN\r\n'
   todoArray.forEach(item => {
     result += 'BEGIN:VEVENT\r\n'
     result += 'UID:' + item.id + '\r\n'

@@ -3,7 +3,7 @@ import { loginComponentManager, LoginWithHuaweiIDButton } from '@kit.AccountKit'
 import { LengthMetrics, LoadingDialog, promptAction } from '@kit.ArkUI'
 import { hdsMaterial, HdsNavDestination, HdsNavDestinationTitleMode, ScrollEffectType } from '@kit.UIDesignKit'
 import { getPersonalAccountAccessToken, getPersonalAccountInfo } from '../common/Account'
-import request from '../common/Request'
+import { developerRequest } from '../common/Request'
 
 export interface Account {
   platform: string,
@@ -57,7 +57,7 @@ struct Huaweiaccount {
         }
         if (response) {
           this.dialogControllerProgress.open()
-          const res = await request(this.context, '/account/bindExternalAccount', {
+          const res = await developerRequest(this.context, '/account/bindExternalAccount', {
             verifyType: this.type,
             verifyCode: code,
             email: this.email,
@@ -193,7 +193,7 @@ struct Huaweiaccount {
                   .width('100%')
                   .onClick(async () => {
                     this.dialogControllerProgress.open()
-                    const res = await request(this.context, '/account/sendEmailCode', {
+                    const res = await developerRequest(this.context, '/account/sendEmailCode', {
                       email: this.email
                     })
                     this.dialogControllerProgress.close()
@@ -261,7 +261,7 @@ struct Huaweiaccount {
                       code = this.emailcode
                     }
                     this.dialogControllerProgress.open()
-                    const res = await request(this.context, '/account/unbindExternalAccount', {
+                    const res = await developerRequest(this.context, '/account/unbindExternalAccount', {
                       verifyType: this.type,
                       verifyCode: code,
                       email: this.email,
@@ -374,7 +374,7 @@ struct Huaweiaccount {
       const accessToken = await getPersonalAccountAccessToken()
       if (accessToken) {
         this.loading = true
-        const res = await request(this.context, '/account/getExternalAccount', {
+        const res = await developerRequest(this.context, '/account/getExternalAccount', {
           accessToken: accessToken
         })
         this.loading = false

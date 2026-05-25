@@ -20,6 +20,7 @@ import { netQuality } from '@kit.NetworkBoostKit'
 import { connection } from '@kit.NetworkKit'
 import { notificationManager } from '@kit.NotificationKit'
 import { hiAppEvent } from '@kit.PerformanceAnalysisKit'
+import { sensor } from '@kit.SensorServiceKit'
 import { harmonyShare, systemShare } from '@kit.ShareKit'
 import { autoLoginPersonalAccount } from '../common/Account'
 import { clearNouseData } from '../common/Clearnousedata'
@@ -131,7 +132,7 @@ export default class EntryAbility extends UIAbility {
     const errorLogDir = this.context.filesDir + '/log/error/'
     errorManager.on('error', {
       async onUnhandledException(errMsg) {
-        if (getFlushPreference(this.context, 'debugSetting', 'globalErrorShowType', 0) === 0) {
+        if (getFlushPreference(context, 'debugSetting', 'globalErrorShowType', 0) === 0) {
           await promptAction.openToast({
             message: 'js 运行异常：' + errMsg
           })
@@ -146,16 +147,16 @@ export default class EntryAbility extends UIAbility {
             stack: err.stack
           }
         }
-        if (getFlushPreference(this.context, 'debugSetting', 'saveErrorLog', true)) {
+        if (getFlushPreference(context, 'debugSetting', 'saveErrorLog', true)) {
           await write(errorLogDir + Date.now() + '.txt', JSON.stringify(object))
         }
-        if (getFlushPreference(this.context, 'debugSetting', 'globalErrorShowType', 0) === 1) {
+        if (getFlushPreference(context, 'debugSetting', 'globalErrorShowType', 0) === 1) {
           context.eventHub.emit('dialog', 'js 运行异常', '名称：' + err.name + '\n信息：' + err.message)
         }
-        if (getFlushPreference(this.context, 'debugSetting', 'autoUploadErrorLog', true) &&
-          getFlushPreference(this.context, 'commonSetting', 'allService', true)) {
-          if ((getFlushPreference(this.context, 'debugSetting', 'autoUploadErrorLogType',
-            ['JS_ERROR', 'APP_CRASH']) as string[]).includes('JS_ERROR')) {
+        if (getFlushPreference(context, 'debugSetting', 'autoUploadErrorLog', true) &&
+          getFlushPreference(context, 'commonSetting', 'allService', true)) {
+          if ((getFlushPreference(context, 'debugSetting', 'autoUploadErrorLogType', ['JS_ERROR', 'APP_CRASH']) as
+            string[]).includes('JS_ERROR')) {
             context.eventHub.emit('uploadErrorLog', object.name, JSON.stringify(object))
           }
         }
@@ -453,7 +454,7 @@ export default class EntryAbility extends UIAbility {
         resultSetb.close()
         const deleteIds = idsb.filter(item => !idsa.includes(item))
         const deletepromises = deleteIds.map(async (item) => {
-          await deleteTodo(this.context, item)
+          await deleteTodo(this.context, item, false)
         })
         await Promise.all(deletepromises)
         await autoSyncTable(this.context, item)
@@ -560,7 +561,7 @@ export default class EntryAbility extends UIAbility {
                     })
                     const deletedIdArray = item.deleted as string[]
                     const deletepromises = deletedIdArray.map(async (id) => {
-                      await deleteTodo(this.context, id)
+                      await deleteTodo(this.context, id, false)
                       await huaweiCloudSyncRdbStore.cleanDirtyData(table)
                     })
                     await Promise.all(insertpromises)
@@ -648,7 +649,7 @@ export default class EntryAbility extends UIAbility {
           try {
             await this.context.startAbility({
               bundleName: 'com.zhangxm.aitodo',
-              abilityName: 'BackGroundAbility'
+              abilityName: 'BackgroundAbility'
             }, {
               processMode: contextConstant.ProcessMode.NEW_PROCESS_ATTACH_TO_STATUS_BAR_ITEM,
               startupVisibility: contextConstant.StartupVisibility.STARTUP_HIDE
@@ -690,7 +691,49 @@ export default class EntryAbility extends UIAbility {
     await this.windowInit(windowStage)
   }
 
-  async onPrepareToTerminateAsync(): Promise<boolean> {
+  async onForeground() {
+    const colorMode = getFlushPreference(this.context, 'commonSetting', 'colorMode', 0)
+    if (colorMode === 3) {
+      try {
+        await sensor.getSingleSensor(sensor.SensorId.AMBIENT_LIGHT)
+        let lastUpdateTime = 0
+        sensor.on(sensor.SensorId.AMBIENT_LIGHT, (event) => {
+          const currentTime = Date.now()
+          if (currentTime - lastUpdateTime >= 3000) {
+            const currentColorMode = getFlushPreference(this.context, 'commonSetting', 'colorMode', 0)
+            if (currentColorMode === 3) {
+              lastUpdateTime = currentTime
+              const applicationContext = this.context.getApplicationContext()
+              if (event.intensity >= 30 &&
+                this.context.config.colorMode === ConfigurationConstant.ColorMode.COLOR_MODE_DARK) {
+                applicationContext.setColorMode(ConfigurationConstant.ColorMode.COLOR_MODE_LIGHT)
+              }
+              if (event.intensity <= 20 &&
+                this.context.config.colorMode === ConfigurationConstant.ColorMode.COLOR_MODE_LIGHT) {
+                applicationContext.setColorMode(ConfigurationConstant.ColorMode.COLOR_MODE_DARK)
+              }
+            } else {
+              sensor.off(sensor.SensorId.AMBIENT_LIGHT)
+            }
+          }
+        })
+      } catch {
+      }
+    }
+  }
+
+  async onBackground() {
+    const colorMode = getFlushPreference(this.context, 'commonSetting', 'colorMode', 0)
+    if (colorMode === 3) {
+      try {
+        await sensor.getSingleSensor(sensor.SensorId.AMBIENT_LIGHT)
+        sensor.off(sensor.SensorId.AMBIENT_LIGHT)
+      } catch {
+      }
+    }
+  }
+
+  async onPrepareToTerminateAsync() {
     const statusBarExist = getTempPreference(this.context, 'statusBar', 'exist', false) as boolean
     if (statusBarExist) {
       await this.context.hideAbility()
@@ -708,7 +751,7 @@ export default class EntryAbility extends UIAbility {
   }
 
   async onContinue(wantParam: Record<string, Object>) {
-    if (wantParam.version !== 1) {
+    if (wantParam.version !== 2) {
       await promptAction.openToast({
         message: '接续失败，原因：目标端应用版本号与发起端不匹配'
       })

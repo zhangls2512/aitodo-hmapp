@@ -17,6 +17,22 @@
       "renderingMode": "autoColor"
     },
     {
+      "name": "standbyrecommendtodo",
+      "displayName": "$string:recommendTodo",
+      "description": "$string:recommendTodo",
+      "src": "./ets/form/pages/StandbyRecommendTodoCard.ets",
+      "uiSyntax": "arkts",
+      "isDefault": false,
+      "supportDimensions": [
+        "2*2"
+      ],
+      "defaultDimension": "2*2",
+      "updateEnabled": true,
+      "updateDuration": 1,
+      "enableBlurBackground": true,
+      "renderingMode": "autoColor"
+    },
+    {
       "name": "newtodo",
       "displayName": "$string:newTodo",
       "description": "$string:newTodo",

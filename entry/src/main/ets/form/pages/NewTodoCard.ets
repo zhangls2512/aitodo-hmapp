@@ -5,7 +5,6 @@ struct NewTodoCard {
     Column() {
       Image($r('app.media.new_form'))
     }
-    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
     .onClick(() => {
       postCardAction(this, {
         action: 'router',

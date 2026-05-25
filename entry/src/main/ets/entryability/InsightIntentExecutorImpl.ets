@@ -3,8 +3,7 @@ import { newTodo, TodoInput } from '../common/Datachange'
 import { getRecommendTodoList } from '../common/Dataget'
 
 export default class InsightIntentExecutorImpl extends InsightIntentExecutor {
-  async onExecuteInUIAbilityForegroundMode(name: string,
-    param: Record<string, Object>): Promise<insightIntent.ExecuteResult> {
+  async onExecuteInUIAbilityForegroundMode(name: string, param: Record<string, Object>) {
     const context = getContext() as common.UIAbilityContext
     const paramString = JSON.stringify(param)
     if (name === 'NewTodo') {
@@ -29,19 +28,19 @@ export default class InsightIntentExecutorImpl extends InsightIntentExecutor {
     }
     if (name === 'GetRecommendTodo') {
       const res = getRecommendTodoList(context)
-      return Promise.resolve({
+      return {
         code: -1,
         result: {
           message: 'success',
           data: res
         }
-      } as insightIntent.ExecuteResult)
+      } as insightIntent.ExecuteResult
     }
-    return Promise.resolve({
+    return {
       code: -1,
       result: {
         message: 'fail'
       }
-    } as insightIntent.ExecuteResult)
+    } as insightIntent.ExecuteResult
   }
 }

@@ -8,7 +8,7 @@ import {
   removeAccount,
   setPersonalAccount
 } from '../common/Account'
-import request from '../common/Request'
+import { developerRequest } from '../common/Request'
 
 @Builder
 export function EmailBuilder() {
@@ -45,7 +45,7 @@ struct Email {
         }
         if (response) {
           this.dialogControllerProgress.open()
-          const res = await request(this.context, '/account/updateEmail', {
+          const res = await developerRequest(this.context, '/account/updateEmail', {
             verifyType: 'huaweiaitodoapp',
             verifyCode: response.authorizationCode,
             newEmail: this.email,
@@ -136,7 +136,7 @@ struct Email {
                   return
                 }
                 this.dialogControllerProgress.open()
-                const res = await request(this.context, '/account/sendEmailCode', {
+                const res = await developerRequest(this.context, '/account/sendEmailCode', {
                   email: this.email
                 })
                 this.dialogControllerProgress.close()

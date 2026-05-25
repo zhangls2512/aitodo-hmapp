@@ -3,7 +3,7 @@ import { LengthMetrics } from '@kit.ArkUI'
 import { iap } from '@kit.IAPKit'
 import { hdsMaterial, HdsNavDestination, HdsNavDestinationTitleMode, ScrollEffectType } from '@kit.UIDesignKit'
 import { getPersonalAccountAccessToken } from '../common/Account'
-import request from '../common/Request'
+import { developerRequest } from '../common/Request'
 import { getTimeStringFromTimeStamp } from '../common/Stringformat'
 
 interface Item {
@@ -243,7 +243,7 @@ struct Viplog {
       .onReachEnd(async () => {
         if (this.accessToken && this.empty === false) {
           this.loading = true
-          const res = await request(this.context, '/product/getViplogList', {
+          const res = await developerRequest(this.context, '/product/getViplogList', {
             accessToken: this.accessToken,
             product: 'todo',
             skip: this.viplogArray.length
@@ -296,7 +296,7 @@ struct Viplog {
       this.accessToken = await getPersonalAccountAccessToken()
       if (this.accessToken) {
         this.loading = true
-        const res = await request(this.context, '/product/getViplogList', {
+        const res = await developerRequest(this.context, '/product/getViplogList', {
           accessToken: this.accessToken,
           product: 'todo'
         })

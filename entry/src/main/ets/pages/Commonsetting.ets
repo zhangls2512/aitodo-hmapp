@@ -3,11 +3,14 @@ import { LengthMetrics, LoadingDialog, promptAction, window } from '@kit.ArkUI'
 import { deviceInfo } from '@kit.BasicServicesKit'
 import { fileIo } from '@kit.CoreFileKit'
 import { image } from '@kit.ImageKit'
+import { notificationManager } from '@kit.NotificationKit'
 import { photoAccessHelper } from '@kit.MediaLibraryKit'
+import { sensor } from '@kit.SensorServiceKit'
 import { hdsMaterial, HdsNavDestination, HdsNavDestinationTitleMode, ScrollEffectType } from '@kit.UIDesignKit'
 import { CustomFreq, setCustomFreq } from '../common/Customfreq'
 import { downloadParameter } from '../common/Parameter'
 import { getFlushPreference, setFlushPreference } from '../common/Preference'
+import { restartApp } from '../common/Restartapp'
 
 @Builder
 export function CommonsettingBuilder() {
@@ -22,11 +25,23 @@ struct Commonsetting {
   @Local acceptCollaborate: boolean = false
   @Local destroyWhenBackPressed: boolean = false
   @Local statusBar: boolean = false
+  @Local colorModeList: SelectOption[] = [
+    {
+      value: '跟随系统'
+    },
+    {
+      value: '浅色模式'
+    },
+    {
+      value: '深色模式'
+    }
+  ]
   @Local colorModeIndex: number = 0
   @Local colorModeValue: string = '跟随系统'
   @Local windowRectAutoSave: boolean = false
   @Local windowTopmost: boolean = false
   @Local keepScreenOn: boolean = false
+  @Local showCanCompletedTodoCountInBadge: boolean = false
   @Local checkVersionUpdateIndex: number = 1
   @Local checkVersionUpdateValue: string = '非流量下'
   @Local openLinkTypeIndex: number = 0
@@ -89,11 +104,7 @@ struct Commonsetting {
                       ]
                     })
                     if (data.index === 1) {
-                      const applicationContext = this.context.getApplicationContext()
-                      applicationContext.restartApp({
-                        bundleName: 'com.zhangxm.aitodo',
-                        abilityName: 'EntryAbility'
-                      })
+                      await restartApp(this.context, this.UIContext)
                     }
                   })
               }
@@ -157,11 +168,7 @@ struct Commonsetting {
                       ]
                     })
                     if (data.index === 1) {
-                      const applicationContext = this.context.getApplicationContext()
-                      applicationContext.restartApp({
-                        bundleName: 'com.zhangxm.aitodo',
-                        abilityName: 'EntryAbility'
-                      })
+                      await restartApp(this.context, this.UIContext)
                     }
                   })
               }
@@ -249,11 +256,7 @@ struct Commonsetting {
                         ]
                       })
                       if (data.index === 1) {
-                        const applicationContext = this.context.getApplicationContext()
-                        applicationContext.restartApp({
-                          bundleName: 'com.zhangxm.aitodo',
-                          abilityName: 'EntryAbility'
-                        })
+                        await restartApp(this.context, this.UIContext)
                       }
                     })
                 }
@@ -300,14 +303,11 @@ struct Commonsetting {
                   right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
                 })
 
-                Select([
-                  { value: '跟随系统' },
-                  { value: '浅色模式' },
-                  { value: '深色模式' }
-                ])
+                Select(this.colorModeList)
                   .selected(this.colorModeIndex!!)
                   .value(this.colorModeValue!!)
-                  .onSelect(index => {
+                  .onSelect(async (index) => {
+                    setFlushPreference(this.context, 'commonSetting', 'colorMode', index)
                     const applicationContext = this.context.getApplicationContext()
                     if (index === 0) {
                       applicationContext.setColorMode(ConfigurationConstant.ColorMode.COLOR_MODE_NOT_SET)
@@ -318,7 +318,30 @@ struct Commonsetting {
                     if (index === 2) {
                       applicationContext.setColorMode(ConfigurationConstant.ColorMode.COLOR_MODE_DARK)
                     }
-                    setFlushPreference(this.context, 'commonSetting', 'colorMode', index)
+                    if (index === 3) {
+                      const promptAction = this.UIContext.getPromptAction()
+                      const data = await promptAction.showDialog({
+                        title: '提示',
+                        message: '设置成功，需重启应用生效，是否重启？',
+                        buttons: [
+                          {
+                            text: '取消',
+                            color: $r('sys.color.font_primary')
+                          },
+                          {
+                            text: '重启',
+                            color: $r('sys.color.font_emphasize')
+                          }
+                        ]
+                      })
+                      if (data.index === 1) {
+                        const applicationContext = this.context.getApplicationContext()
+                        applicationContext.restartApp({
+                          bundleName: 'com.zhangxm.aitodo',
+                          abilityName: 'EntryAbility'
+                        })
+                      }
+                    }
                   })
               }
               .borderRadius(12)
@@ -359,11 +382,7 @@ struct Commonsetting {
                         ]
                       })
                       if (data.index === 1) {
-                        const applicationContext = this.context.getApplicationContext()
-                        applicationContext.restartApp({
-                          bundleName: 'com.zhangxm.aitodo',
-                          abilityName: 'EntryAbility'
-                        })
+                        await restartApp(this.context, this.UIContext)
                       }
                     })
                 }
@@ -568,6 +587,45 @@ struct Commonsetting {
                 right: 12
               })
             Column() {
+              Row() {
+                Text('桌面应用图标角标显示可完成待办数量')
+                  .fontWeight(FontWeight.Medium)
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
+                Toggle({
+                  type: ToggleType.Switch,
+                  isOn: this.showCanCompletedTodoCountInBadge!!
+                })
+                  .onChange(async (isOn) => {
+                    if (!isOn) {
+                      setFlushPreference(this.context, 'commonSetting', 'showCanCompletedTodoCountInBadge', isOn)
+                      this.context.eventHub.emit('refreshTodo')
+                    }
+                    if (isOn) {
+                      const enabled = notificationManager.isNotificationEnabledSync()
+                      if (!enabled) {
+                        this.showCanCompletedTodoCountInBadge = false
+                        await promptAction.openToast({
+                          message: '通知权限未开启'
+                        })
+                      }
+                      if (enabled) {
+                        setFlushPreference(this.context, 'commonSetting', 'showCanCompletedTodoCountInBadge', isOn)
+                        this.context.eventHub.emit('refreshTodo')
+                      }
+                    }
+                  })
+              }
+              .borderRadius(12)
+              .padding(12)
+
+              Divider()
+                .padding({
+                  left: 12,
+                  right: 12
+                })
               Row() {
                 Text('标签兴趣度')
                   .fontWeight(FontWeight.Medium)
@@ -870,6 +928,13 @@ struct Commonsetting {
       this.destroyWhenBackPressed =
         getFlushPreference(this.context, 'commonSetting', 'destroyWhenBackPressed', false) as boolean
       this.statusBar = getFlushPreference(this.context, 'commonSetting', 'statusBar', false) as boolean
+      try {
+        await sensor.getSingleSensor(sensor.SensorId.AMBIENT_LIGHT)
+        this.colorModeList.push({
+          value: '跟随环境光'
+        })
+      } catch {
+      }
       const colorMode = getFlushPreference(this.context, 'commonSetting', 'colorMode', 0)
       this.colorModeIndex = colorMode as number
       if (colorMode === 0) {
@@ -881,11 +946,16 @@ struct Commonsetting {
       if (colorMode === 2) {
         this.colorModeValue = '深色模式'
       }
+      if (colorMode === 3) {
+        this.colorModeValue = '跟随环境光'
+      }
       this.windowRectAutoSave =
         getFlushPreference(this.context, 'commonSetting', 'windowRectAutoSave', false) as boolean
       this.windowTopmost = getFlushPreference(this.context, 'commonSetting', 'windowTopmost', false) as boolean
       const lastWindow = await window.getLastWindow(this.context)
       this.keepScreenOn = lastWindow.getWindowProperties().isKeepScreenOn
+      this.showCanCompletedTodoCountInBadge =
+        getFlushPreference(this.context, 'commonSetting', 'showCanCompletedTodoCountInBadge', false) as boolean
       const checkVersionUpdate = getFlushPreference(this.context, 'commonSetting', 'checkVersionUpdate', 1)
       this.checkVersionUpdateIndex = checkVersionUpdate as number
       if (checkVersionUpdate === 0) {

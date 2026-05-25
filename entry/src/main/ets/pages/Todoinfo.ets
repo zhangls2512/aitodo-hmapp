@@ -11,6 +11,7 @@ import copy from '../common/Pasteboard'
 import { getFlushPreference } from '../common/Preference'
 import { isProxyReminderOn } from '../common/Proxyreminder'
 import { getDateTimeStringFromTimeStamp } from '../common/Stringformat'
+import { fileShare } from '@kit.CoreFileKit'
 
 export interface OpenAppByTypeValue {
   type: string,
@@ -410,23 +411,39 @@ export default struct Todoinfo {
                 await openLink(this.context, item.value)
               }
               if (item.type === 'openFile') {
-                const canPreview = await filePreview.canPreview(this.context, item.value)
-                if (!canPreview) {
-                  await this.context.startAbility({
-                    action: 'ohos.want.action.viewData',
-                    uri: item.value,
-                    parameters: {
-                      'ohos.ability.params.showDefaultPicker': true
-                    },
-                    flags: wantConstant.Flags.FLAG_AUTH_READ_URI_PERMISSION
+                const permissions = await fileShare.checkPersistentPermission([{
+                  uri: item.value,
+                  operationMode: fileShare.OperationMode.READ_MODE
+                }])
+                const permission = permissions[0]
+                if (!permission) {
+                  await promptAction.openToast({
+                    message: '无权限'
                   })
                 }
-                if (canPreview) {
-                  await filePreview.openPreview(this.context, {
-                    title: item.value.substring(item.value.lastIndexOf('/') + 1),
+                if (permission) {
+                  await fileShare.activatePermission([{
                     uri: item.value,
-                    mimeType: ''
-                  })
+                    operationMode: fileShare.OperationMode.READ_MODE
+                  }])
+                  const canPreview = await filePreview.canPreview(this.context, item.value)
+                  if (!canPreview) {
+                    await this.context.startAbility({
+                      action: 'ohos.want.action.viewData',
+                      uri: item.value,
+                      parameters: {
+                        'ohos.ability.params.showDefaultPicker': true
+                      },
+                      flags: wantConstant.Flags.FLAG_AUTH_READ_URI_PERMISSION
+                    })
+                  }
+                  if (canPreview) {
+                    await filePreview.openPreview(this.context, {
+                      title: item.value.substring(item.value.lastIndexOf('/') + 1),
+                      uri: item.value,
+                      mimeType: ''
+                    })
+                  }
                 }
               }
               if (item.type === 'callTelephone') {
