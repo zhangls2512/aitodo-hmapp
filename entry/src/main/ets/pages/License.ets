@@ -42,7 +42,7 @@ struct License {
     },
     {
       key: '注册时间',
-      value: '2026-05-??'
+      value: '2026-05-25'
     }
   ]
   tscjbaInfoArray: ItemWithDesc[] = [
