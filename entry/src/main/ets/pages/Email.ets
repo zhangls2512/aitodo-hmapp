@@ -115,7 +115,7 @@ struct Email {
                 .enableAutoSpacing(true)
                 .layoutWeight(1)
                 .maxLength(8)
-                .type(InputType.ONE_TIME_CODE)
+                .type(InputType.Number)
             }
             .margin({
               top: $r('sys.float.ohos_id_elements_margin_vertical_m')
