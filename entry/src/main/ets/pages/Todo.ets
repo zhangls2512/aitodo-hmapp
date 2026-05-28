@@ -1105,6 +1105,9 @@ export default struct TodoPage {
               })
           }
           .height('100%')
+          .lanes({
+            fillType: PresetFillType.BREAKPOINT_DEFAULT
+          })
           .multiSelectable(true)
         }
         .keyboardShortcut('R', [ModifierKey.CTRL], () => {

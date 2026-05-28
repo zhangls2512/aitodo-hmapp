@@ -226,6 +226,9 @@ export default struct Recommendtodo {
               })
             })
         }
+        .lanes({
+          fillType: PresetFillType.BREAKPOINT_DEFAULT
+        })
         .margin({
           bottom: this.preferType === 0 ? 80 : 0,
           top: $r('sys.float.ohos_id_elements_margin_vertical_l')
