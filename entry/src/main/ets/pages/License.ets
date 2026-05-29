@@ -3,10 +3,10 @@ import { LengthMetrics } from '@kit.ArkUI'
 import { hdsMaterial, HdsNavDestination, HdsNavDestinationTitleMode, ScrollEffectType } from '@kit.UIDesignKit'
 import openLink from '../common/Openlink'
 
-interface Item {
+/*interface Item {
   key: string,
   value: string
-}
+}*/
 
 interface ItemWithDesc {
   key: string,
