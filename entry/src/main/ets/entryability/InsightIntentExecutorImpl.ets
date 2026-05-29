@@ -1,4 +1,5 @@
 import { common, insightIntent, InsightIntentExecutor } from '@kit.AbilityKit'
+import { promptAction } from '@kit.ArkUI'
 import { newTodo, TodoInput } from '../common/Datachange'
 import { getRecommendTodoList } from '../common/Dataget'
 
@@ -9,37 +10,44 @@ export default class InsightIntentExecutorImpl extends InsightIntentExecutor {
     if (name === 'NewTodo') {
       const paramJson = JSON.parse(paramString) as TodoInput
       await newTodo(context, {
-        content: paramJson.content,
-        priority: paramJson.priority,
-        startTime: paramJson.startTime,
-        endTime: paramJson.endTime,
-        duration: paramJson.duration,
-        recurrenceRule: paramJson.recurrenceRule,
-        excludeTime: paramJson.excludeTime,
-        tag: paramJson.tag,
+        content: paramJson.content ?? '',
+        priority: paramJson.priority ?? 0,
+        startTime: paramJson.startTime ?? Date.now(),
+        endTime: paramJson.endTime ?? -1,
+        duration: paramJson.duration ?? 0,
+        recurrenceRule: paramJson.recurrenceRule ?? '',
+        excludeTime: paramJson.excludeTime ?? [],
+        tag: paramJson.tag ?? [],
         dependency: [],
-        location: paramJson.location,
-        action: paramJson.action,
-        bz: paramJson.bz,
+        location: paramJson.location ?? {
+          latitude: -1,
+          longitude: -1,
+          location: ''
+        },
+        action: paramJson.action ?? [],
+        bz: paramJson.bz ?? '',
         cloudBackup: false,
-        remind: paramJson.remind
+        remind: paramJson.remind ?? false
       })
       context.eventHub.emit('refreshTodo')
     }
     if (name === 'GetRecommendTodo') {
       const res = getRecommendTodoList(context)
       return {
-        code: -1,
+        code: 0,
         result: {
           message: 'success',
           data: res
         }
       } as insightIntent.ExecuteResult
     }
+    await promptAction.openToast({
+      message: '新增成功'
+    })
     return {
-      code: -1,
+      code: 0,
       result: {
-        message: 'fail'
+        message: 'success'
       }
     } as insightIntent.ExecuteResult
   }
