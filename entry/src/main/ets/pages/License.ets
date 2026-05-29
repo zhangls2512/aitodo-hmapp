@@ -23,7 +23,7 @@ export function LicenseBuilder() {
 struct License {
   UIContext = this.getUIContext()
   context = this.UIContext.getHostContext() as common.UIAbilityContext
-  gabaInfoArray: Item[] = [
+  /*gabaInfoArray: Item[] = [
     {
       key: '名称',
       value: '轩铭智能待办'
@@ -44,7 +44,7 @@ struct License {
       key: '注册时间',
       value: '2026-05-25'
     }
-  ]
+  ]*/
   tscjbaInfoArray: ItemWithDesc[] = [
     {
       key: '适老化',
@@ -95,7 +95,7 @@ struct License {
           top: $r('sys.float.ohos_id_elements_margin_vertical_m')
         })
 
-        ListItem() {
+        /*ListItem() {
           Column() {
             Text('公安备案')
               .fontColor($r('sys.color.font_emphasize'))
@@ -154,7 +154,7 @@ struct License {
         }
         .margin({
           top: $r('sys.float.ohos_id_elements_margin_vertical_l')
-        })
+        })*/
 
         ListItem() {
           Text() {
