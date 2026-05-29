@@ -1,7 +1,11 @@
 import { common, insightIntent, InsightIntentExecutor } from '@kit.AbilityKit'
 import { promptAction } from '@kit.ArkUI'
 import { newTodo, TodoInput } from '../common/Datachange'
-import { getRecommendTodoList } from '../common/Dataget'
+import { getCurrentTimePersonalTodoList, getRecommendTodoList } from '../common/Dataget'
+
+interface GetInput {
+  currentTime: number
+}
 
 export default class InsightIntentExecutorImpl extends InsightIntentExecutor {
   async onExecuteInUIAbilityForegroundMode(name: string, param: Record<string, Object>) {
@@ -12,11 +16,11 @@ export default class InsightIntentExecutorImpl extends InsightIntentExecutor {
       await newTodo(context, {
         content: paramJson.content ?? '',
         priority: paramJson.priority ?? 0,
-        startTime: paramJson.startTime ?? Date.now(),
-        endTime: paramJson.endTime ?? -1,
+        startTime: paramJson.startTime >= 0 ? paramJson.startTime * 1000 : Date.now(),
+        endTime: paramJson.endTime >= 0 ? paramJson.endTime * 1000 : -1,
         duration: paramJson.duration ?? 0,
         recurrenceRule: paramJson.recurrenceRule ?? '',
-        excludeTime: paramJson.excludeTime ?? [],
+        excludeTime: [],
         tag: paramJson.tag ?? [],
         dependency: [],
         location: paramJson.location ?? {
@@ -24,7 +28,7 @@ export default class InsightIntentExecutorImpl extends InsightIntentExecutor {
           longitude: -1,
           location: ''
         },
-        action: paramJson.action ?? [],
+        action: [],
         bz: paramJson.bz ?? '',
         cloudBackup: false,
         remind: paramJson.remind ?? false
@@ -32,11 +36,23 @@ export default class InsightIntentExecutorImpl extends InsightIntentExecutor {
       context.eventHub.emit('refreshTodo')
     }
     if (name === 'GetRecommendTodo') {
-      const res = getRecommendTodoList(context)
+      const res = await getRecommendTodoList(context)
       return {
         code: 0,
         result: {
-          message: 'success',
+          data: res
+        }
+      } as insightIntent.ExecuteResult
+    }
+    if (name === 'GetCurrentTimePersonalTodo') {
+      const paramJson = JSON.parse(paramString) as GetInput
+      const date = new Date()
+      const res = await getCurrentTimePersonalTodoList(context,
+        paramJson.currentTime >= 0 ? paramJson.currentTime * 1000 :
+          new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0).getTime())
+      return {
+        code: 0,
+        result: {
           data: res
         }
       } as insightIntent.ExecuteResult
