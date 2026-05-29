@@ -884,7 +884,7 @@ struct Infolist {
                 try {
                   this.dialogControllerProgress.open()
                   const pushToken = await pushService.getToken()
-                  this.dialogControllerProgress.open()
+                  this.dialogControllerProgress.close()
                   const promptAction = this.UIContext.getPromptAction()
                   await promptAction.showDialog({
                     title: 'PushToken',
