@@ -18,11 +18,11 @@ struct Newpasskey {
   @Local publicKey: string = ''
   @Local type: string = 'mfa'
   @Local buttonText: string = '获取验证码'
-  @Local buttonEnabled: boolean = true
   context = this.getUIContext().getHostContext() as common.UIAbilityContext
   pageInfos = new NavPathStack()
   mfa = ''
   emailcode = ''
+  buttonEnabled = true
   dialogControllerProgress = new CustomDialogController({
     builder: LoadingDialog({
       content: '请求中...'
@@ -254,7 +254,7 @@ struct Newpasskey {
                     .enableAutoSpacing(true)
                     .layoutWeight(1)
                     .maxLength(6)
-                    .type(InputType.ONE_TIME_CODE)
+                    .type(InputType.Number)
                 }
                 .margin({
                   top: $r('sys.float.ohos_id_elements_margin_vertical_m')
@@ -274,7 +274,7 @@ struct Newpasskey {
                     .enableAutoSpacing(true)
                     .layoutWeight(1)
                     .maxLength(8)
-                    .type(InputType.ONE_TIME_CODE)
+                    .type(InputType.Number)
                 }
                 .margin({
                   top: $r('sys.float.ohos_id_elements_margin_vertical_m')
