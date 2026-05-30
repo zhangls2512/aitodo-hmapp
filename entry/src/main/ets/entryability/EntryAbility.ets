@@ -587,9 +587,12 @@ export default class EntryAbility extends UIAbility {
     const allowRestore = getFlushPreference(this.context, 'commonSetting', 'allowRestore', true) as boolean
     this.context.setRestoreEnabled(allowRestore)
     if (deviceInfo.deviceType === '2in1') {
-      statusBarManager.on('statusBarIconClick', async () => {
-        await this.context.showAbility()
-      })
+      const statusBarContent = getFlushPreference(this.context, 'commonSetting', 'statusBarContent', 0)
+      if (statusBarContent === 1) {
+        statusBarManager.on('statusBarIconClick', async () => {
+          await this.context.showAbility()
+        })
+      }
       statusBarManager.on('rightMenuClick', (data) => {
         const datastring = JSON.stringify(data)
         const eventData = JSON.parse(datastring) as MenuCodeEventData
@@ -611,19 +614,36 @@ export default class EntryAbility extends UIAbility {
         const imageSource = image.createImageSource(fileData.buffer)
         const pixelMap = await imageSource.createPixelMap()
         await imageSource.release()
-        statusBarManager.addToStatusBar(this.context, {
-          icons: {
-            black: pixelMap,
-            white: pixelMap
-          },
-          quickOperation: {
-            title: '',
-            height: 1,
-            abilityName: '',
-            moduleName: 'entry',
-            loadingStatus: true
-          }
-        })
+        if (statusBarContent === 0) {
+          statusBarManager.addToStatusBar(this.context, {
+            icons: {
+              black: pixelMap,
+              white: pixelMap
+            },
+            quickOperation: {
+              title: '推荐待办',
+              height: 1000,
+              abilityName: 'StatusBarViewAbility',
+              moduleName: '',
+              loadingStatus: true
+            }
+          })
+        }
+        if (statusBarContent === 1) {
+          statusBarManager.addToStatusBar(this.context, {
+            icons: {
+              black: pixelMap,
+              white: pixelMap
+            },
+            quickOperation: {
+              title: '',
+              height: 1,
+              abilityName: '',
+              moduleName: 'entry',
+              loadingStatus: true
+            }
+          })
+        }
         await pixelMap.release()
         statusBarManager.updateStatusBarMenu(this.context, [
           [
@@ -751,7 +771,7 @@ export default class EntryAbility extends UIAbility {
   }
 
   async onContinue(wantParam: Record<string, Object>) {
-    if (wantParam.version !== 3) {
+    if (wantParam.version !== 4) {
       await promptAction.openToast({
         message: '接续失败，原因：目标端应用版本号与发起端不匹配'
       })

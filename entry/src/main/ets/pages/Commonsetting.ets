@@ -25,6 +25,8 @@ struct Commonsetting {
   @Local acceptCollaborate: boolean = false
   @Local destroyWhenBackPressed: boolean = false
   @Local statusBar: boolean = false
+  @Local statusBarContentIndex: number = 0
+  @Local statusBarContentValue: string = '推荐待办'
   @Local colorModeList: SelectOption[] = [
     {
       value: '跟随系统'
@@ -41,6 +43,7 @@ struct Commonsetting {
   @Local windowRectAutoSave: boolean = false
   @Local windowTopmost: boolean = false
   @Local keepScreenOn: boolean = false
+  @Local showCompletedTodoInRecommendTodo: boolean = false
   @Local showCanCompletedTodoCountInBadge: boolean = false
   @Local checkVersionUpdateIndex: number = 1
   @Local checkVersionUpdateValue: string = '非流量下'
@@ -262,6 +265,51 @@ struct Commonsetting {
                 }
                 .borderRadius(12)
                 .padding(12)
+
+                if (this.statusBar) {
+                  Divider()
+                    .padding({
+                      left: 12,
+                      right: 12
+                    })
+                  Row() {
+                    Text('状态栏内容')
+                      .fontWeight(FontWeight.Medium)
+                      .layoutWeight(1)
+                      .margin({
+                        right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                      })
+                    Select([
+                      { value: '推荐待办' },
+                      { value: '主窗口' }
+                    ])
+                      .selected(this.statusBarContentIndex!!)
+                      .value(this.statusBarContentValue!!)
+                      .onSelect(async (index) => {
+                        setFlushPreference(this.context, 'commonSetting', 'statusBarContent', index)
+                        const promptAction = this.UIContext.getPromptAction()
+                        const data = await promptAction.showDialog({
+                          title: '提示',
+                          message: '设置成功，需重启应用生效，是否重启？',
+                          buttons: [
+                            {
+                              text: '取消',
+                              color: $r('sys.color.font_primary')
+                            },
+                            {
+                              text: '重启',
+                              color: $r('sys.color.font_emphasize')
+                            }
+                          ]
+                        })
+                        if (data.index === 1) {
+                          await restartApp(this.context, this.UIContext)
+                        }
+                      })
+                  }
+                  .borderRadius(12)
+                  .padding(12)
+                }
               }
             }
             .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
@@ -587,6 +635,30 @@ struct Commonsetting {
                 right: 12
               })
             Column() {
+              Row() {
+                Text('推荐待办显示已完成待办')
+                  .fontWeight(FontWeight.Medium)
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
+                Toggle({
+                  type: ToggleType.Switch,
+                  isOn: this.showCompletedTodoInRecommendTodo!!
+                })
+                  .onChange(isOn => {
+                    setFlushPreference(this.context, 'commonSetting', 'showCompletedTodoInRecommendTodo', isOn)
+                    this.context.eventHub.emit('refreshTodo')
+                  })
+              }
+              .borderRadius(12)
+              .padding(12)
+
+              Divider()
+                .padding({
+                  left: 12,
+                  right: 12
+                })
               Row() {
                 Text('桌面应用图标角标显示可完成待办数量')
                   .fontWeight(FontWeight.Medium)
@@ -935,6 +1007,14 @@ struct Commonsetting {
         })
       } catch {
       }
+      const statusBarContent = getFlushPreference(this.context, 'commonSetting', 'statusBarContent', 0)
+      this.statusBarContentIndex = statusBarContent as number
+      if (statusBarContent === 0) {
+        this.statusBarContentValue = '推荐待办'
+      }
+      if (statusBarContent === 1) {
+        this.statusBarContentValue = '主窗口'
+      }
       const colorMode = getFlushPreference(this.context, 'commonSetting', 'colorMode', 0)
       this.colorModeIndex = colorMode as number
       if (colorMode === 0) {
@@ -954,6 +1034,8 @@ struct Commonsetting {
       this.windowTopmost = getFlushPreference(this.context, 'commonSetting', 'windowTopmost', false) as boolean
       const lastWindow = await window.getLastWindow(this.context)
       this.keepScreenOn = lastWindow.getWindowProperties().isKeepScreenOn
+      this.showCompletedTodoInRecommendTodo =
+        getFlushPreference(this.context, 'commonSetting', 'showCompletedTodoInRecommendTodo', false) as boolean
       this.showCanCompletedTodoCountInBadge =
         getFlushPreference(this.context, 'commonSetting', 'showCanCompletedTodoCountInBadge', false) as boolean
       const checkVersionUpdate = getFlushPreference(this.context, 'commonSetting', 'checkVersionUpdate', 1)
