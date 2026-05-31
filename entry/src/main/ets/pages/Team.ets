@@ -45,6 +45,7 @@ export default struct Team {
           ListItem() {
             Column() {
               Text(item.teamName)
+                .enableAutoSpacing(true)
                 .fontColor($r('sys.color.font_secondary'))
                 .fontSize($r('sys.float.ohos_id_text_size_body2'))
                 .fontWeight(FontWeight.Medium)
@@ -56,6 +57,7 @@ export default struct Team {
               Column() {
                 Row() {
                   Text(item.name)
+                    .enableAutoSpacing(true)
                     .fontWeight(FontWeight.Medium)
                 }
                 .borderRadius(12)

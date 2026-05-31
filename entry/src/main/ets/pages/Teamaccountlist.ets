@@ -129,6 +129,7 @@ struct Teamaccountlist {
                     right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
                   })
                 Text(item.userName)
+                  .enableAutoSpacing(true)
                   .fontColor($r('sys.color.font_secondary'))
                   .fontSize($r('sys.float.ohos_id_text_size_body2'))
                   .layoutWeight(1)
