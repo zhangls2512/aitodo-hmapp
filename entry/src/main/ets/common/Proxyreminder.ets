@@ -18,72 +18,75 @@ function generateId(arr: number[]) {
 }
 
 export async function setProxyReminder(data: ProxyReminder) {
-  if (data.time > Date.now()) {
-    const date = new Date(data.time)
-    const res = await getProxyReminderList()
-    const index = res.findIndex(item => item.todoId === data.todoId)
-    if (index !== -1) {
-      const body: reminderAgentManager.ReminderRequestCalendar = {
-        reminderType: reminderAgentManager.ReminderType.REMINDER_TYPE_CALENDAR,
-        actionButton: [
-          {
-            title: '关闭',
-            type: reminderAgentManager.ActionButtonType.ACTION_BUTTON_TYPE_CLOSE
+  try {
+    if (data.time > Date.now()) {
+      const date = new Date(data.time)
+      const res = await getProxyReminderList()
+      const index = res.findIndex(item => item.todoId === data.todoId)
+      if (index !== -1) {
+        const body: reminderAgentManager.ReminderRequestCalendar = {
+          reminderType: reminderAgentManager.ReminderType.REMINDER_TYPE_CALENDAR,
+          actionButton: [
+            {
+              title: '关闭',
+              type: reminderAgentManager.ActionButtonType.ACTION_BUTTON_TYPE_CLOSE
+            }
+          ],
+          wantAgent: {
+            pkgName: 'com.zhangxm.aitodo',
+            abilityName: 'EntryAbility',
+            parameters: {
+              todoId: data.todoId
+            }
+          },
+          title: data.title,
+          content: data.content,
+          notificationId: res[index].id,
+          groupId: data.todoId,
+          dateTime: {
+            year: date.getFullYear(),
+            month: date.getUTCMonth() + 1,
+            day: date.getDate(),
+            hour: date.getHours(),
+            minute: date.getMinutes(),
+            second: date.getSeconds()
           }
-        ],
-        wantAgent: {
-          pkgName: 'com.zhangxm.aitodo',
-          abilityName: 'EntryAbility',
-          parameters: {
-            todoId: data.todoId
-          }
-        },
-        title: data.title,
-        content: data.content,
-        notificationId: res[index].id,
-        groupId: data.todoId,
-        dateTime: {
-          year: date.getFullYear(),
-          month: date.getUTCMonth() + 1,
-          day: date.getDate(),
-          hour: date.getHours(),
-          minute: date.getMinutes(),
-          second: date.getSeconds()
         }
+        await reminderAgentManager.updateReminder(res[index].id, body)
       }
-      await reminderAgentManager.updateReminder(res[index].id, body)
-    }
-    if (index === -1) {
-      const body: reminderAgentManager.ReminderRequestCalendar = {
-        reminderType: reminderAgentManager.ReminderType.REMINDER_TYPE_CALENDAR,
-        actionButton: [
-          {
-            title: '关闭',
-            type: reminderAgentManager.ActionButtonType.ACTION_BUTTON_TYPE_CLOSE
+      if (index === -1) {
+        const body: reminderAgentManager.ReminderRequestCalendar = {
+          reminderType: reminderAgentManager.ReminderType.REMINDER_TYPE_CALENDAR,
+          actionButton: [
+            {
+              title: '关闭',
+              type: reminderAgentManager.ActionButtonType.ACTION_BUTTON_TYPE_CLOSE
+            }
+          ],
+          wantAgent: {
+            pkgName: 'com.zhangxm.aitodo',
+            abilityName: 'EntryAbility',
+            parameters: {
+              todoId: data.todoId
+            }
+          },
+          title: data.title,
+          content: data.content,
+          notificationId: generateId(res.map(item => item.id)),
+          groupId: data.todoId,
+          dateTime: {
+            year: date.getFullYear(),
+            month: date.getUTCMonth() + 1,
+            day: date.getDate(),
+            hour: date.getHours(),
+            minute: date.getMinutes(),
+            second: date.getSeconds()
           }
-        ],
-        wantAgent: {
-          pkgName: 'com.zhangxm.aitodo',
-          abilityName: 'EntryAbility',
-          parameters: {
-            todoId: data.todoId
-          }
-        },
-        title: data.title,
-        content: data.content,
-        notificationId: generateId(res.map(item => item.id)),
-        groupId: data.todoId,
-        dateTime: {
-          year: date.getFullYear(),
-          month: date.getUTCMonth() + 1,
-          day: date.getDate(),
-          hour: date.getHours(),
-          minute: date.getMinutes(),
-          second: date.getSeconds()
         }
+        await reminderAgentManager.publishReminder(body)
       }
-      await reminderAgentManager.publishReminder(body)
     }
+  } catch {
   }
 }
 

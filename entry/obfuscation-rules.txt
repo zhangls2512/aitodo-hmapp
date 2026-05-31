@@ -4,3 +4,5 @@
 -enable-filename-obfuscation
 -compact
 -remove-log
+-keep-file-name
+InsightIntentExecutorImpl

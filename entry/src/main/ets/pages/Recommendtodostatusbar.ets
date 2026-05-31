@@ -1,9 +1,12 @@
-import { FormTodo } from '../../entryformability/EntryFormAbility'
+import { common } from '@kit.AbilityKit'
+import { completeTodo } from '../common/Datachange'
+import { getRecommendTodoList, Todo } from '../common/Dataget'
 
-@Entry(new LocalStorage())
-@Component
-struct RecommendTodoCard {
-  @LocalStorageProp('todoArray') todoArray: FormTodo[] = []
+@Entry
+@ComponentV2
+struct Recommendtodostatusbar {
+  @Local todoArray: Todo[] = []
+  context = this.getUIContext().getHostContext() as common.UIAbilityContext
 
   build() {
     Column() {
@@ -12,13 +15,8 @@ struct RecommendTodoCard {
           bottom: $r('sys.float.ohos_id_elements_margin_vertical_m'),
           top: $r('sys.float.ohos_id_elements_margin_vertical_m')
         })
-        .onClick(() => {
-          postCardAction(this, {
-            action: 'message',
-            params: {
-              action: 'refresh'
-            }
-          })
+        .onClick(async () => {
+          this.todoArray = await getRecommendTodoList(this.context)
         })
       if (this.todoArray.length === 0) {
         Text('无数据')
@@ -27,7 +25,7 @@ struct RecommendTodoCard {
           })
       }
       Column() {
-        ForEach(this.todoArray, (item: FormTodo) => {
+        ForEach(this.todoArray, (item: Todo) => {
           Row() {
             Toggle({
               type: ToggleType.Checkbox,
@@ -37,15 +35,14 @@ struct RecommendTodoCard {
               .margin({
                 right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
               })
-              .onChange(isOn => {
-                postCardAction(this, {
-                  action: 'message',
-                  params: {
-                    action: 'complete',
-                    todo: item,
-                    isOn: isOn
-                  }
-                })
+              .onChange(async (isOn) => {
+                if (!item.teamId) {
+                  await completeTodo(this.context, item.id, isOn)
+                }
+                if (item.teamId) {
+                  //请求团队完成待办API
+                }
+                this.todoArray = await getRecommendTodoList(this.context)
               })
             Column() {
               if (!item.isCompleted) {
@@ -64,16 +61,6 @@ struct RecommendTodoCard {
             }
             .alignItems(HorizontalAlign.Start)
             .layoutWeight(1)
-            .onClick(() => {
-              postCardAction(this, {
-                action: 'router',
-                abilityName: 'EntryAbility',
-                params: {
-                  action: 'todoInfo',
-                  todoId: item.id
-                }
-              })
-            })
           }
           .borderRadius(12)
           .margin({
@@ -88,5 +75,8 @@ struct RecommendTodoCard {
       right: $r('sys.float.ohos_id_elements_margin_horizontal_l')
     })
     .width('100%')
+    .onAppear(async () => {
+      this.todoArray = await getRecommendTodoList(this.context)
+    })
   }
 }

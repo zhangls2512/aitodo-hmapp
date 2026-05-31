@@ -13,13 +13,14 @@ interface PersonalAccountInfo {
   endDate: number
 }
 
-interface TeamAccountInfo {
+export interface TeamAccountInfo {
   id: string,
   path: string,
   name: string,
   teamId: string,
   teamName: string,
-  authorization: string
+  authorization: string,
+  admin: string
 }
 
 let globalPersonalAccountAccessToken: string | undefined = undefined
@@ -196,12 +197,21 @@ export async function newTeamAccount(accountInfo: TeamAccountInfo) {
         path: accountInfo.path,
         name: accountInfo.name,
         teamId: accountInfo.teamId,
-        teamName: accountInfo.teamName
+        teamName: accountInfo.teamName,
+        admin: accountInfo.admin
       }
     })
     await appAccountManager.setCredential(id, 'authorization', accountInfo.authorization)
     if (globalTeamAccountList) {
-      globalTeamAccountList.push(accountInfo)
+      globalTeamAccountList.push({
+        id: id,
+        path: accountInfo.path,
+        name: accountInfo.name,
+        teamId: accountInfo.teamId,
+        teamName: accountInfo.teamName,
+        authorization: accountInfo.authorization,
+        admin: accountInfo.admin
+      })
     } else {
       globalTeamAccountList = [accountInfo]
     }
@@ -224,13 +234,21 @@ export async function getTeamName(teamId: string) {
   return '未知团队'
 }
 
-export async function getTeamAccountAuthorization(teamId: string) {
+export async function getTeamAccountInfo(teamId: string): Promise<TeamAccountInfo> {
   const teamAccountList = await getTeamAccountList()
-  const authorization = teamAccountList.find(item => item.teamId === teamId)?.authorization
-  if (authorization) {
-    return authorization
+  const teamAccount = teamAccountList.find(item => item.teamId === teamId)
+  if (teamAccount) {
+    return teamAccount
   }
-  return ''
+  return {
+    id: '',
+    path: '',
+    name: '',
+    teamId: '',
+    teamName: '',
+    authorization: '',
+    admin: 'false'
+  }
 }
 
 export async function getTeamAccountList() {
@@ -247,7 +265,8 @@ export async function getTeamAccountList() {
           name: appAccountManager.getCustomDataSync(id, 'name'),
           teamId: appAccountManager.getCustomDataSync(id, 'teamId'),
           teamName: appAccountManager.getCustomDataSync(id, 'teamName'),
-          authorization: await appAccountManager.getCredential(id, 'authorization')
+          authorization: await appAccountManager.getCredential(id, 'authorization'),
+          admin: appAccountManager.getCustomDataSync(id, 'admin')
         })
       }
     })

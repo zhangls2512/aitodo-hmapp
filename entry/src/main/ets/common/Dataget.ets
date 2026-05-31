@@ -6,6 +6,7 @@ import { getPersonalAccountInfo, getTeamName } from './Account'
 import { Action, canCompleteTodo, Location } from './Datachange'
 import { TodoItem } from './Dataimport'
 import { getPermission } from './Permission'
+import { getFlushPreference } from './Preference'
 import { getRecentTodoFromFreq } from './Rrule'
 import { getTagMap } from './Tag'
 
@@ -334,7 +335,12 @@ export async function getCurrentTimePersonalTodoList(context: Context, currentTi
 
 export async function getRecommendTodoList(context: Context) {
   const currentTime = Date.now()
-  const list = await getCanCompletedTodoList(context, currentTime)
+  let list = await getCanCompletedTodoList(context, currentTime)
+  const showCompletedTodoInRecommendTodo =
+    getFlushPreference(context, 'commonSetting', 'showCompletedTodoInRecommendTodo', false)
+  if (!showCompletedTodoInRecommendTodo) {
+    list = list.filter(item => !item.isCompleted)
+  }
   let latitude = -1
   let longitude = -1
   const location = getPermission('ohos.permission.LOCATION')
