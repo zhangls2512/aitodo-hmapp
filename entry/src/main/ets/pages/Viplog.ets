@@ -241,7 +241,7 @@ struct Viplog {
         right: $r('sys.float.ohos_id_elements_margin_horizontal_l')
       })
       .onReachEnd(async () => {
-        if (this.accessToken && this.empty === false) {
+        if (this.accessToken && this.empty === false && this.viplogArray.length > 0) {
           this.loading = true
           const res = await developerRequest(this.context, '/product/getViplogList', {
             accessToken: this.accessToken,

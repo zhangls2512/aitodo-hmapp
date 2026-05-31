@@ -7,7 +7,7 @@ import { getPersonalAccountAccessToken, getPersonalAccountInfo } from '../common
 import openLink from '../common/Openlink'
 import { developerRequest } from '../common/Request'
 
-interface VipItem {
+export interface VipItem {
   id: string,
   name: string,
   type: iap.ProductType,

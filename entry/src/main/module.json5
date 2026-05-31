@@ -154,6 +154,11 @@
             "resource": "$profile:form_config"
           }
         ]
+      },
+      {
+        "name": "StatusBarViewAbility",
+        "srcEntry": "./ets/statusbarviewability/StatusBarViewAbility.ets",
+        "type": "statusBarView"
       }
     ],
     "requestPermissions": [

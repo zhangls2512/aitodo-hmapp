@@ -907,19 +907,18 @@ export default struct TodoPage {
           .scrollable(ScrollDirection.Horizontal)
           .scrollBar(BarState.Off)
         }
+        if (this.todoArray.length === 0 && !this.loading) {
+          Text('无数据')
+            .margin({
+              top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+            })
+            .textAlign(TextAlign.Center)
+            .width('100%')
+        }
         Refresh({
           refreshing: $$this.loading
         }) {
           List() {
-            if (this.todoArray.length === 0) {
-              ListItem() {
-                Text('无数据')
-              }
-              .margin({
-                top: $r('sys.float.ohos_id_elements_margin_vertical_m')
-              })
-              .width('100%')
-            }
             ForEach(this.todoArray, (item: Todo, index) => {
               ListItem() {
                 Column() {

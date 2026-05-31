@@ -6,9 +6,39 @@
       "buildFunction": "AboutBuilder"
     },
     {
+      "name": "Newteamaccount",
+      "pageSourceFile": "src/main/ets/pages/Newteamaccount.ets",
+      "buildFunction": "NewteamaccountBuilder"
+    },
+    {
+      "name": "Updateteamaccount",
+      "pageSourceFile": "src/main/ets/pages/Updateteamaccount.ets",
+      "buildFunction": "UpdateteamaccountBuilder"
+    },
+    {
+      "name": "Teamaccountlist",
+      "pageSourceFile": "src/main/ets/pages/Teamaccountlist.ets",
+      "buildFunction": "TeamaccountlistBuilder"
+    },
+    {
       "name": "Tag",
       "pageSourceFile": "src/main/ets/pages/Tag.ets",
       "buildFunction": "TagBuilder"
+    },
+    {
+      "name": "Updateteamaccountpassword",
+      "pageSourceFile": "src/main/ets/pages/Updateteamaccountpassword.ets",
+      "buildFunction": "UpdateteamaccountpasswordBuilder"
+    },
+    {
+      "name": "Teamaccountinfo",
+      "pageSourceFile": "src/main/ets/pages/Teamaccountinfo.ets",
+      "buildFunction": "TeamaccountinfoBuilder"
+    },
+    {
+      "name": "Loginteamaccount",
+      "pageSourceFile": "src/main/ets/pages/Loginteamaccount.ets",
+      "buildFunction": "LoginteamaccountBuilder"
     },
     {
       "name": "Dumpjsrawheapdata",

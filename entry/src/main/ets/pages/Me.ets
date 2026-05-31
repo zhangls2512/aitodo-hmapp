@@ -528,11 +528,8 @@ export default struct Me {
               this.hoverId = 6
             }
           })
-          .onClick(async () => {
-            await promptAction.openToast({
-              message: '敬请期待'
-            })
-            //this.isShowTeamSheet = true
+          .onClick(() => {
+            this.isShowTeamSheet = true
           })
           .bindSheet(this.isShowTeamSheet!!, this.TeamSheetBuilder(), {
             preferType: this.preferType
