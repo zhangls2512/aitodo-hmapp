@@ -269,7 +269,7 @@ export default struct Recommendtodo {
           .fontColor($r('sys.color.font_emphasize'))
           .fontSize($r('sys.float.ohos_id_text_size_body3'))
           .margin({
-            bottom: $r('sys.float.ohos_id_default_padding_bottom_fixed'),
+            bottom: this.preferType === 0 ? 96 : $r('sys.float.ohos_id_default_padding_bottom_fixed'),
             top: $r('sys.float.ohos_id_elements_margin_vertical_l')
           })
           .onClick(async () => {

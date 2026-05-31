@@ -155,7 +155,7 @@ export default struct Team {
                       right: 12
                     })
                   Row() {
-                    Text('用户管理')
+                    Text('团队信息')
                       .layoutWeight(1)
                       .margin({
                         right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
@@ -182,6 +182,48 @@ export default struct Team {
                     }
                     if (isHover) {
                       this.hoverId = '2,' + index
+                    }
+                  })
+                  .onClick(() => {
+                    this.pageInfos.pushPath({
+                      name: 'Teaminfo',
+                      param: item.teamId
+                    })
+                  })
+
+                  Divider()
+                    .padding({
+                      left: 12,
+                      right: 12
+                    })
+                  Row() {
+                    Text('用户管理')
+                      .layoutWeight(1)
+                      .margin({
+                        right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                      })
+                    Image($r('app.media.right'))
+                      .fillColor($r('sys.color.icon_fourth'))
+                      .height(12)
+                      .width(12)
+                  }
+                  .borderRadius(12)
+                  .padding(12)
+                  .stateStyles({
+                    normal: {
+                      .backgroundColor(this.hoverId === '3,' + index ? $r('sys.color.interactive_hover') :
+                        $r('sys.color.ohos_id_color_card_bg'))
+                    },
+                    pressed: {
+                      .backgroundColor($r('sys.color.interactive_pressed'))
+                    }
+                  })
+                  .onHover(isHover => {
+                    if (!isHover) {
+                      this.hoverId = ''
+                    }
+                    if (isHover) {
+                      this.hoverId = '3,' + index
                     }
                   })
                   .onClick(() => {
@@ -213,7 +255,7 @@ export default struct Team {
                 .padding(12)
                 .stateStyles({
                   normal: {
-                    .backgroundColor(this.hoverId === '3,' + index ? $r('sys.color.interactive_hover') :
+                    .backgroundColor(this.hoverId === '4,' + index ? $r('sys.color.interactive_hover') :
                       $r('sys.color.ohos_id_color_card_bg'))
                   },
                   pressed: {
@@ -225,7 +267,7 @@ export default struct Team {
                     this.hoverId = ''
                   }
                   if (isHover) {
-                    this.hoverId = '3,' + index
+                    this.hoverId = '4,' + index
                   }
                 })
                 .onClick(async () => {
