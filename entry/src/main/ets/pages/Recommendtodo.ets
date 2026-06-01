@@ -1,5 +1,5 @@
 import { common } from '@kit.AbilityKit'
-import { LoadingDialog } from '@kit.ArkUI'
+import { LoadingDialog, promptAction } from '@kit.ArkUI'
 import { formProvider } from '@kit.FormKit'
 import { notificationManager } from '@kit.NotificationKit'
 import { completeTodo } from '../common/Datachange'
@@ -7,6 +7,7 @@ import { getRecommendTodoList, Todo } from '../common/Dataget'
 import { checkPermission } from '../common/Permission'
 import { getFlushPreference } from '../common/Preference'
 import { getPreferType } from '../common/Prefertype'
+import { teamRequest } from '../common/Request'
 import { getDateTimeStringFromTimeStamp } from '../common/Stringformat'
 import NewTodo from './Newtodo'
 import TodoInfo from './Todoinfo'
@@ -88,11 +89,16 @@ export default struct Recommendtodo {
                           this.dialogControllerProgress.open()
                           await completeTodo(this.context, item.id, isOn)
                           this.dialogControllerProgress.close()
+                          this.loading = true
                         }
                         if (item.teamId) {
-                          //请求团队完成待办API
+                          const res = await teamRequest(this.context, item.teamId, '/completeTodo', {
+                            id: item.id
+                          })
+                          if (res !== 'fail') {
+                            this.loading = true
+                          }
                         }
-                        this.loading = true
                       })
                     Column() {
                       if (!item.isCompleted) {

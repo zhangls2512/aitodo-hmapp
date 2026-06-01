@@ -19,12 +19,13 @@ import { hdsEffect } from '@kit.UIDesignKit'
 import getCloudServiceStatus from '../common/Cloudservice'
 import { getKeyAlg } from '../common/Crypto'
 import { getCustomFreqList } from '../common/Customfreq'
-import { Action, newTodo } from '../common/Datachange'
+import { Action, Location, newTodo } from '../common/Datachange'
 import { icsTimeStringToTimeStamp, timeStampToIcsTimeString } from '../common/Ics'
 import openLink from '../common/Openlink'
 import { checkPermission } from '../common/Permission'
 import { getFlushPreference } from '../common/Preference'
 import { isProxyReminderEnabled } from '../common/Proxyreminder'
+import { teamRequest } from '../common/Request'
 import { getDateTimeStringFromTimeStamp } from '../common/Stringformat'
 import { OpenAppByTypeValue } from './Todoinfo'
 
@@ -1327,45 +1328,47 @@ export default struct Newtodo {
           top: $r('sys.float.ohos_id_elements_margin_vertical_m')
         })
       })
-      ListItem() {
-        Column() {
+      if (!this.teamId) {
+        ListItem() {
           Column() {
-            Row() {
-              Text('云备份')
-                .fontWeight(FontWeight.Medium)
-                .layoutWeight(1)
-                .margin({
-                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+            Column() {
+              Row() {
+                Text('云备份')
+                  .fontWeight(FontWeight.Medium)
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
+                Toggle({
+                  type: ToggleType.Switch,
+                  isOn: this.cloudBackup!!
                 })
-              Toggle({
-                type: ToggleType.Switch,
-                isOn: this.cloudBackup!!
-              })
-                .enabled(this.allowCloudBackup)
+                  .enabled(this.allowCloudBackup)
+              }
+              .borderRadius(12)
+              .padding(12)
             }
-            .borderRadius(12)
-            .padding(12)
-          }
-          .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
-          .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
-          .padding($r('sys.float.ohos_id_corner_radius_mark'))
+            .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+            .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
+            .padding($r('sys.float.ohos_id_corner_radius_mark'))
 
-          if (!this.allowCloudBackup) {
-            Text(this.alertText)
-              .fontColor($r('sys.color.warning'))
-              .fontSize($r('sys.float.ohos_id_text_size_body3'))
-              .margin({
-                top: 6,
-                left: 12,
-                right: 12
-              })
+            if (!this.allowCloudBackup) {
+              Text(this.alertText)
+                .fontColor($r('sys.color.warning'))
+                .fontSize($r('sys.float.ohos_id_text_size_body3'))
+                .margin({
+                  top: 6,
+                  left: 12,
+                  right: 12
+                })
+            }
           }
+          .alignItems(HorizontalAlign.Start)
         }
-        .alignItems(HorizontalAlign.Start)
+        .margin({
+          top: $r('sys.float.ohos_id_elements_margin_vertical_l')
+        })
       }
-      .margin({
-        top: $r('sys.float.ohos_id_elements_margin_vertical_l')
-      })
 
       ListItem() {
         Button('新增')
@@ -1455,11 +1458,41 @@ export default struct Newtodo {
               await promptAction.openToast({
                 message: '新增成功'
               })
+              this.isShowNewSheet = false
             }
             if (this.teamId) {
-              //请求团队新增待办API
+              const dialogControllerProgress = new CustomDialogController({
+                builder: LoadingDialog({
+                  content: '新增中...'
+                })
+              })
+              dialogControllerProgress.open()
+              const res = await teamRequest(this.context, this.teamId, '/newTodo', {
+                content: this.content,
+                priority: this.priority,
+                startTime: this.startTime,
+                endTime: this.endTime,
+                duration: Number(this.duration) * 60000,
+                recurrenceRule: recurrenceRule,
+                excludeTime: [],
+                tag: this.tagArray,
+                dependency: this.dependencyArray,
+                location: {
+                  latitude: this.locationLatitude,
+                  longitude: this.locationLongitude,
+                  location: this.locationLocation
+                } as Location,
+                action: this.actionArray,
+                bz: this.bz
+              })
+              dialogControllerProgress.close()
+              if (res !== 'fail') {
+                await promptAction.openToast({
+                  message: '新增成功'
+                })
+                this.isShowNewSheet = false
+              }
             }
-            this.isShowNewSheet = false
           })
       }
       .margin({
@@ -1479,19 +1512,21 @@ export default struct Newtodo {
             value: item
           }
         })
-      this.remindEnabled = await isProxyReminderEnabled()
-      const res = await getCloudServiceStatus(this.context)
-      const key = getKeyAlg()
-      if (!res) {
-        this.alertText = '未登录账号或账号未开通云服务，云备份不可用'
-      }
-      if (res) {
-        if (!key) {
-          this.alertText = '未导入密钥，云备份不可用。请前往“我的”>“设置”>“密钥”导入密钥'
+      if (!this.teamId) {
+        this.remindEnabled = await isProxyReminderEnabled()
+        const res = await getCloudServiceStatus(this.context)
+        const key = getKeyAlg()
+        if (!res) {
+          this.alertText = '未登录账号或账号未开通云服务，云备份不可用'
         }
-        if (key) {
-          this.allowCloudBackup = true
-          this.cloudBackup = getFlushPreference(this.context, 'cloudbackupSetting', 'autoOn', false) as boolean
+        if (res) {
+          if (!key) {
+            this.alertText = '未导入密钥，云备份不可用。请前往“我的”>“设置”>“密钥”导入密钥'
+          }
+          if (key) {
+            this.allowCloudBackup = true
+            this.cloudBackup = getFlushPreference(this.context, 'cloudbackupSetting', 'autoOn', false) as boolean
+          }
         }
       }
     })

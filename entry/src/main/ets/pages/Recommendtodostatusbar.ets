@@ -1,6 +1,7 @@
 import { common } from '@kit.AbilityKit'
 import { completeTodo } from '../common/Datachange'
 import { getRecommendTodoList, Todo } from '../common/Dataget'
+import { teamRequest } from '../common/Request'
 
 @Entry
 @ComponentV2
@@ -37,11 +38,16 @@ struct Recommendtodostatusbar {
               .onChange(async (isOn) => {
                 if (!item.teamId) {
                   await completeTodo(this.context, item.id, isOn)
+                  this.todoArray = await getRecommendTodoList(this.context)
                 }
                 if (item.teamId) {
-                  //请求团队完成待办API
+                  const res = await teamRequest(this.context, item.teamId, '/completeTodo', {
+                    id: item.id
+                  })
+                  if (res !== 'fail') {
+                    this.todoArray = await getRecommendTodoList(this.context)
+                  }
                 }
-                this.todoArray = await getRecommendTodoList(this.context)
               })
             Column() {
               if (!item.isCompleted) {

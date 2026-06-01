@@ -47,7 +47,7 @@ struct Teamviplog {
           ListItem() {
             Column() {
               Row() {
-                Text('个数')
+                Text('待办个数')
                   .fontWeight(FontWeight.Medium)
                   .margin({
                     right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
