@@ -189,7 +189,7 @@ export async function getCanCompletedTodoList(context: Context, currentTime: num
     return array
   } catch (err) {
     await promptAction.openToast({
-      message: '发生错误，错误码：' + err.code
+      message: '发生错误，错误码：' + err.code + (err.message ? '，错误信息：' + err.message : '')
     })
     return []
   }
@@ -247,7 +247,7 @@ export async function getPersonalTodoList(context: Context) {
     return array
   } catch (err) {
     await promptAction.openToast({
-      message: '发生错误，错误码：' + err.code
+      message: '发生错误，错误码：' + err.code + (err.message ? '，错误信息：' + err.message : '')
     })
     return []
   }
@@ -327,7 +327,7 @@ export async function getCurrentTimePersonalTodoList(context: Context, currentTi
     return array
   } catch (err) {
     await promptAction.openToast({
-      message: '发生错误，错误码：' + err.code
+      message: '发生错误，错误码：' + err.code + (err.message ? '，错误信息：' + err.message : '')
     })
     return []
   }

@@ -88,7 +88,7 @@ export default struct Vip {
       }
       if (err.code !== 1001860000 && err.code !== 1001860005 && err.code !== 1001860004 && err.code !== 1001860051) {
         await promptAction.openToast({
-          message: '发生错误，错误码：' + err.code + '，错误信息：' + err.message
+          message: '发生错误，错误码：' + err.code + (err.message ? '，错误信息：' + err.message : '')
         })
       }
     }
@@ -437,7 +437,7 @@ export default struct Vip {
         } catch (err) {
           this.iapStatusLoading = false
           await promptAction.openToast({
-            message: '发生错误，错误码：' + err.code + '，错误信息：' + err.message
+            message: '发生错误，错误码：' + err.code + (err.message ? '，错误信息：' + err.message : '')
           })
         }
       }

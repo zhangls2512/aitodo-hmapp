@@ -345,7 +345,7 @@ export default class EntryAbility extends UIAbility {
           }
         } catch (err) {
           await promptAction.openToast({
-            message: '发生错误，错误码：' + err.code + '，错误信息：' + err.message
+            message: '发生错误，错误码：' + err.code + (err.message ? '，错误信息：' + err.message : '')
           })
         }
       }
@@ -599,10 +599,10 @@ export default class EntryAbility extends UIAbility {
         this.context.eventHub.emit(eventData.data.menuCode)
       })
       const subscriber = commonEventManager.createSubscriberSync({
-        events: ['BACKGROUNDABILITY_EVENT_PREPARETOTERMINATE']
+        events: ['BACKGROUNDABILITY_EVENT_DESTROY']
       })
       await commonEventManager.subscribeToEvent(subscriber, async (data) => {
-        if (data.event === 'BACKGROUNDABILITY_EVENT_PREPARETOTERMINATE') {
+        if (data.event === 'BACKGROUNDABILITY_EVENT_DESTROY') {
           statusBarManager.removeFromStatusBar(this.context)
           setTempPreference(this.context, 'statusBar', 'exist', false)
           await this.context.terminateSelf()
@@ -624,7 +624,7 @@ export default class EntryAbility extends UIAbility {
               title: '推荐待办',
               height: 1000,
               abilityName: 'StatusBarViewAbility',
-              moduleName: '',
+              moduleName: 'entry',
               loadingStatus: true
             }
           })
@@ -638,7 +638,7 @@ export default class EntryAbility extends UIAbility {
             quickOperation: {
               title: '',
               height: 1,
-              abilityName: '',
+              abilityName: 'EntryAbility',
               moduleName: 'entry',
               loadingStatus: true
             }

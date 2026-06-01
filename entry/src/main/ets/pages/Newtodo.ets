@@ -135,7 +135,7 @@ export default struct Newtodo {
             this.recurrenceByMonthDay = []
             this.recurrenceByDay = []
           }
-          if (dateTime.rrule && !this.teamId) {
+          if (dateTime.rrule) {
             this.recurrence = true
             this.recurrenceFreqIndex = 0
             this.recurrenceFreqValue = '年'
@@ -326,7 +326,7 @@ export default struct Newtodo {
         Column() {
           CollaborationServiceStateDialog({
             async onState(stateCode: number, bufferType: string, buffer: ArrayBuffer) {
-              if (stateCode !== 0) {
+              if (stateCode !== 0 && stateCode !== 1001202003) {
                 await promptAction.openToast({
                   message: '发生错误，错误码：' + stateCode
                 })
@@ -334,7 +334,7 @@ export default struct Newtodo {
               }
               if (bufferType !== 'general.image') {
                 await promptAction.openToast({
-                  message: '请导入图片'
+                  message: '请选择图片'
                 })
                 return
               }
@@ -634,7 +634,6 @@ export default struct Newtodo {
               type: ToggleType.Switch,
               isOn: this.recurrence!!
             })
-              .enabled(this.teamId === '')
           }
           .margin({
             top: $r('sys.float.ohos_id_elements_margin_vertical_m')

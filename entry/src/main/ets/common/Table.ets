@@ -84,7 +84,7 @@ export async function syncTable(context: Context, networkId: string, syncMode: r
       }
     } catch (err) {
       await promptAction.openToast({
-        message: '发生错误，错误码：' + err.code
+        message: '发生错误，错误码：' + err.code + (err.message ? '，错误信息：' + err.message : '')
       })
     }
   }
@@ -351,7 +351,7 @@ export async function webdavBackupTable(context: Context, todoArray?: TodoItem[]
       }
     } catch (err) {
       await promptAction.openToast({
-        message: '发生错误，错误码：' + err.code
+        message: '发生错误，错误码：' + err.code + (err.message ? '，错误信息：' + err.message : '')
       })
       return 'fail'
     }

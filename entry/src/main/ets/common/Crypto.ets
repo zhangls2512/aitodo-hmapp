@@ -137,7 +137,7 @@ export async function importCustomKey(key: string) {
     }
     if (err.code) {
       await promptAction.openToast({
-        message: '导入失败，错误码：' + err.code
+        message: '导入失败，错误码：' + err.code + (err.message ? '，错误信息：' + err.message : '')
       })
     }
   }
@@ -159,7 +159,7 @@ export async function exportKey(): Promise<CustomKey | 'fail'> {
     }
   } catch (err) {
     await promptAction.openToast({
-      message: '发生错误，错误码：' + err.code
+      message: '发生错误，错误码：' + err.code + (err.message ? '，错误信息：' + err.message : '')
     })
     return 'fail'
   }
@@ -334,7 +334,7 @@ export async function decrypt(encryptData: EncryptData): Promise<string> {
     return 'fail'
   } catch (err) {
     await promptAction.openToast({
-      message: '发生错误，错误码：' + err.code
+      message: '发生错误，错误码：' + err.code + (err.message ? '，错误信息：' + err.message : '')
     })
     return 'fail'
   }

@@ -66,7 +66,7 @@ struct Servicemode {
                     })
                   } catch (err) {
                     await promptAction.openToast({
-                      message: '发生错误，错误码：' + err.code + '，错误信息：' + err.message
+                      message: '发生错误，错误码：' + err.code + (err.message ? '，错误信息：' + err.message : '')
                     })
                   }
                 })

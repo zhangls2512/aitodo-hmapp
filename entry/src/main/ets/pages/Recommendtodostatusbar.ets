@@ -12,8 +12,7 @@ struct Recommendtodostatusbar {
     Column() {
       Button('刷新')
         .margin({
-          bottom: $r('sys.float.ohos_id_elements_margin_vertical_m'),
-          top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+          bottom: $r('sys.float.ohos_id_elements_margin_vertical_m')
         })
         .onClick(async () => {
           this.todoArray = await getRecommendTodoList(this.context)

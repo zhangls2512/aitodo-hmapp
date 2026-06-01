@@ -242,7 +242,6 @@ export default struct Updatetodo {
               type: ToggleType.Switch,
               isOn: this.recurrence!!
             })
-              .enabled(this.teamId === '')
           }
           .margin({
             top: $r('sys.float.ohos_id_elements_margin_vertical_m')

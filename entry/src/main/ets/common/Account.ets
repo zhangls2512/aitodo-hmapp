@@ -42,7 +42,7 @@ export async function setPersonalAccount(accessToken: string, accountInfo: Perso
     globalPersonalAccountInfo = accountInfo
   } catch (err) {
     await promptAction.openToast({
-      message: '发生错误，错误码：' + err.code
+      message: '发生错误，错误码：' + err.code + (err.message ? '，错误信息：' + err.message : '')
     })
   }
 }
@@ -181,7 +181,7 @@ export async function autoLoginPersonalAccount(context: Context) {
     } catch (err) {
       if (err.code !== 1021300004) {
         await promptAction.openToast({
-          message: '发生错误，错误码：' + err.code + '，错误信息：' + err.message
+          message: '发生错误，错误码：' + err.code + (err.message ? '，错误信息：' + err.message : '')
         })
       }
     }
@@ -217,7 +217,7 @@ export async function newTeamAccount(accountInfo: TeamAccountInfo) {
     }
   } catch (err) {
     await promptAction.openToast({
-      message: '发生错误，错误码：' + err.code
+      message: '发生错误，错误码：' + err.code + (err.message ? '，错误信息：' + err.message : '')
     })
   }
 }
@@ -288,7 +288,7 @@ export async function updateTeamAccountAuthorization(id: string, authorization: 
     }
   } catch (err) {
     await promptAction.openToast({
-      message: '发生错误，错误码：' + err.code
+      message: '发生错误，错误码：' + err.code + (err.message ? '，错误信息：' + err.message : '')
     })
   }
 }
