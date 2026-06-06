@@ -23,11 +23,11 @@ import { getPreferType } from '../common/Prefertype'
 import { deleteQuickBarTodo, getQuickBarTodoIdList, setQuickBarTodo, syncQuickBarTodo } from '../common/Quickbar'
 import { teamRequest } from '../common/Request'
 import { getDateStringFromTimeStamp, getDateTimeStringFromTimeStamp, getSizeString } from '../common/Stringformat'
-import { autoSyncTable, autoBackupTable } from '../common/Table'
+import { autoBackupTable, autoSyncTable } from '../common/Table'
 import { syncCompleteTeamTodo } from '../common/Teamutil'
 import NewTodo from './Newtodo'
-import TodoInfo from './Todoinfo'
 import ReviewTodo from './Reviewtodo'
+import TodoInfo from './Todoinfo'
 import UpdateTodo from './Updatetodo'
 
 interface TypeItem {
