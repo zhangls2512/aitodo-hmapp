@@ -206,7 +206,10 @@ struct Index {
           this.index = index
         })
         .onAnimationStart((index, targetIndex) => {
-          if (targetIndex === 0 || targetIndex === 1) {
+          if (targetIndex === 0) {
+            this.context.eventHub.emit('refreshRecommendtodo')
+          }
+          if (targetIndex === 1) {
             this.context.eventHub.emit('refreshTodo')
           }
           if (targetIndex === 2) {
@@ -241,7 +244,10 @@ struct Index {
             selectedIndex: 0,
             $selectedIndex: (index) => {
               this.index = index
-              if (index === 0 || index === 1) {
+              if (index === 0) {
+                this.context.eventHub.emit('refreshRecommendtodo')
+              }
+              if (index === 1) {
                 this.context.eventHub.emit('refreshTodo')
               }
               if (index === 2) {
@@ -305,6 +311,7 @@ struct Index {
           const filestring = await readUri(wantUri)
           if (wantUri.endsWith('.txt')) {
             await importTodo(this.context, filestring, relationalStore.ConflictResolution.ON_CONFLICT_IGNORE)
+            this.context.eventHub.emit('refreshRecommendtodo')
             this.context.eventHub.emit('refreshTodo')
             await promptAction.openToast({
               message: '导入成功'
@@ -315,6 +322,7 @@ struct Index {
               encrypted: false,
               data: icsparse(filestring)
             }), relationalStore.ConflictResolution.ON_CONFLICT_IGNORE)
+            this.context.eventHub.emit('refreshRecommendtodo')
             this.context.eventHub.emit('refreshTodo')
             await promptAction.openToast({
               message: '导入成功'
@@ -337,6 +345,7 @@ struct Index {
             await promptAction.openToast({
               message: '导入成功'
             })
+            this.context.eventHub.emit('refreshRecommendtodo')
             this.context.eventHub.emit('refreshTodo')
           }
           if (invitationCode) {

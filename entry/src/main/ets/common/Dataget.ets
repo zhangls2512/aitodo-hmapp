@@ -10,6 +10,11 @@ import { getFlushPreference } from './Preference'
 import { getRecentTodoFromFreq } from './Rrule'
 import { getTagMap } from './Tag'
 
+export interface TeamCompleteTimeItem {
+  uid: string,
+  time: number
+}
+
 export interface CloudBackupTimeItem {
   uid: string,
   time: number
@@ -32,6 +37,8 @@ export interface Todo {
   action: Action[],
   bz: string,
   recentCompletedTime: number,
+  recentCompleteTime?: TeamCompleteTimeItem[],
+  reviewRecentCompleteTime?: TeamCompleteTimeItem[],
   isCompleted?: boolean,
   canCompleted?: boolean,
   status?: string,
@@ -40,7 +47,11 @@ export interface Todo {
   isCloudBackup?: boolean,
   distance?: number,
   latestStartTime?: number,
-  priorityTagScore?: number
+  priorityTagScore?: number,
+  completeMode?: string,
+  allowCompleteUids?: string[],
+  allowGetUids?: string[],
+  allowReviewUids?: string[]
 }
 
 export async function isTodoCompleted(context: Context, id: string, currentTime: number) {
@@ -180,8 +191,13 @@ export async function getCanCompletedTodoList(context: Context, currentTime: num
         info.startTime = recentTodoStartEndTime.startTime
         info.endTime = recentTodoStartEndTime.endTime
       }
-      const canCompleted = await canCompleteTodo(context, info.id, !info.isCompleted, Date.now())
-      if (canCompleted) {
+      if (!info.teamId) {
+        const canCompleted = await canCompleteTodo(context, info.id, !info.isCompleted, Date.now())
+        if (canCompleted) {
+          array.push(info)
+        }
+      }
+      if (info.teamId) {
         array.push(info)
       }
     }

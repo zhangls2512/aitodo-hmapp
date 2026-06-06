@@ -40,6 +40,7 @@ struct Servicemode {
                   .onChange(isOn => {
                     this.allService = isOn
                     setFlushPreference(this.context, 'commonSetting', 'allService', isOn)
+                    this.context.eventHub.emit('refreshSetting')
                   })
               }
               .borderRadius(12)
@@ -104,6 +105,7 @@ struct Servicemode {
                   .onChange(isOn => {
                     this.allService = !isOn
                     setFlushPreference(this.context, 'commonSetting', 'allService', !isOn)
+                    this.context.eventHub.emit('refreshSetting')
                   })
               }
               .borderRadius(12)
@@ -175,9 +177,6 @@ struct Servicemode {
     .onReady(context => {
       this.pageInfos = context.pathStack
       this.allService = getFlushPreference(this.context, 'commonSetting', 'allService', true) as boolean
-    })
-    .onDisAppear(() => {
-      this.context.eventHub.emit('refreshSetting')
     })
   }
 }

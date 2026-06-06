@@ -13,12 +13,15 @@ import { getFlushPreference } from '../common/Preference'
 import { isProxyReminderEnabled, isProxyReminderOn } from '../common/Proxyreminder'
 import { teamRequest } from '../common/Request'
 import { getDateTimeStringFromTimeStamp } from '../common/Stringformat'
+import { getTeamUserList } from '../common/Teamutil'
+import { UserItem } from './Newtodo'
 
 @ComponentV2
 export default struct Updatetodo {
   @Consumer() isShowUpdateSheet: boolean = false
   @Param todoId: string = ''
   @Param teamId: string = ''
+  @Param todoInfo: string = ''
   @Local content: string = ''
   @Local priority: number = 0
   @Local startTime: number = Date.now()
@@ -52,6 +55,12 @@ export default struct Updatetodo {
   @Local cloudBackup: boolean = false
   @Local allowCloudBackup: boolean = false
   @Local alertText: string = ''
+  @Local completeModeIndex: number = 0
+  @Local completeModeValue: string = '单用户'
+  @Local userArray: UserItem[] = []
+  @Local allowCompleteUids: string[] = []
+  @Local allowGetUids: string[] = []
+  @Local allowReviewUids: string[] = []
   UIContext = this.getUIContext()
   context = this.UIContext.getHostContext() as common.UIAbilityContext
   dayMap: Record<string, string> = {
@@ -1013,7 +1022,154 @@ export default struct Updatetodo {
           top: $r('sys.float.ohos_id_elements_margin_vertical_l')
         })
       }
+      if (this.teamId) {
+        ListItem() {
+          Column() {
+            Row() {
+              Text('完成模式')
+                .fontWeight(FontWeight.Medium)
+                .layoutWeight(1)
+              Select([
+                { value: '单用户' },
+                { value: '多用户' }
+              ])
+                .selected(this.completeModeIndex!!)
+                .value(this.completeModeValue!!)
+            }
 
+            Text('单用户为一个执行者完成即完成，多用户为全部执行者完成才完成。')
+              .margin({
+                top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+              })
+            Row() {
+              Text('执行者')
+                .fontWeight(FontWeight.Medium)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
+              Flex({
+                wrap: FlexWrap.Wrap,
+                space: {
+                  main: LengthMetrics.vp(8),
+                  cross: LengthMetrics.vp(8)
+                }
+              }) {
+                ForEach(this.userArray, (item: UserItem) => {
+                  Row() {
+                    Toggle({
+                      type: ToggleType.Checkbox,
+                      isOn: this.allowCompleteUids.includes(item.userId)
+                    })
+                      .margin({
+                        right: $r('sys.float.ohos_id_elements_margin_horizontal_s')
+                      })
+                      .onChange(isOn => {
+                        if (!isOn) {
+                          this.allowCompleteUids.splice(this.allowCompleteUids.indexOf(item.userId), 1)
+                        }
+                        if (isOn && !this.allowCompleteUids.includes(item.userId)) {
+                          this.allowCompleteUids.push(item.userId)
+                        }
+                      })
+                    Text(item.userName)
+                      .enableAutoSpacing(true)
+                  }
+                })
+              }
+              .layoutWeight(1)
+            }
+            .margin({
+              top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+            })
+
+            Row() {
+              Text('查看者')
+                .fontWeight(FontWeight.Medium)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
+              Flex({
+                wrap: FlexWrap.Wrap,
+                space: {
+                  main: LengthMetrics.vp(8),
+                  cross: LengthMetrics.vp(8)
+                }
+              }) {
+                ForEach(this.userArray, (item: UserItem) => {
+                  Row() {
+                    Toggle({
+                      type: ToggleType.Checkbox,
+                      isOn: this.allowGetUids.includes(item.userId)
+                    })
+                      .margin({
+                        right: $r('sys.float.ohos_id_elements_margin_horizontal_s')
+                      })
+                      .onChange(isOn => {
+                        if (!isOn) {
+                          this.allowGetUids.splice(this.allowGetUids.indexOf(item.userId), 1)
+                        }
+                        if (isOn && !this.allowGetUids.includes(item.userId)) {
+                          this.allowGetUids.push(item.userId)
+                        }
+                      })
+                    Text(item.userName)
+                      .enableAutoSpacing(true)
+                  }
+                })
+              }
+              .layoutWeight(1)
+            }
+            .margin({
+              top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+            })
+
+            Row() {
+              Text('审核者')
+                .fontWeight(FontWeight.Medium)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
+              Flex({
+                wrap: FlexWrap.Wrap,
+                space: {
+                  main: LengthMetrics.vp(8),
+                  cross: LengthMetrics.vp(8)
+                }
+              }) {
+                ForEach(this.userArray, (item: UserItem) => {
+                  Row() {
+                    Toggle({
+                      type: ToggleType.Checkbox,
+                      isOn: this.allowReviewUids.includes(item.userId)
+                    })
+                      .margin({
+                        right: $r('sys.float.ohos_id_elements_margin_horizontal_s')
+                      })
+                      .onChange(isOn => {
+                        if (!isOn) {
+                          this.allowReviewUids.splice(this.allowReviewUids.indexOf(item.userId), 1)
+                        }
+                        if (isOn && !this.allowReviewUids.includes(item.userId)) {
+                          this.allowReviewUids.push(item.userId)
+                        }
+                      })
+                    Text(item.userName)
+                      .enableAutoSpacing(true)
+                  }
+                })
+              }
+              .layoutWeight(1)
+            }
+            .margin({
+              top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+            })
+          }
+          .alignItems(HorizontalAlign.Start)
+        }
+        .margin({
+          top: $r('sys.float.ohos_id_elements_margin_vertical_l')
+        })
+      }
       ListItem() {
         Button('修改')
           .keyboardShortcut('S', [ModifierKey.CTRL])
@@ -1103,6 +1259,7 @@ export default struct Updatetodo {
                 message: '修改成功'
               })
               this.isShowUpdateSheet = false
+              this.context.eventHub.emit('refreshTodo')
             }
             if (this.teamId) {
               const dialogControllerProgress = new CustomDialogController({
@@ -1111,7 +1268,7 @@ export default struct Updatetodo {
                 })
               })
               dialogControllerProgress.open()
-              const res = await teamRequest(this.context, this.teamId, '/newTodo', {
+              const res = await teamRequest(this.context, this.teamId, '/updateTodo', {
                 id: this.todoId,
                 content: this.content,
                 priority: this.priority,
@@ -1128,7 +1285,11 @@ export default struct Updatetodo {
                   location: this.locationLocation
                 } as Location,
                 action: this.actionArray,
-                bz: this.bz
+                bz: this.bz,
+                completeMode: this.completeModeIndex === 0 ? 'single' : 'multiple',
+                allowCompleteUids: this.allowCompleteUids,
+                allowGetUids: this.allowGetUids,
+                allowReviewUids: this.allowReviewUids
               })
               dialogControllerProgress.close()
               if (res !== 'fail') {
@@ -1136,6 +1297,7 @@ export default struct Updatetodo {
                   message: '修改成功'
                 })
                 this.isShowUpdateSheet = false
+                this.context.eventHub.emit('refreshTodo')
               }
             }
           })
@@ -1156,60 +1318,81 @@ export default struct Updatetodo {
             value: item
           }
         })
-      const todoInfo = await getTodoInfo(this.context, this.todoId) as Todo
-      this.content = todoInfo.content
-      this.priority = todoInfo.priority
-      this.startTime = todoInfo.startTime
-      this.endTime = todoInfo.endTime
-      this.duration = String(todoInfo.duration / 60000)
-      const recurrenceRule = todoInfo.recurrenceRule
-      this.recurrence = recurrenceRule ? true : false
-      if (this.recurrence) {
-        const tokens = recurrenceRule.split(';')
-        const keyValues = tokens.map(item => item.split('=', 2))
-        keyValues.forEach(item => {
-          const key = item[0]
-          const value = item[1]
-          if (key === 'FREQ') {
-            const validFreqs =
-              ['YEARLY', 'MONTHLY', 'WEEKLY', 'DAILY'].concat(getCustomFreqList(this.context).map(item => item.name))
-            const index = validFreqs.indexOf(value)
-            if (index !== -1) {
-              this.recurrenceFreqIndex = index
-              this.recurrenceFreqValue = this.freq[this.recurrenceFreqIndex].value as string
-            }
-            if (index === -1) {
-              this.recurrence = false
-            }
-          }
-          if (key === 'INTERVAL') {
-            this.recurrenceInterval = value
-          }
-          if (key === 'UNTIL') {
-            this.recurrenceUntil = icsTimeStringToTimeStamp(value, true)
-          }
-          if (key === 'COUNT') {
-            this.recurrenceCount = value
-          }
-          if (key === 'BYMONTH') {
-            this.recurrenceByMonth = value.split(',').map(item => Number(item))
-          }
-          if (key === 'BYMONTHDAY') {
-            this.recurrenceByMonthDay = value.split(',').map(item => Number(item))
-          }
-          if (key === 'BYDAY') {
-            this.recurrenceByDay = value.split(',')
-          }
-        })
+      let todoInfo: Todo | undefined = undefined
+      if (!this.teamId) {
+        todoInfo = await getTodoInfo(this.context, this.todoId) as Todo
       }
-      this.excludeTime = todoInfo.excludeTime
-      this.tagArray = todoInfo.tag
-      this.dependencyArray = todoInfo.dependency
-      this.locationLatitude = todoInfo.location.latitude
-      this.locationLongitude = todoInfo.location.longitude
-      this.locationLocation = todoInfo.location.location
-      this.actionArray = todoInfo.action
-      this.bz = todoInfo.bz
+      if (this.teamId) {
+        todoInfo = JSON.parse(this.todoInfo)
+      }
+      if (todoInfo) {
+        this.content = todoInfo.content
+        this.priority = todoInfo.priority
+        this.startTime = todoInfo.startTime
+        this.endTime = todoInfo.endTime
+        this.duration = String(todoInfo.duration / 60000)
+        const recurrenceRule = todoInfo.recurrenceRule
+        this.recurrence = recurrenceRule ? true : false
+        if (this.recurrence) {
+          const tokens = recurrenceRule.split(';')
+          const keyValues = tokens.map(item => item.split('=', 2))
+          keyValues.forEach(item => {
+            const key = item[0]
+            const value = item[1]
+            if (key === 'FREQ') {
+              const validFreqs =
+                ['YEARLY', 'MONTHLY', 'WEEKLY', 'DAILY'].concat(getCustomFreqList(this.context).map(item => item.name))
+              const index = validFreqs.indexOf(value)
+              if (index !== -1) {
+                this.recurrenceFreqIndex = index
+                this.recurrenceFreqValue = this.freq[this.recurrenceFreqIndex].value as string
+              }
+              if (index === -1) {
+                this.recurrence = false
+              }
+            }
+            if (key === 'INTERVAL') {
+              this.recurrenceInterval = value
+            }
+            if (key === 'UNTIL') {
+              this.recurrenceUntil = icsTimeStringToTimeStamp(value, true)
+            }
+            if (key === 'COUNT') {
+              this.recurrenceCount = value
+            }
+            if (key === 'BYMONTH') {
+              this.recurrenceByMonth = value.split(',').map(item => Number(item))
+            }
+            if (key === 'BYMONTHDAY') {
+              this.recurrenceByMonthDay = value.split(',').map(item => Number(item))
+            }
+            if (key === 'BYDAY') {
+              this.recurrenceByDay = value.split(',')
+            }
+          })
+        }
+        this.excludeTime = todoInfo.excludeTime
+        this.tagArray = todoInfo.tag
+        this.dependencyArray = todoInfo.dependency
+        this.locationLatitude = todoInfo.location.latitude
+        this.locationLongitude = todoInfo.location.longitude
+        this.locationLocation = todoInfo.location.location
+        this.actionArray = todoInfo.action
+        this.bz = todoInfo.bz
+        if (this.teamId) {
+          const completeMode = todoInfo.completeMode
+          this.completeModeIndex = completeMode === 'single' ? 0 : 1
+          if (this.completeModeIndex === 0) {
+            this.completeModeValue = '单用户'
+          }
+          if (this.completeModeIndex === 1) {
+            this.completeModeValue = '多用户'
+          }
+          this.allowCompleteUids = todoInfo.allowCompleteUids ?? []
+          this.allowGetUids = todoInfo.allowGetUids ?? []
+          this.allowReviewUids = todoInfo.allowReviewUids ?? []
+        }
+      }
       if (!this.teamId) {
         this.remind = await isProxyReminderOn(this.todoId)
         if (!this.remind) {
@@ -1229,6 +1412,16 @@ export default struct Updatetodo {
             this.cloudBackup = getFlushPreference(this.context, 'cloudbackupSetting', 'autoOn', false) as boolean
           }
         }
+      }
+      if (this.teamId) {
+        const dialogControllerProgress = new CustomDialogController({
+          builder: LoadingDialog({
+            content: '请求中...'
+          })
+        })
+        dialogControllerProgress.open()
+        this.userArray = await getTeamUserList(this.context, this.teamId)
+        dialogControllerProgress.close()
       }
     })
   }

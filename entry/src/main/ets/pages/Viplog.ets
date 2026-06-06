@@ -26,7 +26,7 @@ struct Viplog {
   UIContext = this.getUIContext()
   context = this.UIContext.getHostContext() as common.UIAbilityContext
   accessToken = ''
-  empty: boolean | undefined = undefined
+  lastCount = -1
 
   build() {
     HdsNavDestination() {
@@ -241,7 +241,7 @@ struct Viplog {
         right: $r('sys.float.ohos_id_elements_margin_horizontal_l')
       })
       .onReachEnd(async () => {
-        if (this.accessToken && this.empty === false && this.viplogArray.length > 0) {
+        if (this.accessToken && this.viplogArray.length > 0 && this.lastCount === 10) {
           this.loading = true
           const res = await developerRequest(this.context, '/product/getViplogList', {
             accessToken: this.accessToken,
@@ -251,9 +251,7 @@ struct Viplog {
           this.loading = false
           if (res !== 'fail') {
             const array = JSON.parse(res).data as Item[]
-            if (array.length === 0) {
-              this.empty = true
-            }
+            this.lastCount = array.length
             this.viplogArray = this.viplogArray.concat(array)
           }
         }
@@ -303,7 +301,7 @@ struct Viplog {
         this.loading = false
         if (res !== 'fail') {
           this.viplogArray = JSON.parse(res).data
-          this.empty = false
+          this.lastCount = this.viplogArray.length
         }
       }
     })

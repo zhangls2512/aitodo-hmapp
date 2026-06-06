@@ -1,7 +1,8 @@
 import { common } from '@kit.AbilityKit'
-import { LengthMetrics } from '@kit.ArkUI'
+import { LengthMetrics, LoadingDialog, promptAction } from '@kit.ArkUI'
 import { hdsMaterial, HdsNavigation, HdsNavigationTitleMode, ScrollEffectType } from '@kit.UIDesignKit'
 import { getTeamAccountList, removeAccount, TeamAccountInfo } from '../common/Account'
+import { syncCompleteTeamTodo } from '../common/Teamutil'
 
 @ComponentV2
 export default struct Team {
@@ -44,16 +45,32 @@ export default struct Team {
         ForEach(this.teamAccountArray, (item: TeamAccountInfo, index) => {
           ListItem() {
             Column() {
-              Text(item.teamName)
-                .enableAutoSpacing(true)
-                .fontColor($r('sys.color.font_secondary'))
-                .fontSize($r('sys.float.ohos_id_text_size_body2'))
-                .fontWeight(FontWeight.Medium)
-                .margin({
-                  bottom: 6,
-                  left: 12,
-                  right: 12
-                })
+              Row() {
+                Text(item.teamName)
+                  .enableAutoSpacing(true)
+                  .fontColor($r('sys.color.font_secondary'))
+                  .fontSize($r('sys.float.ohos_id_text_size_body2'))
+                  .fontWeight(FontWeight.Medium)
+                  .margin({
+                    left: 12,
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
+                Button('同步执行待办到本地')
+                  .onClick(async () => {
+                    const dialogControllerProgress = new CustomDialogController({
+                      builder: LoadingDialog({
+                        content: '请求中...'
+                      })
+                    })
+                    dialogControllerProgress.open()
+                    await syncCompleteTeamTodo(this.context, item.teamId)
+                    dialogControllerProgress.close()
+                    await promptAction.openToast({
+                      message: '同步完成'
+                    })
+                  })
+              }
+
               Column() {
                 Row() {
                   Text(item.name)
@@ -297,6 +314,9 @@ export default struct Team {
               }
               .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
               .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
+              .margin({
+                top: 6
+              })
               .padding($r('sys.float.ohos_id_corner_radius_mark'))
             }
             .alignItems(HorizontalAlign.Start)

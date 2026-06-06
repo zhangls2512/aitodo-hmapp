@@ -27,12 +27,18 @@ import { getFlushPreference } from '../common/Preference'
 import { isProxyReminderEnabled } from '../common/Proxyreminder'
 import { teamRequest } from '../common/Request'
 import { getDateTimeStringFromTimeStamp } from '../common/Stringformat'
+import { getTeamUserList } from '../common/Teamutil'
 import { OpenAppByTypeValue } from './Todoinfo'
 
 interface DateTime {
   startTimestamp: number,
   endTimestamp: number,
   rrule: string
+}
+
+export interface UserItem {
+  userId: string,
+  userName: string
 }
 
 @ComponentV2
@@ -72,6 +78,12 @@ export default struct Newtodo {
   @Local cloudBackup: boolean = false
   @Local allowCloudBackup: boolean = false
   @Local alertText: string = ''
+  @Local completeModeIndex: number = 0
+  @Local completeModeValue: string = '单用户'
+  @Local userArray: UserItem[] = []
+  @Local allowCompleteUids: string[] = []
+  @Local allowGetUids: string[] = []
+  @Local allowReviewUids: string[] = []
   UIContext = this.getUIContext()
   context = this.UIContext.getHostContext() as common.UIAbilityContext
   dialogControllerProgress = new CustomDialogController({
@@ -1369,7 +1381,154 @@ export default struct Newtodo {
           top: $r('sys.float.ohos_id_elements_margin_vertical_l')
         })
       }
+      if (this.teamId) {
+        ListItem() {
+          Column() {
+            Row() {
+              Text('完成模式')
+                .fontWeight(FontWeight.Medium)
+                .layoutWeight(1)
+              Select([
+                { value: '单用户' },
+                { value: '多用户' }
+              ])
+                .selected(this.completeModeIndex!!)
+                .value(this.completeModeValue!!)
+            }
 
+            Text('单用户为一个执行者完成即完成，多用户为全部执行者完成才完成。')
+              .margin({
+                top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+              })
+            Row() {
+              Text('执行者')
+                .fontWeight(FontWeight.Medium)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
+              Flex({
+                wrap: FlexWrap.Wrap,
+                space: {
+                  main: LengthMetrics.vp(8),
+                  cross: LengthMetrics.vp(8)
+                }
+              }) {
+                ForEach(this.userArray, (item: UserItem) => {
+                  Row() {
+                    Toggle({
+                      type: ToggleType.Checkbox,
+                      isOn: this.allowCompleteUids.includes(item.userId)
+                    })
+                      .margin({
+                        right: $r('sys.float.ohos_id_elements_margin_horizontal_s')
+                      })
+                      .onChange(isOn => {
+                        if (!isOn) {
+                          this.allowCompleteUids.splice(this.allowCompleteUids.indexOf(item.userId), 1)
+                        }
+                        if (isOn && !this.allowCompleteUids.includes(item.userId)) {
+                          this.allowCompleteUids.push(item.userId)
+                        }
+                      })
+                    Text(item.userName)
+                      .enableAutoSpacing(true)
+                  }
+                })
+              }
+              .layoutWeight(1)
+            }
+            .margin({
+              top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+            })
+
+            Row() {
+              Text('查看者')
+                .fontWeight(FontWeight.Medium)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
+              Flex({
+                wrap: FlexWrap.Wrap,
+                space: {
+                  main: LengthMetrics.vp(8),
+                  cross: LengthMetrics.vp(8)
+                }
+              }) {
+                ForEach(this.userArray, (item: UserItem) => {
+                  Row() {
+                    Toggle({
+                      type: ToggleType.Checkbox,
+                      isOn: this.allowGetUids.includes(item.userId)
+                    })
+                      .margin({
+                        right: $r('sys.float.ohos_id_elements_margin_horizontal_s')
+                      })
+                      .onChange(isOn => {
+                        if (!isOn) {
+                          this.allowGetUids.splice(this.allowGetUids.indexOf(item.userId), 1)
+                        }
+                        if (isOn && !this.allowGetUids.includes(item.userId)) {
+                          this.allowGetUids.push(item.userId)
+                        }
+                      })
+                    Text(item.userName)
+                      .enableAutoSpacing(true)
+                  }
+                })
+              }
+              .layoutWeight(1)
+            }
+            .margin({
+              top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+            })
+
+            Row() {
+              Text('审核者')
+                .fontWeight(FontWeight.Medium)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
+              Flex({
+                wrap: FlexWrap.Wrap,
+                space: {
+                  main: LengthMetrics.vp(8),
+                  cross: LengthMetrics.vp(8)
+                }
+              }) {
+                ForEach(this.userArray, (item: UserItem) => {
+                  Row() {
+                    Toggle({
+                      type: ToggleType.Checkbox,
+                      isOn: this.allowReviewUids.includes(item.userId)
+                    })
+                      .margin({
+                        right: $r('sys.float.ohos_id_elements_margin_horizontal_s')
+                      })
+                      .onChange(isOn => {
+                        if (!isOn) {
+                          this.allowReviewUids.splice(this.allowReviewUids.indexOf(item.userId), 1)
+                        }
+                        if (isOn && !this.allowReviewUids.includes(item.userId)) {
+                          this.allowReviewUids.push(item.userId)
+                        }
+                      })
+                    Text(item.userName)
+                      .enableAutoSpacing(true)
+                  }
+                })
+              }
+              .layoutWeight(1)
+            }
+            .margin({
+              top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+            })
+          }
+          .alignItems(HorizontalAlign.Start)
+        }
+        .margin({
+          top: $r('sys.float.ohos_id_elements_margin_vertical_l')
+        })
+      }
       ListItem() {
         Button('新增')
           .keyboardShortcut('S', [ModifierKey.CTRL])
@@ -1459,6 +1618,8 @@ export default struct Newtodo {
                 message: '新增成功'
               })
               this.isShowNewSheet = false
+              this.context.eventHub.emit('refreshRecommendtodo')
+              this.context.eventHub.emit('refreshTodo')
             }
             if (this.teamId) {
               const dialogControllerProgress = new CustomDialogController({
@@ -1483,7 +1644,11 @@ export default struct Newtodo {
                   location: this.locationLocation
                 } as Location,
                 action: this.actionArray,
-                bz: this.bz
+                bz: this.bz,
+                completeMode: this.completeModeIndex === 0 ? 'single' : 'multiple',
+                allowCompleteUids: this.allowCompleteUids,
+                allowGetUids: this.allowGetUids,
+                allowReviewUids: this.allowReviewUids
               })
               dialogControllerProgress.close()
               if (res !== 'fail') {
@@ -1491,6 +1656,8 @@ export default struct Newtodo {
                   message: '新增成功'
                 })
                 this.isShowNewSheet = false
+                this.context.eventHub.emit('refreshRecommendtodo')
+                this.context.eventHub.emit('refreshTodo')
               }
             }
           })
@@ -1528,6 +1695,16 @@ export default struct Newtodo {
             this.cloudBackup = getFlushPreference(this.context, 'cloudbackupSetting', 'autoOn', false) as boolean
           }
         }
+      }
+      if (this.teamId) {
+        const dialogControllerProgress = new CustomDialogController({
+          builder: LoadingDialog({
+            content: '请求中...'
+          })
+        })
+        dialogControllerProgress.open()
+        this.userArray = await getTeamUserList(this.context, this.teamId)
+        dialogControllerProgress.close()
       }
     })
     .onDisAppear(async () => {

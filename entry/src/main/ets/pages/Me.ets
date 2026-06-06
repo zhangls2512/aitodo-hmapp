@@ -136,9 +136,6 @@ export default struct Me {
             preferType: this.preferType,
             title: {
               title: '登录'
-            },
-            onDisappear: async () => {
-              await this.get()
             }
           })
 

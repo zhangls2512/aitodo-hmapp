@@ -30,6 +30,7 @@ import { write } from '../common/File'
 import openLink from '../common/Openlink'
 import { getFlushPreference, getTempPreference, setTempPreference } from '../common/Preference'
 import { autoBackupTable, autoSyncTable } from '../common/Table'
+import { syncAllTeamCompleteTodo } from '../common/Teamutil'
 
 interface JsErrorObject {
   name: string,
@@ -355,6 +356,7 @@ export default class EntryAbility extends UIAbility {
     if (autoImport) {
       const res = await importCloudBackupTodo(context, relationalStore.ConflictResolution.ON_CONFLICT_IGNORE)
       if (res === 'success') {
+        this.context.eventHub.emit('refreshRecommendtodo')
         this.context.eventHub.emit('refreshTodo')
         await promptAction.openToast({
           message: '自动导入云备份成功'
@@ -460,6 +462,7 @@ export default class EntryAbility extends UIAbility {
         await autoSyncTable(this.context, item)
       })
       await Promise.all(promises)
+      this.context.eventHub.emit('refreshRecommendtodo')
       this.context.eventHub.emit('refreshTodo')
       await autoBackupTable(this.context)
     })
@@ -567,6 +570,7 @@ export default class EntryAbility extends UIAbility {
                     await Promise.all(insertpromises)
                     await Promise.all(updatepromises)
                     await Promise.all(deletepromises)
+                    this.context.eventHub.emit('refreshRecommendtodo')
                     this.context.eventHub.emit('refreshTodo')
                     await autoSyncTable(this.context)
                     await autoBackupTable(this.context)
@@ -697,6 +701,7 @@ export default class EntryAbility extends UIAbility {
     }
     await this.appInit(want)
     await clearNouseData(this.context)
+    await syncAllTeamCompleteTodo(this.context)
   }
 
   async onNewWant(want: Want) {
