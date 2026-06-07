@@ -9,7 +9,8 @@ interface TeamAccountItem {
   userId: string,
   userName: string,
   userEnabled: boolean,
-  permission: string[]
+  permission: string[],
+  admin: boolean
 }
 
 @Builder
@@ -25,7 +26,7 @@ struct Teamaccountlist {
   context = this.UIContext.getHostContext() as common.UIAbilityContext
   pageInfos = new NavPathStack()
   teamId = ''
-  empty: boolean | undefined = undefined
+  lastCount = -1
   dialogControllerProgress = new CustomDialogController({
     builder: LoadingDialog({
       content: '请求中...'
@@ -45,6 +46,7 @@ struct Teamaccountlist {
     this.dialogControllerProgress.close()
     if (res !== 'fail') {
       this.teamAccountArray = JSON.parse(res).data
+      this.lastCount = this.teamAccountArray.length
     }
   }
 
@@ -129,6 +131,7 @@ struct Teamaccountlist {
                     right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
                   })
                 Text(item.userName)
+                  .enableAutoSpacing(true)
                   .fontColor($r('sys.color.font_secondary'))
                   .fontSize($r('sys.float.ohos_id_text_size_body2'))
                   .layoutWeight(1)
@@ -158,236 +161,238 @@ struct Teamaccountlist {
               .borderRadius(12)
               .padding(12)
 
-              Divider()
-                .padding({
-                  left: 12,
-                  right: 12
-                })
-              Row() {
-                Text(item.userEnabled ? '禁用' : '启用')
-                  .fontColor(item.userEnabled ? $r('sys.color.warning') : $r('sys.color.font_emphasize'))
-                  .layoutWeight(1)
-                  .margin({
-                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+              if (!item.admin) {
+                Divider()
+                  .padding({
+                    left: 12,
+                    right: 12
                   })
-                Image($r('app.media.right'))
-                  .fillColor($r('sys.color.icon_fourth'))
-                  .height(12)
-                  .width(12)
-              }
-              .borderRadius(12)
-              .padding(12)
-              .stateStyles({
-                normal: {
-                  .backgroundColor(this.hoverId === '1,' + index ? $r('sys.color.interactive_hover') :
-                    $r('sys.color.ohos_id_color_card_bg'))
-                },
-                pressed: {
-                  .backgroundColor($r('sys.color.interactive_pressed'))
-                }
-              })
-              .onHover(isHover => {
-                if (!isHover) {
-                  this.hoverId = ''
-                }
-                if (isHover) {
-                  this.hoverId = '1,' + index
-                }
-              })
-              .onClick(async () => {
-                this.dialogControllerProgress.open()
-                const res = await teamRequest(this.context, this.teamId, '/updateUserEnabled', {
-                  id: item.userId
-                })
-                this.dialogControllerProgress.close()
-                if (res !== 'fail') {
-                  await promptAction.openToast({
-                    message: (item.userEnabled ? '禁用' : '启用') + '成功'
-                  })
-                  await this.get()
-                }
-              })
-
-              Divider()
-                .padding({
-                  left: 12,
-                  right: 12
-                })
-              Row() {
-                Text('重置密码')
-                  .fontColor($r('sys.color.warning'))
-                  .layoutWeight(1)
-                  .margin({
-                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                  })
-                Image($r('app.media.right'))
-                  .fillColor($r('sys.color.icon_fourth'))
-                  .height(12)
-                  .width(12)
-              }
-              .borderRadius(12)
-              .padding(12)
-              .stateStyles({
-                normal: {
-                  .backgroundColor(this.hoverId === '2,' + index ? $r('sys.color.interactive_hover') :
-                    $r('sys.color.ohos_id_color_card_bg'))
-                },
-                pressed: {
-                  .backgroundColor($r('sys.color.interactive_pressed'))
-                }
-              })
-              .onHover(isHover => {
-                if (!isHover) {
-                  this.hoverId = ''
-                }
-                if (isHover) {
-                  this.hoverId = '2,' + index
-                }
-              })
-              .onClick(async () => {
-                const promptAction = this.UIContext.getPromptAction()
-                const data = await promptAction.showDialog({
-                  title: '提示',
-                  message: '重置密码为 ID，确定重置？',
-                  buttons: [
-                    {
-                      text: '取消',
-                      color: $r('sys.color.font_primary')
-                    },
-                    {
-                      text: '确定',
-                      color: $r('sys.color.warning')
-                    }
-                  ]
-                })
-                if (data.index === 1) {
-                  this.dialogControllerProgress.open()
-                  const res = await teamRequest(this.context, this.teamId, '/resetUserPassword', {
-                    id: item.userId
-                  })
-                  this.dialogControllerProgress.close()
-                  if (res !== 'fail') {
-                    await promptAction.openToast({
-                      message: '重置成功'
+                Row() {
+                  Text(item.userEnabled ? '禁用' : '启用')
+                    .fontColor(item.userEnabled ? $r('sys.color.warning') : $r('sys.color.font_emphasize'))
+                    .layoutWeight(1)
+                    .margin({
+                      right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
                     })
+                  Image($r('app.media.right'))
+                    .fillColor($r('sys.color.icon_fourth'))
+                    .height(12)
+                    .width(12)
+                }
+                .borderRadius(12)
+                .padding(12)
+                .stateStyles({
+                  normal: {
+                    .backgroundColor(this.hoverId === '1,' + index ? $r('sys.color.interactive_hover') :
+                      $r('sys.color.ohos_id_color_card_bg'))
+                  },
+                  pressed: {
+                    .backgroundColor($r('sys.color.interactive_pressed'))
                   }
-                }
-              })
-
-              Divider()
-                .padding({
-                  left: 12,
-                  right: 12
                 })
-              Row() {
-                Text('修改')
-                  .layoutWeight(1)
-                  .margin({
-                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                  })
-                Image($r('app.media.right'))
-                  .fillColor($r('sys.color.icon_fourth'))
-                  .height(12)
-                  .width(12)
-              }
-              .borderRadius(12)
-              .padding(12)
-              .stateStyles({
-                normal: {
-                  .backgroundColor(this.hoverId === '3,' + index ? $r('sys.color.interactive_hover') :
-                    $r('sys.color.ohos_id_color_card_bg'))
-                },
-                pressed: {
-                  .backgroundColor($r('sys.color.interactive_pressed'))
-                }
-              })
-              .onHover(isHover => {
-                if (!isHover) {
-                  this.hoverId = ''
-                }
-                if (isHover) {
-                  this.hoverId = '3,' + index
-                }
-              })
-              .onClick(() => {
-                this.pageInfos.pushPath({
-                  name: 'Updateteamaccount',
-                  param: {
-                    teamId: this.teamId,
-                    userId: item.userId,
-                    name: item.userName,
-                    permission: item.permission
-                  } as Param
+                .onHover(isHover => {
+                  if (!isHover) {
+                    this.hoverId = ''
+                  }
+                  if (isHover) {
+                    this.hoverId = '1,' + index
+                  }
                 })
-              })
-
-              Divider()
-                .padding({
-                  left: 12,
-                  right: 12
-                })
-              Row() {
-                Text('删除')
-                  .fontColor($r('sys.color.warning'))
-                  .fontWeight(FontWeight.Medium)
-                  .layoutWeight(1)
-                  .margin({
-                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                  })
-                Image($r('app.media.right'))
-                  .fillColor($r('sys.color.icon_fourth'))
-                  .height(12)
-                  .width(12)
-              }
-              .borderRadius(12)
-              .padding(12)
-              .stateStyles({
-                normal: {
-                  .backgroundColor(this.hoverId === '4,' + index ? $r('sys.color.interactive_hover') :
-                    $r('sys.color.ohos_id_color_card_bg'))
-                },
-                pressed: {
-                  .backgroundColor($r('sys.color.interactive_pressed'))
-                }
-              })
-              .onHover(isHover => {
-                if (!isHover) {
-                  this.hoverId = ''
-                }
-                if (isHover) {
-                  this.hoverId = '4,' + index
-                }
-              })
-              .onClick(async () => {
-                const promptAction = this.UIContext.getPromptAction()
-                const data = await promptAction.showDialog({
-                  title: '提示',
-                  message: '删除成功后无法恢复，确定删除？',
-                  buttons: [
-                    {
-                      text: '取消',
-                      color: $r('sys.color.font_primary')
-                    },
-                    {
-                      text: '确定',
-                      color: $r('sys.color.warning')
-                    }
-                  ]
-                })
-                if (data.index === 1) {
+                .onClick(async () => {
                   this.dialogControllerProgress.open()
-                  const res = await teamRequest(this.context, this.teamId, '/deleteUser', {
+                  const res = await teamRequest(this.context, this.teamId, '/updateUserEnabled', {
                     id: item.userId
                   })
                   this.dialogControllerProgress.close()
                   if (res !== 'fail') {
                     await promptAction.openToast({
-                      message: '删除成功'
+                      message: (item.userEnabled ? '禁用' : '启用') + '成功'
                     })
                     await this.get()
                   }
+                })
+
+                Divider()
+                  .padding({
+                    left: 12,
+                    right: 12
+                  })
+                Row() {
+                  Text('重置密码')
+                    .fontColor($r('sys.color.warning'))
+                    .layoutWeight(1)
+                    .margin({
+                      right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                    })
+                  Image($r('app.media.right'))
+                    .fillColor($r('sys.color.icon_fourth'))
+                    .height(12)
+                    .width(12)
                 }
-              })
+                .borderRadius(12)
+                .padding(12)
+                .stateStyles({
+                  normal: {
+                    .backgroundColor(this.hoverId === '2,' + index ? $r('sys.color.interactive_hover') :
+                      $r('sys.color.ohos_id_color_card_bg'))
+                  },
+                  pressed: {
+                    .backgroundColor($r('sys.color.interactive_pressed'))
+                  }
+                })
+                .onHover(isHover => {
+                  if (!isHover) {
+                    this.hoverId = ''
+                  }
+                  if (isHover) {
+                    this.hoverId = '2,' + index
+                  }
+                })
+                .onClick(async () => {
+                  const promptAction = this.UIContext.getPromptAction()
+                  const data = await promptAction.showDialog({
+                    title: '提示',
+                    message: '重置密码为 ID，确定重置？',
+                    buttons: [
+                      {
+                        text: '取消',
+                        color: $r('sys.color.font_primary')
+                      },
+                      {
+                        text: '确定',
+                        color: $r('sys.color.warning')
+                      }
+                    ]
+                  })
+                  if (data.index === 1) {
+                    this.dialogControllerProgress.open()
+                    const res = await teamRequest(this.context, this.teamId, '/resetUserPassword', {
+                      id: item.userId
+                    })
+                    this.dialogControllerProgress.close()
+                    if (res !== 'fail') {
+                      await promptAction.openToast({
+                        message: '重置成功'
+                      })
+                    }
+                  }
+                })
+
+                Divider()
+                  .padding({
+                    left: 12,
+                    right: 12
+                  })
+                Row() {
+                  Text('修改')
+                    .layoutWeight(1)
+                    .margin({
+                      right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                    })
+                  Image($r('app.media.right'))
+                    .fillColor($r('sys.color.icon_fourth'))
+                    .height(12)
+                    .width(12)
+                }
+                .borderRadius(12)
+                .padding(12)
+                .stateStyles({
+                  normal: {
+                    .backgroundColor(this.hoverId === '3,' + index ? $r('sys.color.interactive_hover') :
+                      $r('sys.color.ohos_id_color_card_bg'))
+                  },
+                  pressed: {
+                    .backgroundColor($r('sys.color.interactive_pressed'))
+                  }
+                })
+                .onHover(isHover => {
+                  if (!isHover) {
+                    this.hoverId = ''
+                  }
+                  if (isHover) {
+                    this.hoverId = '3,' + index
+                  }
+                })
+                .onClick(() => {
+                  this.pageInfos.pushPath({
+                    name: 'Updateteamaccount',
+                    param: {
+                      teamId: this.teamId,
+                      userId: item.userId,
+                      name: item.userName,
+                      permission: item.permission
+                    } as Param
+                  })
+                })
+
+                Divider()
+                  .padding({
+                    left: 12,
+                    right: 12
+                  })
+                Row() {
+                  Text('删除')
+                    .fontColor($r('sys.color.warning'))
+                    .fontWeight(FontWeight.Medium)
+                    .layoutWeight(1)
+                    .margin({
+                      right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                    })
+                  Image($r('app.media.right'))
+                    .fillColor($r('sys.color.icon_fourth'))
+                    .height(12)
+                    .width(12)
+                }
+                .borderRadius(12)
+                .padding(12)
+                .stateStyles({
+                  normal: {
+                    .backgroundColor(this.hoverId === '4,' + index ? $r('sys.color.interactive_hover') :
+                      $r('sys.color.ohos_id_color_card_bg'))
+                  },
+                  pressed: {
+                    .backgroundColor($r('sys.color.interactive_pressed'))
+                  }
+                })
+                .onHover(isHover => {
+                  if (!isHover) {
+                    this.hoverId = ''
+                  }
+                  if (isHover) {
+                    this.hoverId = '4,' + index
+                  }
+                })
+                .onClick(async () => {
+                  const promptAction = this.UIContext.getPromptAction()
+                  const data = await promptAction.showDialog({
+                    title: '提示',
+                    message: '删除成功后无法恢复，确定删除？',
+                    buttons: [
+                      {
+                        text: '取消',
+                        color: $r('sys.color.font_primary')
+                      },
+                      {
+                        text: '确定',
+                        color: $r('sys.color.warning')
+                      }
+                    ]
+                  })
+                  if (data.index === 1) {
+                    this.dialogControllerProgress.open()
+                    const res = await teamRequest(this.context, this.teamId, '/deleteUser', {
+                      id: item.userId
+                    })
+                    this.dialogControllerProgress.close()
+                    if (res !== 'fail') {
+                      await promptAction.openToast({
+                        message: '删除成功'
+                      })
+                      await this.get()
+                    }
+                  }
+                })
+              }
             }
             .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
             .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
@@ -407,7 +412,7 @@ struct Teamaccountlist {
         right: $r('sys.float.ohos_id_elements_margin_horizontal_l')
       })
       .onReachEnd(async () => {
-        if (this.empty === false && this.teamAccountArray.length > 0) {
+        if (this.teamAccountArray.length > 0 && this.lastCount === 10) {
           this.dialogControllerProgress.open()
           const res = await teamRequest(this.context, this.teamId, '/getUserList', {
             skip: this.teamAccountArray.length
@@ -415,9 +420,7 @@ struct Teamaccountlist {
           this.dialogControllerProgress.close()
           if (res !== 'fail') {
             const array = JSON.parse(res).data as TeamAccountItem[]
-            if (array.length === 0) {
-              this.empty = true
-            }
+            this.lastCount = array.length
             this.teamAccountArray = this.teamAccountArray.concat(array)
           }
         }

@@ -40,6 +40,7 @@ struct Servicemode {
                   .onChange(isOn => {
                     this.allService = isOn
                     setFlushPreference(this.context, 'commonSetting', 'allService', isOn)
+                    this.context.eventHub.emit('refreshSetting')
                   })
               }
               .borderRadius(12)
@@ -66,7 +67,7 @@ struct Servicemode {
                     })
                   } catch (err) {
                     await promptAction.openToast({
-                      message: '发生错误，错误码：' + err.code + '，错误信息：' + err.message
+                      message: '发生错误，错误码：' + err.code + (err.message ? '，错误信息：' + err.message : '')
                     })
                   }
                 })
@@ -104,6 +105,7 @@ struct Servicemode {
                   .onChange(isOn => {
                     this.allService = !isOn
                     setFlushPreference(this.context, 'commonSetting', 'allService', !isOn)
+                    this.context.eventHub.emit('refreshSetting')
                   })
               }
               .borderRadius(12)
@@ -175,9 +177,6 @@ struct Servicemode {
     .onReady(context => {
       this.pageInfos = context.pathStack
       this.allService = getFlushPreference(this.context, 'commonSetting', 'allService', true) as boolean
-    })
-    .onDisAppear(() => {
-      this.context.eventHub.emit('refreshSetting')
     })
   }
 }

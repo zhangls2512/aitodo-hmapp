@@ -16,6 +16,11 @@
       "buildFunction": "UpdateteamaccountBuilder"
     },
     {
+      "name": "Teamviplog",
+      "pageSourceFile": "src/main/ets/pages/Teamviplog.ets",
+      "buildFunction": "TeamviplogBuilder"
+    },
+    {
       "name": "Teamaccountlist",
       "pageSourceFile": "src/main/ets/pages/Teamaccountlist.ets",
       "buildFunction": "TeamaccountlistBuilder"
@@ -29,6 +34,11 @@
       "name": "Updateteamaccountpassword",
       "pageSourceFile": "src/main/ets/pages/Updateteamaccountpassword.ets",
       "buildFunction": "UpdateteamaccountpasswordBuilder"
+    },
+    {
+      "name": "Teaminfo",
+      "pageSourceFile": "src/main/ets/pages/Teaminfo.ets",
+      "buildFunction": "TeaminfoBuilder"
     },
     {
       "name": "Teamaccountinfo",

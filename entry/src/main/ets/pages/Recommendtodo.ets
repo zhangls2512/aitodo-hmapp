@@ -1,5 +1,5 @@
 import { common } from '@kit.AbilityKit'
-import { LoadingDialog } from '@kit.ArkUI'
+import { LoadingDialog, promptAction } from '@kit.ArkUI'
 import { formProvider } from '@kit.FormKit'
 import { notificationManager } from '@kit.NotificationKit'
 import { completeTodo } from '../common/Datachange'
@@ -7,7 +7,9 @@ import { getRecommendTodoList, Todo } from '../common/Dataget'
 import { checkPermission } from '../common/Permission'
 import { getFlushPreference } from '../common/Preference'
 import { getPreferType } from '../common/Prefertype'
+import { teamRequest } from '../common/Request'
 import { getDateTimeStringFromTimeStamp } from '../common/Stringformat'
+import { syncCompleteTeamTodo } from '../common/Teamutil'
 import NewTodo from './Newtodo'
 import TodoInfo from './Todoinfo'
 
@@ -22,6 +24,8 @@ export default struct Recommendtodo {
   UIContext = this.getUIContext()
   context = this.UIContext.getHostContext() as common.UIAbilityContext
   todoId = ''
+  teamId = ''
+  todoInfo = ''
   dialogControllerProgress = new CustomDialogController({
     builder: LoadingDialog({
       content: '请求中...'
@@ -42,6 +46,8 @@ export default struct Recommendtodo {
       })
         .onClick(() => {
           this.todoId = item.id
+          this.teamId = item.teamId
+          this.todoInfo = JSON.stringify(item)
           this.isShowInfoSheet = true
         })
     }
@@ -58,7 +64,8 @@ export default struct Recommendtodo {
   InfoSheetBuilder() {
     TodoInfo({
       todoId: this.todoId,
-      teamId: ''
+      teamId: this.teamId,
+      todoInfo: this.todoInfo
     })
   }
 
@@ -88,11 +95,31 @@ export default struct Recommendtodo {
                           this.dialogControllerProgress.open()
                           await completeTodo(this.context, item.id, isOn)
                           this.dialogControllerProgress.close()
+                          this.loading = true
                         }
                         if (item.teamId) {
-                          //请求团队完成待办API
+                          this.dialogControllerProgress.open()
+                          const res = await teamRequest(this.context, item.teamId, '/completeTodo', {
+                            id: item.id
+                          })
+                          this.dialogControllerProgress.close()
+                          if (res !== 'fail') {
+                            if (!isOn) {
+                              await promptAction.openToast({
+                                message: '已取消完成'
+                              })
+                            }
+                            if (isOn) {
+                              await promptAction.openToast({
+                                message: '已完成'
+                              })
+                            }
+                            this.dialogControllerProgress.open()
+                            await syncCompleteTeamTodo(this.context, item.teamId)
+                            this.dialogControllerProgress.close()
+                            this.loading = true
+                          }
                         }
-                        this.loading = true
                       })
                     Column() {
                       if (!item.isCompleted) {
@@ -109,6 +136,23 @@ export default struct Recommendtodo {
                           .enableAutoSpacing(true)
                           .fontColor($r('sys.color.font_tertiary'))
                           .fontWeight(FontWeight.Bold)
+                      }
+                      if (item.teamId && item.teamName) {
+                        Row() {
+                          Image($r('app.media.users'))
+                            .fillColor($r('sys.color.icon_primary'))
+                            .height(24)
+                            .margin({
+                              right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                            })
+                            .width(24)
+                          Text(item.teamName)
+                            .enableAutoSpacing(true)
+                            .layoutWeight(1)
+                        }
+                        .margin({
+                          top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+                        })
                       }
                       Row() {
                         Text('开始时间')
@@ -214,9 +258,6 @@ export default struct Recommendtodo {
                 title: {
                   title: '新增待办'
                 },
-                onDisappear: () => {
-                  this.loading = true
-                },
                 onWillDismiss: async (DismissSheetAction) => {
                   const promptAction = this.UIContext.getPromptAction()
                   const data = await promptAction.showDialog({
@@ -269,7 +310,7 @@ export default struct Recommendtodo {
           .fontColor($r('sys.color.font_emphasize'))
           .fontSize($r('sys.float.ohos_id_text_size_body3'))
           .margin({
-            bottom: $r('sys.float.ohos_id_default_padding_bottom_fixed'),
+            bottom: this.preferType === 0 ? 96 : $r('sys.float.ohos_id_default_padding_bottom_fixed'),
             top: $r('sys.float.ohos_id_elements_margin_vertical_l')
           })
           .onClick(async () => {
@@ -299,7 +340,7 @@ export default struct Recommendtodo {
           this.isShowNewSheet = true
         }
       })
-      this.context.eventHub.on('refreshTodo', () => {
+      this.context.eventHub.on('refreshRecommendtodo', () => {
         this.loading = true
       })
       this.context.eventHub.on('todoInfo', (todoId: string) => {
@@ -317,7 +358,7 @@ export default struct Recommendtodo {
     })
     .onDisAppear(() => {
       this.context.eventHub.off('todoInfo')
-      this.context.eventHub.off('refreshTodo')
+      this.context.eventHub.off('refreshRecommendtodo')
       this.context.eventHub.off('newTodo')
     })
     .bindSheet(this.isShowInfoSheet!!, this.InfoSheetBuilder(), {

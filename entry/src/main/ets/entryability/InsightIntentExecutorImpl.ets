@@ -33,6 +33,7 @@ export default class InsightIntentExecutorImpl extends InsightIntentExecutor {
         cloudBackup: false,
         remind: paramJson.remind ?? false
       })
+      context.eventHub.emit('refreshRecommendtodo')
       context.eventHub.emit('refreshTodo')
     }
     if (name === 'GetRecommendTodo') {
