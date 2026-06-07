@@ -3,8 +3,8 @@ import { LengthMetrics, LoadingDialog, promptAction, window } from '@kit.ArkUI'
 import { deviceInfo } from '@kit.BasicServicesKit'
 import { fileIo } from '@kit.CoreFileKit'
 import { image } from '@kit.ImageKit'
-import { notificationManager } from '@kit.NotificationKit'
 import { photoAccessHelper } from '@kit.MediaLibraryKit'
+import { notificationManager } from '@kit.NotificationKit'
 import { sensor } from '@kit.SensorServiceKit'
 import { hdsMaterial, HdsNavDestination, HdsNavDestinationTitleMode, ScrollEffectType } from '@kit.UIDesignKit'
 import { CustomFreq, setCustomFreq } from '../common/Customfreq'
@@ -648,7 +648,7 @@ struct Commonsetting {
                 })
                   .onChange(isOn => {
                     setFlushPreference(this.context, 'commonSetting', 'showCompletedTodoInRecommendTodo', isOn)
-                    this.context.eventHub.emit('refreshTodo')
+                    this.context.eventHub.emit('refreshRecommendtodo')
                   })
               }
               .borderRadius(12)
@@ -673,7 +673,7 @@ struct Commonsetting {
                   .onChange(async (isOn) => {
                     if (!isOn) {
                       setFlushPreference(this.context, 'commonSetting', 'showCanCompletedTodoCountInBadge', isOn)
-                      this.context.eventHub.emit('refreshTodo')
+                      this.context.eventHub.emit('refreshRecommendtodo')
                     }
                     if (isOn) {
                       const enabled = notificationManager.isNotificationEnabledSync()
@@ -685,7 +685,7 @@ struct Commonsetting {
                       }
                       if (enabled) {
                         setFlushPreference(this.context, 'commonSetting', 'showCanCompletedTodoCountInBadge', isOn)
-                        this.context.eventHub.emit('refreshTodo')
+                        this.context.eventHub.emit('refreshRecommendtodo')
                       }
                     }
                   })

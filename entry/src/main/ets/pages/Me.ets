@@ -136,9 +136,6 @@ export default struct Me {
             preferType: this.preferType,
             title: {
               title: '登录'
-            },
-            onDisappear: async () => {
-              await this.get()
             }
           })
 
@@ -272,7 +269,7 @@ export default struct Me {
                 } catch (err) {
                   if (err.code !== 1000500002) {
                     await promptAction.openToast({
-                      message: '发生错误，错误码：' + err.code
+                      message: '发生错误，错误码：' + err.code + (err.message ? '，错误信息：' + err.message : '')
                     })
                   }
                 }

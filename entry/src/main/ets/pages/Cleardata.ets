@@ -632,8 +632,5 @@ export default struct Cleardata {
     .onAppear(async () => {
       await this.getSize()
     })
-    .onDisAppear(() => {
-      this.context.eventHub.emit('refreshSetting')
-    })
   }
 }

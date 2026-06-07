@@ -11,6 +11,7 @@ import { rcp } from '@kit.RemoteCommunicationKit'
 import { generateBarcode, scanCore } from '@kit.ScanKit'
 import { harmonyShare, systemShare } from '@kit.ShareKit'
 import { hdsEffect } from '@kit.UIDesignKit'
+import { getTeamAccountList } from '../common/Account'
 import getCloudServiceStatus from '../common/Cloudservice'
 import { getKeyAlg } from '../common/Crypto'
 import { completeTodo, deleteCloudBackup, deleteTodo, setCloudBackup } from '../common/Datachange'
@@ -20,22 +21,34 @@ import { write } from '../common/File'
 import { icsstringify } from '../common/Ics'
 import { getPreferType } from '../common/Prefertype'
 import { deleteQuickBarTodo, getQuickBarTodoIdList, setQuickBarTodo, syncQuickBarTodo } from '../common/Quickbar'
+import { teamRequest } from '../common/Request'
 import { getDateStringFromTimeStamp, getDateTimeStringFromTimeStamp, getSizeString } from '../common/Stringformat'
-import { autoSyncTable, autoBackupTable } from '../common/Table'
+import { autoBackupTable, autoSyncTable } from '../common/Table'
+import { syncCompleteTeamTodo } from '../common/Teamutil'
 import NewTodo from './Newtodo'
+import ReviewTodo from './Reviewtodo'
 import TodoInfo from './Todoinfo'
 import UpdateTodo from './Updatetodo'
+
+interface TypeItem {
+  name: string,
+  value: string
+}
 
 @ComponentV2
 export default struct TodoPage {
   @Provider() isShowNewSheet: boolean = false
   @Provider() isShowUpdateSheet: boolean = false
   @Local isShowInfoSheet: boolean = false
+  @Local isShowReviewSheet: boolean = false
   @Local preferType: number = 1
   @Local todoArray: Todo[] = []
   @Local loading: boolean = false
   @Local enableCloudBackup: boolean = false
   @Local teamId: string = ''
+  @Local teamNameArray: string[] = []
+  @Local teamIndex: number = 0
+  @Local teamValue: string = '个人'
   @Local currentTime: number = -1
   @Local timeStamp: number = Date.now()
   @Local contentKeyword: string = ''
@@ -46,18 +59,53 @@ export default struct TodoPage {
   @Local hoverId: number = -1
   @Local buttonHoverId: number = -1
   @Local quickBarTodoIdArray: string[] = []
+  @Local type: string = 'complete'
   UIContext = this.getUIContext()
   context = this.UIContext.getHostContext() as common.UIAbilityContext
   todoId = ''
+  todoInfo = ''
+  lastCount = -1
+  teamIdArray: string[] = []
   dialogControllerProgress = new CustomDialogController({
     builder: LoadingDialog({
       content: '请求中...'
     })
   })
+  typeArray: TypeItem[] = [
+    {
+      name: '执行',
+      value: 'complete'
+    },
+    {
+      name: '查看',
+      value: 'get'
+    },
+    {
+      name: '审核',
+      value: 'review'
+    },
+    {
+      name: '创建',
+      value: 'create'
+    }
+  ]
 
   getDateFromTimeStamp(timeStamp: number) {
     const date = new Date(timeStamp)
     return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0)
+  }
+
+  generateTagArray() {
+    const allTagArray: string[] = []
+    this.todoArray.forEach(item => {
+      item.tag.forEach(tagItem => {
+        if (!allTagArray.includes(tagItem)) {
+          allTagArray.push(tagItem)
+        }
+      })
+    })
+    this.tags = allTagArray.sort((a, b) => a.localeCompare(b))
+    this.tag = this.tag.filter(item => this.tags.includes(item))
   }
 
   async shareTodo(todoArray: Todo[]) {
@@ -286,7 +334,7 @@ export default struct TodoPage {
             })
             qrcodeFileStream.closeSync()
             await promptAction.openToast({
-              message: '发生错误，错误码：' + err.code
+              message: '发生错误，错误码：' + err.code + (err.message ? '，错误信息：' + err.message : '')
             })
           }
         }
@@ -318,14 +366,16 @@ export default struct TodoPage {
           })
       }
       if (!this.multipleSelect) {
-        MenuItem({
-          startIcon: $r('app.media.multipleselect'),
-          content: '多选'
-        })
-          .onClick(() => {
-            this.multipleSelect = true
-            this.multipleSelectArray.push(item)
+        if (!this.teamId) {
+          MenuItem({
+            startIcon: $r('app.media.multipleselect'),
+            content: '多选'
           })
+            .onClick(() => {
+              this.multipleSelect = true
+              this.multipleSelectArray.push(item)
+            })
+        }
         if (!this.teamId && deviceInfo.deviceType === '2in1') {
           if (!this.quickBarTodoIdArray.includes(item.id)) {
             MenuItem({
@@ -368,6 +418,7 @@ export default struct TodoPage {
         })
           .onClick(() => {
             this.todoId = item.id
+            this.todoInfo = JSON.stringify(item)
             this.isShowInfoSheet = true
           })
         if (!this.teamId) {
@@ -379,77 +430,180 @@ export default struct TodoPage {
               await this.shareTodo([item])
             })
         }
-        MenuItem({
-          startIcon: $r('app.media.edit'),
-          content: '修改'
-        })
-          .onClick(() => {
-            this.todoId = item.id
-            this.isShowUpdateSheet = true
+        if (this.teamId && this.type === 'review') {
+          MenuItem({
+            startIcon: $r('app.media.review'),
+            content: '审核'
           })
-        MenuItem({
-          startIcon: $r('app.media.delete'),
-          content: '删除'
-        })
-          .onClick(async () => {
-            const promptAction = this.UIContext.getPromptAction()
-            if (!item.recurrenceRule) {
-              const data = await promptAction.showDialog({
-                title: '提示',
-                message: '删除成功后无法恢复，确定删除？',
-                buttons: [
-                  {
-                    text: '取消',
-                    color: $r('sys.color.font_primary')
-                  },
-                  {
-                    text: '删除',
-                    color: $r('sys.color.warning')
-                  }
-                ]
-              })
-              if (data.index === 1) {
-                this.dialogControllerProgress.open()
-                await deleteTodo(this.context, item.id)
-                this.dialogControllerProgress.close()
-                await promptAction.openToast({
-                  message: '删除成功'
-                })
-              }
-            }
-            if (item.recurrenceRule) {
-              const data = await promptAction.showActionMenu({
-                title: '删除模式',
-                buttons: [
-                  {
-                    text: '仅限此待办',
-                    color: $r('sys.color.font_primary')
-                  },
-                  {
-                    text: '所有重复待办',
-                    color: $r('sys.color.font_primary')
-                  }
-                ]
-              })
-              if (data.index === 0) {
-                this.dialogControllerProgress.open()
-                await deleteTodo(this.context, item.id, true, item.excludeTime.concat([item.startTime]))
-                this.dialogControllerProgress.close()
-                await promptAction.openToast({
-                  message: '删除成功'
-                })
-              }
-              if (data.index === 1) {
-                this.dialogControllerProgress.open()
-                await deleteTodo(this.context, item.id)
-                this.dialogControllerProgress.close()
-                await promptAction.openToast({
-                  message: '删除成功'
-                })
-              }
-            }
-            this.loading = true
+            .onClick(() => {
+              this.todoId = item.id
+              this.todoInfo = JSON.stringify(item)
+              this.isShowReviewSheet = true
+            })
+        }
+        if (!this.teamId || this.type === 'create' || this.type === 'get') {
+          MenuItem({
+            startIcon: $r('app.media.edit'),
+            content: '修改'
           })
+            .onClick(() => {
+              this.todoId = item.id
+              this.todoInfo = JSON.stringify(item)
+              this.isShowUpdateSheet = true
+            })
+          MenuItem({
+            startIcon: $r('app.media.delete'),
+            content: '删除'
+          })
+            .onClick(async () => {
+              const promptAction = this.UIContext.getPromptAction()
+              if (!this.teamId) {
+                if (!item.recurrenceRule) {
+                  const data = await promptAction.showDialog({
+                    title: '提示',
+                    message: '删除成功后无法恢复，确定删除？',
+                    buttons: [
+                      {
+                        text: '取消',
+                        color: $r('sys.color.font_primary')
+                      },
+                      {
+                        text: '删除',
+                        color: $r('sys.color.warning')
+                      }
+                    ]
+                  })
+                  if (data.index === 1) {
+                    this.dialogControllerProgress.open()
+                    await deleteTodo(this.context, item.id)
+                    this.dialogControllerProgress.close()
+                    await promptAction.openToast({
+                      message: '删除成功'
+                    })
+                  }
+                }
+                if (item.recurrenceRule) {
+                  const data = await promptAction.showActionMenu({
+                    title: '删除模式',
+                    buttons: [
+                      {
+                        text: '仅限此待办',
+                        color: $r('sys.color.font_primary')
+                      },
+                      {
+                        text: '所有重复待办',
+                        color: $r('sys.color.font_primary')
+                      }
+                    ]
+                  })
+                  if (data.index === 0) {
+                    this.dialogControllerProgress.open()
+                    await deleteTodo(this.context, item.id, true, item.excludeTime.concat([item.startTime]))
+                    this.dialogControllerProgress.close()
+                    await promptAction.openToast({
+                      message: '删除成功'
+                    })
+                  }
+                  if (data.index === 1) {
+                    this.dialogControllerProgress.open()
+                    await deleteTodo(this.context, item.id)
+                    this.dialogControllerProgress.close()
+                    await promptAction.openToast({
+                      message: '删除成功'
+                    })
+                  }
+                }
+                this.loading = true
+              }
+              if (this.teamId) {
+                if (!item.recurrenceRule) {
+                  const data = await promptAction.showDialog({
+                    title: '提示',
+                    message: '删除成功后无法恢复，确定删除？',
+                    buttons: [
+                      {
+                        text: '取消',
+                        color: $r('sys.color.font_primary')
+                      },
+                      {
+                        text: '删除',
+                        color: $r('sys.color.warning')
+                      }
+                    ]
+                  })
+                  if (data.index === 1) {
+                    this.dialogControllerProgress.open()
+                    const res = await teamRequest(this.context, this.teamId, '/deleteTodo', {
+                      id: item.id
+                    })
+                    this.dialogControllerProgress.close()
+                    if (res !== 'fail') {
+                      this.loading = true
+                      await promptAction.openToast({
+                        message: '删除成功'
+                      })
+                      this.loading = true
+                    }
+                  }
+                }
+                if (item.recurrenceRule) {
+                  const data = await promptAction.showActionMenu({
+                    title: '删除模式',
+                    buttons: [
+                      {
+                        text: '仅限此待办',
+                        color: $r('sys.color.font_primary')
+                      },
+                      {
+                        text: '所有重复待办',
+                        color: $r('sys.color.font_primary')
+                      }
+                    ]
+                  })
+                  if (data.index === 0) {
+                    this.dialogControllerProgress.open()
+                    const res = await teamRequest(this.context, this.teamId, '/deleteTodo', {
+                      id: item.id
+                    })
+                    this.dialogControllerProgress.close()
+                    if (res !== 'fail') {
+                      this.loading = true
+                      await promptAction.openToast({
+                        message: '删除成功'
+                      })
+                      this.loading = true
+                    }
+                  }
+                  if (data.index === 1) {
+                    this.dialogControllerProgress.open()
+                    const res = await teamRequest(this.context, this.teamId, '/updateTodo', {
+                      id: item.id,
+                      content: item.content,
+                      priority: item.priority,
+                      startTime: item.startTime,
+                      endTime: item.endTime,
+                      duration: item.duration,
+                      recurrenceRule: item.recurrenceRule,
+                      excludeTime: item.excludeTime.concat([item.startTime]),
+                      tag: item.tag,
+                      dependency: item.dependency,
+                      location: item.location,
+                      action: item.action,
+                      bz: item.bz
+                    })
+                    this.dialogControllerProgress.close()
+                    if (res !== 'fail') {
+                      this.loading = true
+                      await promptAction.openToast({
+                        message: '删除成功'
+                      })
+                      this.loading = true
+                    }
+                  }
+                }
+              }
+            })
+        }
         if (!this.teamId) {
           if (this.enableCloudBackup && !item.isCloudBackup) {
             MenuItem({
@@ -516,7 +670,17 @@ export default struct TodoPage {
   InfoSheetBuilder() {
     TodoInfo({
       todoId: this.todoId,
-      teamId: this.teamId
+      teamId: this.teamId,
+      todoInfo: this.todoInfo
+    })
+  }
+
+  @Builder
+  ReviewSheetBuilder() {
+    ReviewTodo({
+      todoId: this.todoId,
+      teamId: this.teamId,
+      todoInfo: this.todoInfo
     })
   }
 
@@ -524,7 +688,8 @@ export default struct TodoPage {
   UpdateSheetBuilder() {
     UpdateTodo({
       todoId: this.todoId,
-      teamId: this.teamId
+      teamId: this.teamId,
+      todoInfo: this.todoInfo
     })
   }
 
@@ -570,43 +735,45 @@ export default struct TodoPage {
               .margin({
                 right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
               })
-            if (!this.teamId) {
-              Column() {
-                Image($r('app.media.share'))
-              }
-              .borderRadius(20)
-              .height(40)
-              .margin({
-                right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-              })
-              .padding(11)
-              .stateStyles({
-                normal: {
-                  .backgroundColor($r('sys.color.interactive_hover'))
-                },
-                pressed: {
-                  .backgroundColor($r('sys.color.interactive_pressed'))
-                }
-              })
-              .visualEffect(new hdsEffect.HdsEffectBuilder()
-                .pointLight({
-                  sourceType: hdsEffect.PointLightSourceType.SOFT,
-                  illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
-                })
-                .buildEffect())
-              .width(40)
-              .onClick(async () => {
-                await this.shareTodo(this.multipleSelectArray)
-                this.multipleSelect = false
-                this.multipleSelectArray = []
-              })
+            Column() {
+              Image($r('app.media.share'))
             }
+            .borderRadius(20)
+            .height(40)
+            .margin({
+              right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+            })
+            .padding(11)
+            .stateStyles({
+              normal: {
+                .backgroundColor($r('sys.color.interactive_hover'))
+              },
+              pressed: {
+                .backgroundColor($r('sys.color.interactive_pressed'))
+              }
+            })
+            .visualEffect(new hdsEffect.HdsEffectBuilder()
+              .pointLight({
+                sourceType: hdsEffect.PointLightSourceType.SOFT,
+                illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
+              })
+              .buildEffect())
+            .width(40)
+            .onClick(async () => {
+              await this.shareTodo(this.multipleSelectArray)
+              this.multipleSelect = false
+              this.multipleSelectArray = []
+            })
+
             Column() {
               Image($r('app.media.delete'))
             }
             .borderRadius(20)
             .height(40)
             .keyboardShortcut('D', [ModifierKey.CTRL])
+            .margin({
+              right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+            })
             .padding(11)
             .stateStyles({
               normal: {
@@ -665,75 +832,70 @@ export default struct TodoPage {
               }
             })
 
-            if (!this.teamId && this.enableCloudBackup) {
-              Column() {
-                Image($r('app.media.cloud'))
-              }
-              .borderRadius(20)
-              .height(40)
-              .margin({
-                left: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-              })
-              .padding(11)
-              .stateStyles({
-                normal: {
-                  .backgroundColor($r('sys.color.interactive_hover'))
-                },
-                pressed: {
-                  .backgroundColor($r('sys.color.interactive_pressed'))
-                }
-              })
-              .visualEffect(new hdsEffect.HdsEffectBuilder()
-                .pointLight({
-                  sourceType: hdsEffect.PointLightSourceType.SOFT,
-                  illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
-                })
-                .buildEffect())
-              .width(40)
-              .onClick(async () => {
-                if (this.multipleSelectArray.length === 0) {
-                  await promptAction.openToast({
-                    message: '未选择'
-                  })
-                  return
-                }
-                for (let i = 0; i < this.multipleSelectArray.length; i++) {
-                  const dialogControllerProgress = new CustomDialogController({
-                    builder: LoadingDialog({
-                      content: '批量云备份中，进度：' + (i + 1) + '/' + this.multipleSelectArray.length
-                    })
-                  })
-                  dialogControllerProgress.open()
-                  await setCloudBackup(this.context, {
-                    id: this.multipleSelectArray[i].id,
-                    content: JSON.stringify({
-                      content: this.multipleSelectArray[i].content,
-                      priority: this.multipleSelectArray[i].priority,
-                      startTime: this.multipleSelectArray[i].startTime,
-                      endTime: this.multipleSelectArray[i].endTime,
-                      duration: this.multipleSelectArray[i].duration,
-                      recurrenceRule: this.multipleSelectArray[i].recurrenceRule,
-                      excludeTime: this.multipleSelectArray[i].excludeTime,
-                      tag: this.multipleSelectArray[i].tag,
-                      dependency: this.multipleSelectArray[i].dependency,
-                      location: this.multipleSelectArray[i].location,
-                      action: this.multipleSelectArray[i].action,
-                      bz: this.multipleSelectArray[i].bz,
-                      recentCompletedTime: this.multipleSelectArray[i].recentCompletedTime,
-                      updateTime: this.multipleSelectArray[i].updateTime,
-                      cloudBackupTime: this.multipleSelectArray[i].cloudBackupTime
-                    })
-                  }, false)
-                  dialogControllerProgress.close()
-                  await promptAction.openToast({
-                    message: '云备份成功'
-                  })
-                }
-                this.loading = true
-                await autoSyncTable(this.context)
-                await autoBackupTable(this.context)
-              })
+            Column() {
+              Image($r('app.media.cloud'))
             }
+            .borderRadius(20)
+            .height(40)
+            .padding(11)
+            .stateStyles({
+              normal: {
+                .backgroundColor($r('sys.color.interactive_hover'))
+              },
+              pressed: {
+                .backgroundColor($r('sys.color.interactive_pressed'))
+              }
+            })
+            .visualEffect(new hdsEffect.HdsEffectBuilder()
+              .pointLight({
+                sourceType: hdsEffect.PointLightSourceType.SOFT,
+                illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
+              })
+              .buildEffect())
+            .width(40)
+            .onClick(async () => {
+              if (this.multipleSelectArray.length === 0) {
+                await promptAction.openToast({
+                  message: '未选择'
+                })
+                return
+              }
+              for (let i = 0; i < this.multipleSelectArray.length; i++) {
+                const dialogControllerProgress = new CustomDialogController({
+                  builder: LoadingDialog({
+                    content: '批量云备份中，进度：' + (i + 1) + '/' + this.multipleSelectArray.length
+                  })
+                })
+                dialogControllerProgress.open()
+                await setCloudBackup(this.context, {
+                  id: this.multipleSelectArray[i].id,
+                  content: JSON.stringify({
+                    content: this.multipleSelectArray[i].content,
+                    priority: this.multipleSelectArray[i].priority,
+                    startTime: this.multipleSelectArray[i].startTime,
+                    endTime: this.multipleSelectArray[i].endTime,
+                    duration: this.multipleSelectArray[i].duration,
+                    recurrenceRule: this.multipleSelectArray[i].recurrenceRule,
+                    excludeTime: this.multipleSelectArray[i].excludeTime,
+                    tag: this.multipleSelectArray[i].tag,
+                    dependency: this.multipleSelectArray[i].dependency,
+                    location: this.multipleSelectArray[i].location,
+                    action: this.multipleSelectArray[i].action,
+                    bz: this.multipleSelectArray[i].bz,
+                    recentCompletedTime: this.multipleSelectArray[i].recentCompletedTime,
+                    updateTime: this.multipleSelectArray[i].updateTime,
+                    cloudBackupTime: this.multipleSelectArray[i].cloudBackupTime
+                  })
+                }, false)
+                dialogControllerProgress.close()
+                await promptAction.openToast({
+                  message: '云备份成功'
+                })
+              }
+              this.loading = true
+              await autoSyncTable(this.context)
+              await autoBackupTable(this.context)
+            })
           }
           .margin({
             bottom: $r('sys.float.ohos_id_elements_margin_vertical_m')
@@ -747,6 +909,9 @@ export default struct TodoPage {
             .borderRadius(20)
             .height(40)
             .keyboardShortcut('N', [ModifierKey.CTRL, ModifierKey.SHIFT])
+            .margin({
+              right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+            })
             .padding(11)
             .stateStyles({
               normal: {
@@ -774,9 +939,6 @@ export default struct TodoPage {
               title: {
                 title: '新增待办'
               },
-              onDisappear: () => {
-                this.loading = true
-              },
               onWillDismiss: async (DismissSheetAction) => {
                 const promptAction = this.UIContext.getPromptAction()
                 const data = await promptAction.showDialog({
@@ -802,6 +964,7 @@ export default struct TodoPage {
             Blank()
             Text(getDateStringFromTimeStamp(this.currentTime))
               .fontWeight(FontWeight.Medium)
+              .layoutWeight(1)
               .margin({
                 right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
               })
@@ -836,23 +999,56 @@ export default struct TodoPage {
                 .buildEffect())
               .width(40)
             }
-            Select([
-              { value: '个人' }
-            ])
-              .selected(0)
-              .value('个人')
+            Select(this.teamNameArray.map((item): SelectOption => {
+              return {
+                value: item
+              }
+            }))
+              .selected(this.teamIndex!!)
+              .value(this.teamValue!!)
+              .onSelect(index => {
+                if (index === 0) {
+                  this.type = ''
+                  this.teamId = ''
+                } else {
+                  if (!this.teamId) {
+                    this.type = 'complete'
+                  }
+                  this.teamId = this.teamIdArray[this.teamIndex - 1]
+                }
+                this.loading = true
+              })
           }
-          .width('100%')
 
+          if (this.teamId) {
+            Row() {
+              ForEach(this.typeArray, (item: TypeItem, index) => {
+                Text(item.name)
+                  .fontColor(this.type === item.value ? $r('sys.color.font_emphasize') : '')
+                  .fontWeight(FontWeight.Medium)
+                  .margin({
+                    left: index !== 0 ? $r('sys.float.ohos_id_elements_margin_horizontal_m') : 0
+                  })
+                  .onClick(() => {
+                    if (this.type !== item.value) {
+                      this.type = item.value
+                      this.loading = true
+                    }
+                  })
+              })
+            }
+            .margin({
+              top: $r('sys.float.ohos_id_elements_margin_vertical_l')
+            })
+          }
           Search({
             placeholder: '请输入内容关键词',
             value: this.contentKeyword!!
           })
-            .searchButton('搜索')
-            .onSubmit(() => {
-              this.todoArray = this.todoArray.filter(item => item.content.includes(this.contentKeyword) &&
-                this.tag.every(tagItem => item.tag.includes(tagItem)))
+            .margin({
+              top: $r('sys.float.ohos_id_elements_margin_vertical_m')
             })
+            .searchButton('搜索')
           Scroll() {
             Row() {
               ForEach(this.tags, (item: string, index) => {
@@ -866,8 +1062,6 @@ export default struct TodoPage {
                     .padding(12)
                     .onClick(() => {
                       this.tag.push(item)
-                      this.todoArray = this.todoArray.filter(item => item.content.includes(this.contentKeyword) &&
-                        this.tag.every(tagItem => item.tag.includes(tagItem)))
                     })
                   }
                   .backgroundColor($r('sys.color.comp_background_primary'))
@@ -887,8 +1081,6 @@ export default struct TodoPage {
                     .padding(12)
                     .onClick(() => {
                       this.tag.splice(this.tag.indexOf(item), 1)
-                      this.todoArray = this.todoArray.filter(item => item.content.includes(this.contentKeyword) &&
-                        this.tag.every(tagItem => item.tag.includes(tagItem)))
                     })
                   }
                   .backgroundColor($r('sys.color.background_emphasize'))
@@ -902,7 +1094,8 @@ export default struct TodoPage {
           }
           .edgeEffect(EdgeEffect.Spring)
           .margin({
-            bottom: $r('sys.float.ohos_id_elements_margin_vertical_m')
+            bottom: this.tags.length === 0 ? 0 : $r('sys.float.ohos_id_elements_margin_vertical_m'),
+            top: $r('sys.float.ohos_id_elements_margin_vertical_m')
           })
           .scrollable(ScrollDirection.Horizontal)
           .scrollBar(BarState.Off)
@@ -942,7 +1135,7 @@ export default struct TodoPage {
                           }
                         })
                     }
-                    if (!this.multipleSelect) {
+                    if (!this.multipleSelect && (!this.teamId || this.type === 'complete')) {
                       Toggle({
                         type: ToggleType.Checkbox,
                         isOn: item.isCompleted
@@ -956,11 +1149,31 @@ export default struct TodoPage {
                             this.dialogControllerProgress.open()
                             await completeTodo(this.context, item.id, isOn)
                             this.dialogControllerProgress.close()
+                            this.loading = true
                           }
                           if (this.teamId) {
-                            //请求团队完成待办API
+                            this.dialogControllerProgress.open()
+                            const res = await teamRequest(this.context, this.teamId, '/completeTodo', {
+                              id: item.id
+                            })
+                            this.dialogControllerProgress.close()
+                            if (res !== 'fail') {
+                              if (!isOn) {
+                                await promptAction.openToast({
+                                  message: '已取消完成'
+                                })
+                              }
+                              if (isOn) {
+                                await promptAction.openToast({
+                                  message: '已完成'
+                                })
+                              }
+                              this.dialogControllerProgress.open()
+                              await syncCompleteTeamTodo(this.context, this.teamId)
+                              this.dialogControllerProgress.close()
+                              this.loading = true
+                            }
                           }
-                          this.loading = true
                         })
                     }
                     if (item.isCloudBackup) {
@@ -971,14 +1184,14 @@ export default struct TodoPage {
                         .width('5%')
                     }
                     Column() {
-                      if (!item.isCompleted) {
+                      if (!item.isCompleted || (this.teamId && this.type !== 'complete')) {
                         Text(item.content)
                           .enableAutoSpacing(true)
                           .fontColor(
                             (item.endTime !== -1 && item.endTime < this.timeStamp) ? $r('sys.color.warning') : '')
                           .fontWeight(FontWeight.Bold)
                       }
-                      if (item.isCompleted) {
+                      if (item.isCompleted && (!this.teamId || (this.teamId && this.type === 'complete'))) {
                         Text(item.content)
                           .decoration({
                             type: TextDecorationType.LineThrough,
@@ -987,6 +1200,72 @@ export default struct TodoPage {
                           .enableAutoSpacing(true)
                           .fontColor($r('sys.color.font_tertiary'))
                           .fontWeight(FontWeight.Bold)
+                      }
+                      if (this.teamId) {
+                        if (this.type === 'complete' && item.status) {
+                          if (item.status === 'pending') {
+                            Text('待完成')
+                              .fontColor($r('sys.color.warning'))
+                              .fontWeight(FontWeight.Medium)
+                              .margin({
+                                top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+                              })
+                          }
+                          if (item.status === 'reviewing') {
+                            Text('待审核')
+                              .fontColor(Color.Orange)
+                              .fontWeight(FontWeight.Medium)
+                              .margin({
+                                top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+                              })
+                          }
+                          if (item.status === 'finished') {
+                            Text('已完成')
+                              .fontColor(Color.Green)
+                              .fontWeight(FontWeight.Medium)
+                              .margin({
+                                top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+                              })
+                          }
+                        }
+                        if (this.type === 'review' && item.reviewRecentCompleteTime) {
+                          Text('待审核' + item.reviewRecentCompleteTime.length)
+                            .enableAutoSpacing(true)
+                            .fontColor(Color.Orange)
+                            .fontWeight(FontWeight.Medium)
+                            .margin({
+                              top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+                            })
+                        }
+                        if (this.type === 'get' && item.allowCompleteUids && item.reviewRecentCompleteTime &&
+                          item.recentCompleteTime) {
+                          Row() {
+                            Text('待完成' + (item.allowCompleteUids.length - item.recentCompleteTime.length -
+                              item.reviewRecentCompleteTime.length))
+                              .enableAutoSpacing(true)
+                              .fontColor($r('sys.color.warning'))
+                              .fontWeight(FontWeight.Medium)
+                              .margin({
+                                right: $r('sys.float.ohos_id_elements_margin_horizontal_m'),
+                                top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+                              })
+                            Text('待审核' + item.reviewRecentCompleteTime.length)
+                              .enableAutoSpacing(true)
+                              .fontColor(Color.Orange)
+                              .fontWeight(FontWeight.Medium)
+                              .margin({
+                                right: $r('sys.float.ohos_id_elements_margin_horizontal_m'),
+                                top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+                              })
+                            Text('已完成' + item.recentCompleteTime.length)
+                              .enableAutoSpacing(true)
+                              .fontColor(Color.Green)
+                              .fontWeight(FontWeight.Medium)
+                              .margin({
+                                top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+                              })
+                          }
+                        }
                       }
                       Row() {
                         Text('开始时间')
@@ -1086,6 +1365,9 @@ export default struct TodoPage {
               .margin({
                 top: $r('sys.float.ohos_id_elements_margin_vertical_m')
               })
+              .visibility(
+                (item.content.includes(this.contentKeyword) && this.tag.every(tagItem => item.tag.includes(tagItem))) ?
+                  Visibility.Visible : Visibility.None)
               .onSelect(isSelected => {
                 if (!isSelected) {
                   this.multipleSelectArray = this.multipleSelectArray.filter(selectItem => selectItem.id !== item.id)
@@ -1108,37 +1390,65 @@ export default struct TodoPage {
             fillType: PresetFillType.BREAKPOINT_DEFAULT
           }, $r('sys.float.ohos_id_elements_margin_horizontal_m'))
           .multiSelectable(true)
+          .onReachEnd(async () => {
+            if (this.teamId && this.todoArray.length > 0 && this.lastCount === 10 && !this.contentKeyword &&
+              this.tag.length === 0) {
+              this.dialogControllerProgress.open()
+              const res = await teamRequest(this.context, this.teamId, '/getTodoList', {
+                type: this.type,
+                time: this.currentTime,
+                skip: this.todoArray.length
+              })
+              this.dialogControllerProgress.close()
+              if (res !== 'fail') {
+                const todoArray = JSON.parse(res).data as Todo[]
+                todoArray.forEach(item => {
+                  item.canCompleted = item.startTime <= this.timeStamp &&
+                    ((item.endTime >= this.timeStamp && item.endTime !== -1) || item.endTime === -1)
+                  item.isCompleted = item.status === 'pending' ? false : true
+                })
+                this.todoArray = this.todoArray.concat(todoArray)
+                this.generateTagArray()
+              }
+            }
+          })
         }
         .keyboardShortcut('R', [ModifierKey.CTRL], () => {
           this.loading = true
         })
         .layoutWeight(1)
         .onRefreshing(async () => {
-          this.tag = []
           this.tags = []
           this.multipleSelect = false
           this.multipleSelectArray = []
           this.todoArray = []
+          this.timeStamp = Date.now()
           if (!this.teamId) {
             this.todoArray = await getCurrentTimePersonalTodoList(this.context, this.currentTime)
-            this.timeStamp = Date.now()
-            const allTagArray: string[] = []
-            this.todoArray.forEach(item => {
-              item.tag.forEach(tagItem => {
-                if (!allTagArray.includes(tagItem)) {
-                  allTagArray.push(tagItem)
-                }
-              })
-            })
-            this.tags = allTagArray.sort((a, b) => a.localeCompare(b))
             if (deviceInfo.deviceType === '2in1') {
               await syncQuickBarTodo(this.context)
               this.quickBarTodoIdArray = await getQuickBarTodoIdList(this.context)
             }
           }
           if (this.teamId) {
-            //请求获取待办列表API
+            this.dialogControllerProgress.open()
+            const res = await teamRequest(this.context, this.teamId, '/getTodoList', {
+              type: this.type,
+              time: this.currentTime
+            })
+            this.dialogControllerProgress.close()
+            if (res !== 'fail') {
+              const todoArray = JSON.parse(res).data as Todo[]
+              todoArray.forEach(item => {
+                item.canCompleted = item.startTime <= this.timeStamp &&
+                  ((item.endTime >= this.timeStamp && item.endTime !== -1) || item.endTime === -1)
+                item.isCompleted = item.status === 'pending' ? false : true
+              })
+              this.todoArray = todoArray
+              this.lastCount = this.todoArray.length
+            }
           }
+          this.generateTagArray()
           this.loading = false
         })
         .bindSheet(this.isShowInfoSheet!!, this.InfoSheetBuilder(), {
@@ -1150,6 +1460,12 @@ export default struct TodoPage {
         })
       }
       .alignItems(HorizontalAlign.Start)
+      .bindSheet(this.isShowReviewSheet!!, this.ReviewSheetBuilder(), {
+        preferType: this.preferType,
+        title: {
+          title: '审核待办'
+        }
+      })
     }
     .padding({
       left: $r('sys.float.ohos_id_elements_margin_horizontal_l'),
@@ -1158,17 +1474,33 @@ export default struct TodoPage {
     })
     .onAppear(async () => {
       this.preferType = getPreferType(this.UIContext)
-      this.context.eventHub.on('refreshTodo', async () => {
-        this.enableCloudBackup = false
-        this.loading = true
-        const cloudServiceStatus = await getCloudServiceStatus(this.context)
-        if (cloudServiceStatus && getKeyAlg()) {
-          this.enableCloudBackup = true
+      this.context.eventHub.on('refreshTodo', async (refresh: string) => {
+        if (refresh !== 'false') {
+          const teamAccountArray = await getTeamAccountList()
+          this.teamIdArray = teamAccountArray.map(item => item.teamId)
+          this.teamNameArray = ['个人'].concat(teamAccountArray.map(item => item.teamName))
+          const index = this.teamNameArray.indexOf(this.teamValue)
+          if (index === -1) {
+            this.teamId = ''
+            this.teamIndex = 0
+            this.teamValue = '个人'
+          }
+          this.loading = true
+          if (!this.teamId) {
+            this.enableCloudBackup = false
+            const cloudServiceStatus = await getCloudServiceStatus(this.context)
+            if (cloudServiceStatus && getKeyAlg()) {
+              this.enableCloudBackup = true
+            }
+          }
         }
       })
       const currentDate = new Date()
       this.currentTime =
         new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate(), 0, 0, 0).getTime()
+      const teamAccountArray = await getTeamAccountList()
+      this.teamIdArray = teamAccountArray.map(item => item.teamId)
+      this.teamNameArray = ['个人'].concat(teamAccountArray.map(item => item.teamName))
       this.loading = true
       const cloudServiceStatus = await getCloudServiceStatus(this.context)
       if (cloudServiceStatus && getKeyAlg()) {
@@ -1183,9 +1515,6 @@ export default struct TodoPage {
       preferType: this.preferType,
       title: {
         title: '修改待办'
-      },
-      onDisappear: () => {
-        this.loading = true
       },
       onWillDismiss: async (DismissSheetAction) => {
         const promptAction = this.UIContext.getPromptAction()

@@ -30,6 +30,7 @@ import { write } from '../common/File'
 import openLink from '../common/Openlink'
 import { getFlushPreference, getTempPreference, setTempPreference } from '../common/Preference'
 import { autoBackupTable, autoSyncTable } from '../common/Table'
+import { syncAllTeamCompleteTodo } from '../common/Teamutil'
 
 interface JsErrorObject {
   name: string,
@@ -345,7 +346,7 @@ export default class EntryAbility extends UIAbility {
           }
         } catch (err) {
           await promptAction.openToast({
-            message: '发生错误，错误码：' + err.code + '，错误信息：' + err.message
+            message: '发生错误，错误码：' + err.code + (err.message ? '，错误信息：' + err.message : '')
           })
         }
       }
@@ -355,6 +356,7 @@ export default class EntryAbility extends UIAbility {
     if (autoImport) {
       const res = await importCloudBackupTodo(context, relationalStore.ConflictResolution.ON_CONFLICT_IGNORE)
       if (res === 'success') {
+        this.context.eventHub.emit('refreshRecommendtodo')
         this.context.eventHub.emit('refreshTodo')
         await promptAction.openToast({
           message: '自动导入云备份成功'
@@ -460,6 +462,7 @@ export default class EntryAbility extends UIAbility {
         await autoSyncTable(this.context, item)
       })
       await Promise.all(promises)
+      this.context.eventHub.emit('refreshRecommendtodo')
       this.context.eventHub.emit('refreshTodo')
       await autoBackupTable(this.context)
     })
@@ -567,6 +570,7 @@ export default class EntryAbility extends UIAbility {
                     await Promise.all(insertpromises)
                     await Promise.all(updatepromises)
                     await Promise.all(deletepromises)
+                    this.context.eventHub.emit('refreshRecommendtodo')
                     this.context.eventHub.emit('refreshTodo')
                     await autoSyncTable(this.context)
                     await autoBackupTable(this.context)
@@ -599,10 +603,10 @@ export default class EntryAbility extends UIAbility {
         this.context.eventHub.emit(eventData.data.menuCode)
       })
       const subscriber = commonEventManager.createSubscriberSync({
-        events: ['BACKGROUNDABILITY_EVENT_PREPARETOTERMINATE']
+        events: ['BACKGROUNDABILITY_EVENT_DESTROY']
       })
       await commonEventManager.subscribeToEvent(subscriber, async (data) => {
-        if (data.event === 'BACKGROUNDABILITY_EVENT_PREPARETOTERMINATE') {
+        if (data.event === 'BACKGROUNDABILITY_EVENT_DESTROY') {
           statusBarManager.removeFromStatusBar(this.context)
           setTempPreference(this.context, 'statusBar', 'exist', false)
           await this.context.terminateSelf()
@@ -624,7 +628,7 @@ export default class EntryAbility extends UIAbility {
               title: '推荐待办',
               height: 1000,
               abilityName: 'StatusBarViewAbility',
-              moduleName: '',
+              moduleName: 'entry',
               loadingStatus: true
             }
           })
@@ -638,7 +642,7 @@ export default class EntryAbility extends UIAbility {
             quickOperation: {
               title: '',
               height: 1,
-              abilityName: '',
+              abilityName: 'EntryAbility',
               moduleName: 'entry',
               loadingStatus: true
             }
@@ -697,6 +701,7 @@ export default class EntryAbility extends UIAbility {
     }
     await this.appInit(want)
     await clearNouseData(this.context)
+    await syncAllTeamCompleteTodo(this.context)
   }
 
   async onNewWant(want: Want) {
@@ -771,7 +776,7 @@ export default class EntryAbility extends UIAbility {
   }
 
   async onContinue(wantParam: Record<string, Object>) {
-    if (wantParam.version !== 4) {
+    if (wantParam.version !== 5) {
       await promptAction.openToast({
         message: '接续失败，原因：目标端应用版本号与发起端不匹配'
       })

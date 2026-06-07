@@ -12,6 +12,8 @@ export interface Response {
 
 interface Data {
   teamName: string,
+  userCount: number,
+  todoCount: number,
   userMaxCount: number,
   todoMaxCount: number,
   userId: string,

@@ -5,19 +5,23 @@ import { sceneMap } from '@kit.MapKit'
 import getCloudServiceStatus from '../common/Cloudservice'
 import { getKeyAlg } from '../common/Crypto'
 import { getCustomFreqList } from '../common/Customfreq'
-import { Action, updateTodo } from '../common/Datachange'
+import { Action, Location, updateTodo } from '../common/Datachange'
 import { getTodoInfo, Todo } from '../common/Dataget'
 import { icsTimeStringToTimeStamp, timeStampToIcsTimeString } from '../common/Ics'
 import openLink from '../common/Openlink'
 import { getFlushPreference } from '../common/Preference'
 import { isProxyReminderEnabled, isProxyReminderOn } from '../common/Proxyreminder'
+import { teamRequest } from '../common/Request'
 import { getDateTimeStringFromTimeStamp } from '../common/Stringformat'
+import { getTeamUserList } from '../common/Teamutil'
+import { UserItem } from './Newtodo'
 
 @ComponentV2
 export default struct Updatetodo {
   @Consumer() isShowUpdateSheet: boolean = false
   @Param todoId: string = ''
   @Param teamId: string = ''
+  @Param todoInfo: string = ''
   @Local content: string = ''
   @Local priority: number = 0
   @Local startTime: number = Date.now()
@@ -51,6 +55,12 @@ export default struct Updatetodo {
   @Local cloudBackup: boolean = false
   @Local allowCloudBackup: boolean = false
   @Local alertText: string = ''
+  @Local completeModeIndex: number = 0
+  @Local completeModeValue: string = '单用户'
+  @Local userArray: UserItem[] = []
+  @Local allowCompleteUids: string[] = []
+  @Local allowGetUids: string[] = []
+  @Local allowReviewUids: string[] = []
   UIContext = this.getUIContext()
   context = this.UIContext.getHostContext() as common.UIAbilityContext
   dayMap: Record<string, string> = {
@@ -242,7 +252,6 @@ export default struct Updatetodo {
               type: ToggleType.Switch,
               isOn: this.recurrence!!
             })
-              .enabled(this.teamId === '')
           }
           .margin({
             top: $r('sys.float.ohos_id_elements_margin_vertical_m')
@@ -972,46 +981,195 @@ export default struct Updatetodo {
           top: $r('sys.float.ohos_id_elements_margin_vertical_m')
         })
       })
-      ListItem() {
-        Column() {
+      if (!this.teamId) {
+        ListItem() {
+          Column() {
+            Column() {
+              Row() {
+                Text('云备份')
+                  .fontWeight(FontWeight.Medium)
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
+                Toggle({
+                  type: ToggleType.Switch,
+                  isOn: this.cloudBackup!!
+                })
+                  .enabled(this.allowCloudBackup)
+              }
+              .borderRadius(12)
+              .padding(12)
+            }
+            .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+            .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
+            .padding($r('sys.float.ohos_id_corner_radius_mark'))
+
+            if (!this.allowCloudBackup) {
+              Text(this.alertText)
+                .fontColor($r('sys.color.warning'))
+                .fontSize($r('sys.float.ohos_id_text_size_body3'))
+                .margin({
+                  top: 6,
+                  left: 12,
+                  right: 12
+                })
+            }
+          }
+          .alignItems(HorizontalAlign.Start)
+        }
+        .margin({
+          top: $r('sys.float.ohos_id_elements_margin_vertical_l')
+        })
+      }
+      if (this.teamId) {
+        ListItem() {
           Column() {
             Row() {
-              Text('云备份')
+              Text('完成模式')
                 .fontWeight(FontWeight.Medium)
                 .layoutWeight(1)
+              Select([
+                { value: '单用户' },
+                { value: '多用户' }
+              ])
+                .selected(this.completeModeIndex!!)
+                .value(this.completeModeValue!!)
+            }
+
+            Text('单用户为一个执行者完成即完成，多用户为全部执行者完成才完成。')
+              .margin({
+                top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+              })
+            Row() {
+              Text('执行者')
+                .fontWeight(FontWeight.Medium)
                 .margin({
                   right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
                 })
-              Toggle({
-                type: ToggleType.Switch,
-                isOn: this.cloudBackup!!
-              })
-                .enabled(this.allowCloudBackup)
+              Flex({
+                wrap: FlexWrap.Wrap,
+                space: {
+                  main: LengthMetrics.vp(8),
+                  cross: LengthMetrics.vp(8)
+                }
+              }) {
+                ForEach(this.userArray, (item: UserItem) => {
+                  Row() {
+                    Toggle({
+                      type: ToggleType.Checkbox,
+                      isOn: this.allowCompleteUids.includes(item.userId)
+                    })
+                      .margin({
+                        right: $r('sys.float.ohos_id_elements_margin_horizontal_s')
+                      })
+                      .onChange(isOn => {
+                        if (!isOn) {
+                          this.allowCompleteUids.splice(this.allowCompleteUids.indexOf(item.userId), 1)
+                        }
+                        if (isOn && !this.allowCompleteUids.includes(item.userId)) {
+                          this.allowCompleteUids.push(item.userId)
+                        }
+                      })
+                    Text(item.userName)
+                      .enableAutoSpacing(true)
+                  }
+                })
+              }
+              .layoutWeight(1)
             }
-            .borderRadius(12)
-            .padding(12)
-          }
-          .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
-          .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
-          .padding($r('sys.float.ohos_id_corner_radius_mark'))
+            .margin({
+              top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+            })
 
-          if (!this.allowCloudBackup) {
-            Text(this.alertText)
-              .fontColor($r('sys.color.warning'))
-              .fontSize($r('sys.float.ohos_id_text_size_body3'))
-              .margin({
-                top: 6,
-                left: 12,
-                right: 12
-              })
+            Row() {
+              Text('查看者')
+                .fontWeight(FontWeight.Medium)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
+              Flex({
+                wrap: FlexWrap.Wrap,
+                space: {
+                  main: LengthMetrics.vp(8),
+                  cross: LengthMetrics.vp(8)
+                }
+              }) {
+                ForEach(this.userArray, (item: UserItem) => {
+                  Row() {
+                    Toggle({
+                      type: ToggleType.Checkbox,
+                      isOn: this.allowGetUids.includes(item.userId)
+                    })
+                      .margin({
+                        right: $r('sys.float.ohos_id_elements_margin_horizontal_s')
+                      })
+                      .onChange(isOn => {
+                        if (!isOn) {
+                          this.allowGetUids.splice(this.allowGetUids.indexOf(item.userId), 1)
+                        }
+                        if (isOn && !this.allowGetUids.includes(item.userId)) {
+                          this.allowGetUids.push(item.userId)
+                        }
+                      })
+                    Text(item.userName)
+                      .enableAutoSpacing(true)
+                  }
+                })
+              }
+              .layoutWeight(1)
+            }
+            .margin({
+              top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+            })
+
+            Row() {
+              Text('审核者')
+                .fontWeight(FontWeight.Medium)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
+              Flex({
+                wrap: FlexWrap.Wrap,
+                space: {
+                  main: LengthMetrics.vp(8),
+                  cross: LengthMetrics.vp(8)
+                }
+              }) {
+                ForEach(this.userArray, (item: UserItem) => {
+                  Row() {
+                    Toggle({
+                      type: ToggleType.Checkbox,
+                      isOn: this.allowReviewUids.includes(item.userId)
+                    })
+                      .margin({
+                        right: $r('sys.float.ohos_id_elements_margin_horizontal_s')
+                      })
+                      .onChange(isOn => {
+                        if (!isOn) {
+                          this.allowReviewUids.splice(this.allowReviewUids.indexOf(item.userId), 1)
+                        }
+                        if (isOn && !this.allowReviewUids.includes(item.userId)) {
+                          this.allowReviewUids.push(item.userId)
+                        }
+                      })
+                    Text(item.userName)
+                      .enableAutoSpacing(true)
+                  }
+                })
+              }
+              .layoutWeight(1)
+            }
+            .margin({
+              top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+            })
           }
+          .alignItems(HorizontalAlign.Start)
         }
-        .alignItems(HorizontalAlign.Start)
+        .margin({
+          top: $r('sys.float.ohos_id_elements_margin_vertical_l')
+        })
       }
-      .margin({
-        top: $r('sys.float.ohos_id_elements_margin_vertical_l')
-      })
-
       ListItem() {
         Button('修改')
           .keyboardShortcut('S', [ModifierKey.CTRL])
@@ -1100,11 +1258,48 @@ export default struct Updatetodo {
               await promptAction.openToast({
                 message: '修改成功'
               })
+              this.isShowUpdateSheet = false
+              this.context.eventHub.emit('refreshTodo')
             }
             if (this.teamId) {
-              //请求团队修改待办API
+              const dialogControllerProgress = new CustomDialogController({
+                builder: LoadingDialog({
+                  content: '修改中...'
+                })
+              })
+              dialogControllerProgress.open()
+              const res = await teamRequest(this.context, this.teamId, '/updateTodo', {
+                id: this.todoId,
+                content: this.content,
+                priority: this.priority,
+                startTime: this.startTime,
+                endTime: this.endTime,
+                duration: Number(this.duration) * 60000,
+                recurrenceRule: recurrenceRule,
+                excludeTime: [],
+                tag: this.tagArray,
+                dependency: this.dependencyArray,
+                location: {
+                  latitude: this.locationLatitude,
+                  longitude: this.locationLongitude,
+                  location: this.locationLocation
+                } as Location,
+                action: this.actionArray,
+                bz: this.bz,
+                completeMode: this.completeModeIndex === 0 ? 'single' : 'multiple',
+                allowCompleteUids: this.allowCompleteUids,
+                allowGetUids: this.allowGetUids,
+                allowReviewUids: this.allowReviewUids
+              })
+              dialogControllerProgress.close()
+              if (res !== 'fail') {
+                await promptAction.openToast({
+                  message: '修改成功'
+                })
+                this.isShowUpdateSheet = false
+                this.context.eventHub.emit('refreshTodo')
+              }
             }
-            this.isShowUpdateSheet = false
           })
       }
       .margin({
@@ -1123,77 +1318,110 @@ export default struct Updatetodo {
             value: item
           }
         })
-      const todoInfo = await getTodoInfo(this.context, this.todoId) as Todo
-      this.content = todoInfo.content
-      this.priority = todoInfo.priority
-      this.startTime = todoInfo.startTime
-      this.endTime = todoInfo.endTime
-      this.duration = String(todoInfo.duration / 60000)
-      const recurrenceRule = todoInfo.recurrenceRule
-      this.recurrence = recurrenceRule ? true : false
-      if (this.recurrence) {
-        const tokens = recurrenceRule.split(';')
-        const keyValues = tokens.map(item => item.split('=', 2))
-        keyValues.forEach(item => {
-          const key = item[0]
-          const value = item[1]
-          if (key === 'FREQ') {
-            const validFreqs =
-              ['YEARLY', 'MONTHLY', 'WEEKLY', 'DAILY'].concat(getCustomFreqList(this.context).map(item => item.name))
-            const index = validFreqs.indexOf(value)
-            if (index !== -1) {
-              this.recurrenceFreqIndex = index
-              this.recurrenceFreqValue = this.freq[this.recurrenceFreqIndex].value as string
+      let todoInfo: Todo | undefined = undefined
+      if (!this.teamId) {
+        todoInfo = await getTodoInfo(this.context, this.todoId) as Todo
+      }
+      if (this.teamId) {
+        todoInfo = JSON.parse(this.todoInfo)
+      }
+      if (todoInfo) {
+        this.content = todoInfo.content
+        this.priority = todoInfo.priority
+        this.startTime = todoInfo.startTime
+        this.endTime = todoInfo.endTime
+        this.duration = String(todoInfo.duration / 60000)
+        const recurrenceRule = todoInfo.recurrenceRule
+        this.recurrence = recurrenceRule ? true : false
+        if (this.recurrence) {
+          const tokens = recurrenceRule.split(';')
+          const keyValues = tokens.map(item => item.split('=', 2))
+          keyValues.forEach(item => {
+            const key = item[0]
+            const value = item[1]
+            if (key === 'FREQ') {
+              const validFreqs =
+                ['YEARLY', 'MONTHLY', 'WEEKLY', 'DAILY'].concat(getCustomFreqList(this.context).map(item => item.name))
+              const index = validFreqs.indexOf(value)
+              if (index !== -1) {
+                this.recurrenceFreqIndex = index
+                this.recurrenceFreqValue = this.freq[this.recurrenceFreqIndex].value as string
+              }
+              if (index === -1) {
+                this.recurrence = false
+              }
             }
-            if (index === -1) {
-              this.recurrence = false
+            if (key === 'INTERVAL') {
+              this.recurrenceInterval = value
             }
+            if (key === 'UNTIL') {
+              this.recurrenceUntil = icsTimeStringToTimeStamp(value, true)
+            }
+            if (key === 'COUNT') {
+              this.recurrenceCount = value
+            }
+            if (key === 'BYMONTH') {
+              this.recurrenceByMonth = value.split(',').map(item => Number(item))
+            }
+            if (key === 'BYMONTHDAY') {
+              this.recurrenceByMonthDay = value.split(',').map(item => Number(item))
+            }
+            if (key === 'BYDAY') {
+              this.recurrenceByDay = value.split(',')
+            }
+          })
+        }
+        this.excludeTime = todoInfo.excludeTime
+        this.tagArray = todoInfo.tag
+        this.dependencyArray = todoInfo.dependency
+        this.locationLatitude = todoInfo.location.latitude
+        this.locationLongitude = todoInfo.location.longitude
+        this.locationLocation = todoInfo.location.location
+        this.actionArray = todoInfo.action
+        this.bz = todoInfo.bz
+        if (this.teamId) {
+          const completeMode = todoInfo.completeMode
+          this.completeModeIndex = completeMode === 'single' ? 0 : 1
+          if (this.completeModeIndex === 0) {
+            this.completeModeValue = '单用户'
           }
-          if (key === 'INTERVAL') {
-            this.recurrenceInterval = value
+          if (this.completeModeIndex === 1) {
+            this.completeModeValue = '多用户'
           }
-          if (key === 'UNTIL') {
-            this.recurrenceUntil = icsTimeStringToTimeStamp(value, true)
+          this.allowCompleteUids = todoInfo.allowCompleteUids ?? []
+          this.allowGetUids = todoInfo.allowGetUids ?? []
+          this.allowReviewUids = todoInfo.allowReviewUids ?? []
+        }
+      }
+      if (!this.teamId) {
+        this.remind = await isProxyReminderOn(this.todoId)
+        if (!this.remind) {
+          this.remindEnabled = await isProxyReminderEnabled()
+        }
+        const res = await getCloudServiceStatus(this.context)
+        const key = getKeyAlg()
+        if (!res) {
+          this.alertText = '未登录账号或账号未开通云服务，云备份不可用'
+        }
+        if (res) {
+          if (!key) {
+            this.alertText = '未导入密钥，云备份不可用。请前往“我的”>“设置”>“密钥”导入密钥'
           }
-          if (key === 'COUNT') {
-            this.recurrenceCount = value
+          if (key) {
+            this.allowCloudBackup = true
+            this.cloudBackup = getFlushPreference(this.context, 'cloudbackupSetting', 'autoOn', false) as boolean
           }
-          if (key === 'BYMONTH') {
-            this.recurrenceByMonth = value.split(',').map(item => Number(item))
-          }
-          if (key === 'BYMONTHDAY') {
-            this.recurrenceByMonthDay = value.split(',').map(item => Number(item))
-          }
-          if (key === 'BYDAY') {
-            this.recurrenceByDay = value.split(',')
-          }
+        }
+      }
+      if (this.teamId) {
+        const dialogControllerProgress = new CustomDialogController({
+          builder: LoadingDialog({
+            content: '请求中...'
+          })
         })
-      }
-      this.excludeTime = todoInfo.excludeTime
-      this.tagArray = todoInfo.tag
-      this.dependencyArray = todoInfo.dependency
-      this.locationLatitude = todoInfo.location.latitude
-      this.locationLongitude = todoInfo.location.longitude
-      this.locationLocation = todoInfo.location.location
-      this.actionArray = todoInfo.action
-      this.bz = todoInfo.bz
-      this.remind = await isProxyReminderOn(this.todoId)
-      if (!this.remind) {
-        this.remindEnabled = await isProxyReminderEnabled()
-      }
-      const res = await getCloudServiceStatus(this.context)
-      const key = getKeyAlg()
-      if (!res) {
-        this.alertText = '未登录账号或账号未开通云服务，云备份不可用'
-      }
-      if (res) {
-        if (!key) {
-          this.alertText = '未导入密钥，云备份不可用。请前往“我的”>“设置”>“密钥”导入密钥'
-        }
-        if (key) {
-          this.allowCloudBackup = true
-          this.cloudBackup = getFlushPreference(this.context, 'cloudbackupSetting', 'autoOn', false) as boolean
-        }
+        dialogControllerProgress.open()
+        this.userArray = await getTeamUserList(this.context, this.teamId)
+        dialogControllerProgress.close()
       }
     })
   }

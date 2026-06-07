@@ -1,51 +1,46 @@
 import { common } from '@kit.AbilityKit'
-import { LengthMetrics, promptAction } from '@kit.ArkUI'
+import { LengthMetrics, LoadingDialog, promptAction } from '@kit.ArkUI'
 import { iap } from '@kit.IAPKit'
 import { netBoost } from '@kit.NetworkBoostKit'
-import { hdsMaterial, HdsNavigation, HdsNavigationTitleMode, ScrollEffectType } from '@kit.UIDesignKit'
-import { getPersonalAccountAccessToken, getPersonalAccountInfo } from '../common/Account'
+import { hdsMaterial, HdsNavDestination, HdsNavDestinationTitleMode, ScrollEffectType } from '@kit.UIDesignKit'
+import { getTeamAccountInfo, removeAccount } from '../common/Account'
 import openLink from '../common/Openlink'
-import { developerRequest } from '../common/Request'
+import { teamRequest } from '../common/Request'
+import { Response } from './Loginteamaccount'
+import { VipItem } from './Vip'
 
-export interface VipItem {
-  id: string,
-  name: string,
-  type: iap.ProductType,
-  price: string
+@Builder
+export function TeaminfoBuilder() {
+  Teaminfo()
 }
 
 @ComponentV2
-export default struct Vip {
-  @Local vipStatusLoading: boolean = false
-  @Local backupMaxCount: number = -1
+struct Teaminfo {
+  @Local teamId: string = ''
+  @Local teamName: string = ''
+  @Local userCount: number = -1
+  @Local todoCount: number = -1
+  @Local userMaxCount: string = '∞'
+  @Local todoMaxCount: string = '∞'
   @Local iapStatus: boolean = false
-  @Local iapStatusLoading: boolean = false
   @Local hoverId: number = -1
-  context = this.getUIContext().getHostContext() as common.UIAbilityContext
+  UIContext = this.getUIContext()
+  context = this.UIContext.getHostContext() as common.UIAbilityContext
   pageInfos = new NavPathStack()
   agree = false
-  accessToken = ''
-  uid = ''
+  dialogControllerProgress = new CustomDialogController({
+    builder: LoadingDialog({
+      content: '请求中...'
+    })
+  })
   vipArray: VipItem[] = [
     {
-      id: 'iqKBj_k_muJcd3yc',
-      name: '20个永久云备份空间',
+      id: 'XBCGwpIuyeAPvuk2',
+      name: '4个账号、20个待办',
       type: iap.ProductType.CONSUMABLE,
       price: '￥5'
     }
   ]
-
-  async getVipStatus() {
-    this.vipStatusLoading = true
-    const userres = await developerRequest(this.context, '/product/getUserInfo', {
-      accessToken: this.accessToken,
-      product: 'todo'
-    })
-    this.vipStatusLoading = false
-    if (userres !== 'fail') {
-      this.backupMaxCount = JSON.parse(userres).data.backupMaxCount as number
-    }
-  }
 
   async buyVip(id: string, type: iap.ProductType) {
     if (!this.agree) {
@@ -62,7 +57,7 @@ export default struct Vip {
       await iap.createPurchase(this.context, {
         productId: id,
         productType: type,
-        developerPayload: this.uid
+        developerPayload: this.teamId
       })
       netBoost.setSceneDesc({
         scene: 'transaction',
@@ -95,7 +90,7 @@ export default struct Vip {
   }
 
   build() {
-    HdsNavigation(this.pageInfos) {
+    HdsNavDestination() {
       List() {
         ListItem()
           .margin({
@@ -103,34 +98,90 @@ export default struct Vip {
           })
         ListItem() {
           Column() {
-            if (!this.vipStatusLoading) {
-              Text('永久云备份空间：' + this.backupMaxCount + '个')
+            Row() {
+              Text('ID')
+                .fontWeight(FontWeight.Medium)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
+              Text(this.teamId)
+                .fontColor($r('sys.color.font_secondary'))
+                .fontSize($r('sys.float.ohos_id_text_size_body2'))
+                .layoutWeight(1)
+                .textAlign(TextAlign.End)
+            }
+            .borderRadius(12)
+            .padding(12)
+
+            Divider()
+              .padding({
+                left: 12,
+                right: 12
+              })
+            Row() {
+              Text('名')
+                .fontWeight(FontWeight.Medium)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
+              Text(this.teamName)
                 .enableAutoSpacing(true)
-                .fontSize($r('sys.float.ohos_id_text_size_dialog_tittle'))
-                .fontWeight(FontWeight.Bold)
+                .fontColor($r('sys.color.font_secondary'))
+                .fontSize($r('sys.float.ohos_id_text_size_body2'))
+                .layoutWeight(1)
+                .textAlign(TextAlign.End)
             }
-            if (this.vipStatusLoading) {
-              LoadingProgress()
-                .height(20)
-                .width(20)
+            .borderRadius(12)
+            .padding(12)
+
+            Divider()
+              .padding({
+                left: 12,
+                right: 12
+              })
+            Row() {
+              Text('用户')
+                .fontWeight(FontWeight.Medium)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
+              Text(this.userCount + '/' + this.userMaxCount)
+                .fontColor($r('sys.color.font_secondary'))
+                .fontSize($r('sys.float.ohos_id_text_size_body2'))
+                .layoutWeight(1)
+                .textAlign(TextAlign.End)
             }
+            .borderRadius(12)
+            .padding(12)
+
+            Divider()
+              .padding({
+                left: 12,
+                right: 12
+              })
+            Row() {
+              Text('待办')
+                .fontWeight(FontWeight.Medium)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
+              Text(this.todoCount + '/' + this.todoMaxCount)
+                .fontColor($r('sys.color.font_secondary'))
+                .fontSize($r('sys.float.ohos_id_text_size_body2'))
+                .layoutWeight(1)
+                .textAlign(TextAlign.End)
+            }
+            .borderRadius(12)
+            .padding(12)
           }
-          .alignItems(HorizontalAlign.Start)
+          .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+          .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
+          .padding($r('sys.float.ohos_id_corner_radius_mark'))
         }
         .margin({
           top: $r('sys.float.ohos_id_elements_margin_vertical_m')
         })
 
-        if (this.iapStatusLoading) {
-          ListItem() {
-            LoadingProgress()
-              .width('20%')
-          }
-          .margin({
-            top: $r('sys.float.ohos_id_elements_margin_vertical_l')
-          })
-          .width('100%')
-        }
         if (this.iapStatus) {
           ListItem() {
             Column() {
@@ -176,7 +227,7 @@ export default struct Vip {
                     .padding(12)
                     .stateStyles({
                       normal: {
-                        .backgroundColor(this.hoverId === index + 4 ? $r('sys.color.interactive_hover') :
+                        .backgroundColor(this.hoverId === 0 ? $r('sys.color.interactive_hover') :
                           $r('sys.color.ohos_id_color_card_bg'))
                       },
                       pressed: {
@@ -188,7 +239,7 @@ export default struct Vip {
                         this.hoverId = -1
                       }
                       if (isHover) {
-                        this.hoverId = index + 4
+                        this.hoverId = 0
                       }
                     })
                     .onClick(async () => {
@@ -233,21 +284,11 @@ export default struct Vip {
             top: $r('sys.float.ohos_id_elements_margin_vertical_l')
           })
         }
-        ListItem() {
-          Column() {
-            Text('更多')
-              .fontColor($r('sys.color.font_secondary'))
-              .fontSize($r('sys.float.ohos_id_text_size_body2'))
-              .fontWeight(FontWeight.Medium)
-              .margin({
-                bottom: 6,
-                left: 12,
-                right: 12
-              })
+        if (this.userMaxCount !== '∞' && this.todoMaxCount !== '∞') {
+          ListItem() {
             Column() {
               Row() {
-                Text('邀请新用户，免费得会员')
-                  .fontColor($r('sys.color.font_emphasize'))
+                Text('付费开通记录')
                   .fontWeight(FontWeight.Medium)
                   .layoutWeight(1)
                   .margin({
@@ -279,92 +320,8 @@ export default struct Vip {
               })
               .onClick(() => {
                 this.pageInfos.pushPath({
-                  name: 'Invite'
-                })
-              })
-
-              Divider()
-                .padding({
-                  left: 12,
-                  right: 12
-                })
-              Row() {
-                Text('兑换码')
-                  .fontColor(Color.Red)
-                  .fontWeight(FontWeight.Medium)
-                  .layoutWeight(1)
-                  .margin({
-                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                  })
-                Image($r('app.media.right'))
-                  .fillColor($r('sys.color.icon_fourth'))
-                  .height(12)
-                  .width(12)
-              }
-              .borderRadius(12)
-              .padding(12)
-              .stateStyles({
-                normal: {
-                  .backgroundColor(this.hoverId === 2 ? $r('sys.color.interactive_hover') :
-                    $r('sys.color.ohos_id_color_card_bg'))
-                },
-                pressed: {
-                  .backgroundColor($r('sys.color.interactive_pressed'))
-                }
-              })
-              .onHover(isHover => {
-                if (!isHover) {
-                  this.hoverId = -1
-                }
-                if (isHover) {
-                  this.hoverId = 2
-                }
-              })
-              .onClick(() => {
-                this.pageInfos.pushPath({
-                  name: 'Vipcode'
-                })
-              })
-
-              Divider()
-                .padding({
-                  left: 12,
-                  right: 12
-                })
-              Row() {
-                Text('开通记录')
-                  .fontWeight(FontWeight.Medium)
-                  .layoutWeight(1)
-                  .margin({
-                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                  })
-                Image($r('app.media.right'))
-                  .fillColor($r('sys.color.icon_fourth'))
-                  .height(12)
-                  .width(12)
-              }
-              .borderRadius(12)
-              .padding(12)
-              .stateStyles({
-                normal: {
-                  .backgroundColor(this.hoverId === 3 ? $r('sys.color.interactive_hover') :
-                    $r('sys.color.ohos_id_color_card_bg'))
-                },
-                pressed: {
-                  .backgroundColor($r('sys.color.interactive_pressed'))
-                }
-              })
-              .onHover(isHover => {
-                if (!isHover) {
-                  this.hoverId = -1
-                }
-                if (isHover) {
-                  this.hoverId = 3
-                }
-              })
-              .onClick(() => {
-                this.pageInfos.pushPath({
-                  name: 'Viplog'
+                  name: 'Teamviplog',
+                  param: this.teamId
                 })
               })
             }
@@ -372,7 +329,45 @@ export default struct Vip {
             .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
             .padding($r('sys.float.ohos_id_corner_radius_mark'))
           }
-          .alignItems(HorizontalAlign.Start)
+          .margin({
+            top: $r('sys.float.ohos_id_elements_margin_vertical_l')
+          })
+        }
+        ListItem() {
+          Button('注销团队')
+            .role(ButtonRole.ERROR)
+            .width('100%')
+            .onClick(async () => {
+              const promptAction = this.UIContext.getPromptAction()
+              const data = await promptAction.showDialog({
+                title: '提示',
+                message: '注销成功后无法恢复，确定注销？',
+                buttons: [
+                  {
+                    text: '取消',
+                    color: $r('sys.color.font_primary')
+                  },
+                  {
+                    text: '注销',
+                    color: $r('sys.color.warning')
+                  }
+                ]
+              })
+              if (data.index === 1) {
+                this.dialogControllerProgress.open()
+                const res = await teamRequest(this.context, this.teamId, '/deleteTeam')
+                this.dialogControllerProgress.close()
+                if (res !== 'fail') {
+                  const teamAccountInfo = await getTeamAccountInfo(this.teamId)
+                  await removeAccount(teamAccountInfo.id)
+                  await promptAction.openToast({
+                    message: '注销成功'
+                  })
+                  this.pageInfos.pop()
+                  this.context.eventHub.emit('refreshTeam')
+                }
+              }
+            })
         }
         .margin({
           top: $r('sys.float.ohos_id_elements_margin_vertical_l')
@@ -389,8 +384,6 @@ export default struct Vip {
       })
     }
     .backgroundColor($r('app.color.sheet_background'))
-    .hideBackButton(true)
-    .mode(NavigationMode.Stack)
     .recoverable(true)
     .titleBar({
       padding: {
@@ -404,6 +397,9 @@ export default struct Vip {
           contentStyle: {
             titleStyle: {
               mainTitleColor: $r('sys.color.font_primary')
+            },
+            backIconStyle: {
+              iconColor: $r('sys.color.icon_primary')
             }
           }
         },
@@ -415,35 +411,35 @@ export default struct Vip {
       },
       content: {
         title: {
-          mainTitle: '会员中心'
+          mainTitle: '团队信息'
         }
       }
     })
-    .titleMode(HdsNavigationTitleMode.MODAL)
-    .onAppear(async () => {
-      this.accessToken = await getPersonalAccountAccessToken()
-      if (this.accessToken) {
-        const accountInfo = await getPersonalAccountInfo()
-        this.uid = accountInfo.uid
-        this.context.eventHub.on('refreshVip', async () => {
-          await this.getVipStatus()
-        })
-        await this.getVipStatus()
-        this.iapStatusLoading = true
-        try {
-          await iap.queryEnvironmentStatus(this.context)
-          this.iapStatusLoading = false
-          this.iapStatus = true
-        } catch (err) {
-          this.iapStatusLoading = false
-          await promptAction.openToast({
-            message: '发生错误，错误码：' + err.code + (err.message ? '，错误信息：' + err.message : '')
-          })
+    .titleMode(HdsNavDestinationTitleMode.MODAL)
+    .onReady(async (context) => {
+      this.pageInfos = context.pathStack
+      this.teamId = context.pathInfo.param as string
+      this.dialogControllerProgress.open()
+      const res = await teamRequest(this.context, this.teamId, '/getTeamInfo')
+      this.dialogControllerProgress.close()
+      if (res !== 'fail') {
+        const response = JSON.parse(res) as Response
+        this.teamName = response.data.teamName
+        this.userCount = response.data.userCount
+        this.todoCount = response.data.todoCount
+        this.userMaxCount = response.data.userMaxCount ? String(response.data.userMaxCount) : '∞'
+        this.todoMaxCount = response.data.todoMaxCount ? String(response.data.todoMaxCount) : '∞'
+        if (this.userMaxCount !== '∞' && this.todoMaxCount !== '∞') {
+          try {
+            await iap.queryEnvironmentStatus(this.context)
+            this.iapStatus = true
+          } catch (err) {
+            await promptAction.openToast({
+              message: '发生错误，错误码：' + err.code + (err.message ? '，错误信息：' + err.message : '')
+            })
+          }
         }
       }
-    })
-    .onDisAppear(() => {
-      this.context.eventHub.off('refreshVip')
     })
   }
 }
