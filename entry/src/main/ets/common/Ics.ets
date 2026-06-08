@@ -1,5 +1,6 @@
 import { util } from '@kit.ArkTS'
 import { TodoItem } from './Dataimport'
+import { stringSplit } from './Stringformat'
 
 export function timeStampToIcsTimeString(timeStamp: number) {
   const date = new Date(timeStamp)
@@ -78,7 +79,13 @@ export function icsstringify(todoArray: TodoItem[]) {
 }
 
 export function icsparse(icsString: string) {
-  const rows = icsString.split('\r\n')
+  let rows: string[] = []
+  if (!icsString.includes('\r\n')) {
+    rows = icsString.split('\n')
+  }
+  if (icsString.includes('\r\n')) {
+    rows = icsString.split('\r\n')
+  }
   const result: TodoItem[] = []
   let todo: TodoItem = {
     id: util.generateRandomUUID(),
@@ -134,7 +141,7 @@ export function icsparse(icsString: string) {
       result.push(todo)
     }
     if (begin) {
-      const keyValue = item.split(':', 2)
+      const keyValue = stringSplit(item, ':', 2)
       if (keyValue.length === 2) {
         const key = keyValue[0]
         const value = keyValue[1]
@@ -147,10 +154,10 @@ export function icsparse(icsString: string) {
         if (key === 'PRIORITY') {
           todo.priority = Number(value)
         }
-        if (key === 'DTSTART') {
+        if (key === 'DTSTART' || key.startsWith('DTSTART;')) {
           todo.startTime = icsTimeStringToTimeStamp(value)
         }
-        if (key === 'DTEND') {
+        if (key === 'DTEND' || key.startsWith('DTEND;')) {
           todo.endTime = icsTimeStringToTimeStamp(value, true)
         }
         if (key === 'RRULE') {

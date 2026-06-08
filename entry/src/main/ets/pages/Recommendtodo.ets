@@ -192,6 +192,7 @@ export default struct Recommendtodo {
                             })
                           Text(item.location.location)
                             .enableAutoSpacing(true)
+                            .enableDataDetector(true)
                             .layoutWeight(1)
                         }
                         .margin({

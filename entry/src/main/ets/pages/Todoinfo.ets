@@ -12,7 +12,7 @@ import copy from '../common/Pasteboard'
 import { getFlushPreference } from '../common/Preference'
 import { isProxyReminderOn } from '../common/Proxyreminder'
 import { teamRequest } from '../common/Request'
-import { getDateTimeStringFromTimeStamp } from '../common/Stringformat'
+import { getDateTimeStringFromTimeStamp, stringSplit } from '../common/Stringformat'
 
 export interface OpenAppByTypeValue {
   type: string,
@@ -311,6 +311,7 @@ export default struct Todoinfo {
                   .fontColor($r('sys.color.font_emphasize'))
               }
               .enableAutoSpacing(true)
+              .enableDataDetector(true)
               .margin({
                 top: $r('sys.float.ohos_id_text_margin_vertical')
               })
@@ -331,6 +332,7 @@ export default struct Todoinfo {
               Span(this.locationLocation)
             }
             .enableAutoSpacing(true)
+            .enableDataDetector(true)
             .margin({
               top: $r('sys.float.ohos_id_text_margin_vertical')
             })
@@ -633,7 +635,7 @@ export default struct Todoinfo {
         this.recurrence = recurrenceRule ? true : false
         if (this.recurrence) {
           const tokens = recurrenceRule.split(';')
-          const keyValues = tokens.map(item => item.split('=', 2))
+          const keyValues = tokens.map((item): string[] => stringSplit(item, '=', 2))
           keyValues.forEach(item => {
             const key = item[0]
             const value = item[1]
