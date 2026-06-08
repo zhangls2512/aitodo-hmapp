@@ -2,7 +2,7 @@ import { common } from '@kit.AbilityKit'
 import { LengthMetrics, LoadingDialog, promptAction } from '@kit.ArkUI'
 import { hdsMaterial, HdsNavigation, HdsNavigationTitleMode, ScrollEffectType } from '@kit.UIDesignKit'
 import { getTeamAccountList, removeAccount, TeamAccountInfo } from '../common/Account'
-import { syncCompleteTeamTodo } from '../common/Teamutil'
+import { deleteCompleteTeamTodo, syncCompleteTeamTodo } from '../common/Teamutil'
 
 @ComponentV2
 export default struct Team {
@@ -305,6 +305,7 @@ export default struct Team {
                   })
                   if (data.index === 1) {
                     await removeAccount(item.id)
+                    await deleteCompleteTeamTodo(this.context, item.teamId)
                     await promptAction.openToast({
                       message: '退出成功'
                     })

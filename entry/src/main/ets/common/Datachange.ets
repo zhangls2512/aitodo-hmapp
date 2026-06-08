@@ -88,6 +88,7 @@ export async function newTodo(context: Context, data: TodoInput) {
     updateTime: updateTime,
     cloudBackupTime: JSON.stringify([])
   })
+  await rdbStore.close()
   huaweiCloudSyncRdbStore.insertSync('todo', {
     id: id,
     content: data.content,
@@ -106,6 +107,7 @@ export async function newTodo(context: Context, data: TodoInput) {
     updateTime: updateTime,
     cloudBackupTime: JSON.stringify([])
   })
+  await huaweiCloudSyncRdbStore.close()
   await autoSyncTable(context)
   await autoBackupTable(context, false)
   const autoCaldavBackup = getFlushPreference(context, 'dataSetting', 'autoCaldavBackup', true)
@@ -204,6 +206,7 @@ export async function updateTodo(context: Context, id: string, data: TodoInput) 
     bz: data.bz,
     updateTime: updateTime
   }, predicates)
+  await rdbStore.close()
   huaweiCloudSyncRdbStore.updateSync({
     content: data.content,
     priority: data.priority,
@@ -219,6 +222,7 @@ export async function updateTodo(context: Context, id: string, data: TodoInput) 
     bz: data.bz,
     updateTime: updateTime
   }, predicates)
+  await huaweiCloudSyncRdbStore.close()
   await autoSyncTable(context)
   await autoBackupTable(context, false)
   const autoCaldavBackup = getFlushPreference(context, 'dataSetting', 'autoCaldavBackup', true)
@@ -388,20 +392,24 @@ export async function completeTodo(context: Context, id: string, complete: boole
         recentCompletedTime: -1,
         updateTime: updateTime
       }, predicates)
+      await rdbStore.close()
       huaweiCloudSyncRdbStore.updateSync({
         recentCompletedTime: -1,
         updateTime: updateTime
       }, predicates)
+      await huaweiCloudSyncRdbStore.close()
     }
     if (complete) {
       rdbStore.updateSync({
         recentCompletedTime: updateTime,
         updateTime: updateTime
       }, predicates)
+      await rdbStore.close()
       huaweiCloudSyncRdbStore.updateSync({
         recentCompletedTime: updateTime,
         updateTime: updateTime
       }, predicates)
+      await huaweiCloudSyncRdbStore.close()
     }
     await autoSyncTable(context)
     await autoBackupTable(context, false)
@@ -450,7 +458,9 @@ export async function deleteTodo(context: Context, id: string, single = false, e
   predicates.equalTo('id', id)
   if (!single) {
     rdbStore.deleteSync(predicates)
+    await rdbStore.close()
     huaweiCloudSyncRdbStore.deleteSync(predicates)
+    await huaweiCloudSyncRdbStore.close()
     await cancelProxyReminder(id)
   }
   if (single) {
@@ -459,10 +469,12 @@ export async function deleteTodo(context: Context, id: string, single = false, e
       excludeTime: JSON.stringify(excludeTime),
       updateTime: updateTime
     }, predicates)
+    await rdbStore.close()
     huaweiCloudSyncRdbStore.updateSync({
       excludeTime: JSON.stringify(excludeTime),
       updateTime: updateTime
     }, predicates)
+    await huaweiCloudSyncRdbStore.close()
   }
   if (autoSyncBackup) {
     await autoSyncTable(context)
@@ -514,9 +526,11 @@ export async function setCloudBackup(context: Context, data: CloudBackupItem, au
       rdbStore.updateSync({
         cloudBackupTime: JSON.stringify(content.cloudBackupTime)
       }, predicates)
+      await rdbStore.close()
       huaweiCloudSyncRdbStore.updateSync({
         cloudBackupTime: JSON.stringify(content.cloudBackupTime)
       }, predicates)
+      await huaweiCloudSyncRdbStore.close()
       if (autoSyncBackup) {
         await autoSyncTable(context)
         await autoBackupTable(context, false)
@@ -584,9 +598,11 @@ export async function deleteCloudBackup(context: Context, id: string) {
       rdbStore.updateSync({
         cloudBackupTime: JSON.stringify(cloudBackupTime)
       }, predicates)
+      await rdbStore.close()
       huaweiCloudSyncRdbStore.updateSync({
         cloudBackupTime: JSON.stringify(cloudBackupTime)
       }, predicates)
+      await huaweiCloudSyncRdbStore.close()
       await autoSyncTable(context)
       await autoBackupTable(context, false)
       const autoCaldavBackup = getFlushPreference(context, 'dataSetting', 'autoCaldavBackup', true)

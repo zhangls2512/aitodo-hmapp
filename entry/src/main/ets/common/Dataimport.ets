@@ -134,6 +134,8 @@ export async function importTodoArray(context: Context, todoArray: TodoItem[],
       cloudBackupTime: JSON.stringify(item.cloudBackupTime)
     }, conflict)
   })
+  await rdbStore.close()
+  await huaweiCloudSyncRdbStore.close()
   await autoSyncTable(context)
   await autoBackupTable(context)
 }

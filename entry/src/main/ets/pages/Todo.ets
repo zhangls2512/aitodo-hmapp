@@ -11,7 +11,7 @@ import { rcp } from '@kit.RemoteCommunicationKit'
 import { generateBarcode, scanCore } from '@kit.ScanKit'
 import { harmonyShare, systemShare } from '@kit.ShareKit'
 import { hdsEffect } from '@kit.UIDesignKit'
-import { getTeamAccountList } from '../common/Account'
+import { getTeamAccountInfo, getTeamAccountList } from '../common/Account'
 import getCloudServiceStatus from '../common/Cloudservice'
 import { getKeyAlg } from '../common/Crypto'
 import { completeTodo, deleteCloudBackup, deleteTodo, setCloudBackup } from '../common/Datachange'
@@ -60,6 +60,7 @@ export default struct TodoPage {
   @Local buttonHoverId: number = -1
   @Local quickBarTodoIdArray: string[] = []
   @Local type: string = 'complete'
+  @Local teamAdmin: boolean = false
   UIContext = this.getUIContext()
   context = this.UIContext.getHostContext() as common.UIAbilityContext
   todoId = ''
@@ -441,7 +442,7 @@ export default struct TodoPage {
               this.isShowReviewSheet = true
             })
         }
-        if (!this.teamId || this.type === 'create' || this.type === 'get') {
+        if (!this.teamId || this.type === 'create' || (this.type === 'get' && this.teamAdmin)) {
           MenuItem({
             startIcon: $r('app.media.edit'),
             content: '修改'
@@ -832,70 +833,72 @@ export default struct TodoPage {
               }
             })
 
-            Column() {
-              Image($r('app.media.cloud'))
-            }
-            .borderRadius(20)
-            .height(40)
-            .padding(11)
-            .stateStyles({
-              normal: {
-                .backgroundColor($r('sys.color.interactive_hover'))
-              },
-              pressed: {
-                .backgroundColor($r('sys.color.interactive_pressed'))
+            if (this.enableCloudBackup) {
+              Column() {
+                Image($r('app.media.cloud'))
               }
-            })
-            .visualEffect(new hdsEffect.HdsEffectBuilder()
-              .pointLight({
-                sourceType: hdsEffect.PointLightSourceType.SOFT,
-                illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
+              .borderRadius(20)
+              .height(40)
+              .padding(11)
+              .stateStyles({
+                normal: {
+                  .backgroundColor($r('sys.color.interactive_hover'))
+                },
+                pressed: {
+                  .backgroundColor($r('sys.color.interactive_pressed'))
+                }
               })
-              .buildEffect())
-            .width(40)
-            .onClick(async () => {
-              if (this.multipleSelectArray.length === 0) {
-                await promptAction.openToast({
-                  message: '未选择'
+              .visualEffect(new hdsEffect.HdsEffectBuilder()
+                .pointLight({
+                  sourceType: hdsEffect.PointLightSourceType.SOFT,
+                  illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
                 })
-                return
-              }
-              for (let i = 0; i < this.multipleSelectArray.length; i++) {
-                const dialogControllerProgress = new CustomDialogController({
-                  builder: LoadingDialog({
-                    content: '批量云备份中，进度：' + (i + 1) + '/' + this.multipleSelectArray.length
+                .buildEffect())
+              .width(40)
+              .onClick(async () => {
+                if (this.multipleSelectArray.length === 0) {
+                  await promptAction.openToast({
+                    message: '未选择'
                   })
-                })
-                dialogControllerProgress.open()
-                await setCloudBackup(this.context, {
-                  id: this.multipleSelectArray[i].id,
-                  content: JSON.stringify({
-                    content: this.multipleSelectArray[i].content,
-                    priority: this.multipleSelectArray[i].priority,
-                    startTime: this.multipleSelectArray[i].startTime,
-                    endTime: this.multipleSelectArray[i].endTime,
-                    duration: this.multipleSelectArray[i].duration,
-                    recurrenceRule: this.multipleSelectArray[i].recurrenceRule,
-                    excludeTime: this.multipleSelectArray[i].excludeTime,
-                    tag: this.multipleSelectArray[i].tag,
-                    dependency: this.multipleSelectArray[i].dependency,
-                    location: this.multipleSelectArray[i].location,
-                    action: this.multipleSelectArray[i].action,
-                    bz: this.multipleSelectArray[i].bz,
-                    recentCompletedTime: this.multipleSelectArray[i].recentCompletedTime,
-                    updateTime: this.multipleSelectArray[i].updateTime,
-                    cloudBackupTime: this.multipleSelectArray[i].cloudBackupTime
+                  return
+                }
+                for (let i = 0; i < this.multipleSelectArray.length; i++) {
+                  const dialogControllerProgress = new CustomDialogController({
+                    builder: LoadingDialog({
+                      content: '批量云备份中，进度：' + (i + 1) + '/' + this.multipleSelectArray.length
+                    })
                   })
-                }, false)
-                dialogControllerProgress.close()
-                await promptAction.openToast({
-                  message: '云备份成功'
-                })
-              }
-              this.loading = true
-              await autoSyncTable(this.context)
-              await autoBackupTable(this.context)
-            })
+                  dialogControllerProgress.open()
+                  await setCloudBackup(this.context, {
+                    id: this.multipleSelectArray[i].id,
+                    content: JSON.stringify({
+                      content: this.multipleSelectArray[i].content,
+                      priority: this.multipleSelectArray[i].priority,
+                      startTime: this.multipleSelectArray[i].startTime,
+                      endTime: this.multipleSelectArray[i].endTime,
+                      duration: this.multipleSelectArray[i].duration,
+                      recurrenceRule: this.multipleSelectArray[i].recurrenceRule,
+                      excludeTime: this.multipleSelectArray[i].excludeTime,
+                      tag: this.multipleSelectArray[i].tag,
+                      dependency: this.multipleSelectArray[i].dependency,
+                      location: this.multipleSelectArray[i].location,
+                      action: this.multipleSelectArray[i].action,
+                      bz: this.multipleSelectArray[i].bz,
+                      recentCompletedTime: this.multipleSelectArray[i].recentCompletedTime,
+                      updateTime: this.multipleSelectArray[i].updateTime,
+                      cloudBackupTime: this.multipleSelectArray[i].cloudBackupTime
+                    })
+                  }, false)
+                  dialogControllerProgress.close()
+                  await promptAction.openToast({
+                    message: '云备份成功'
+                  })
+                }
+                this.loading = true
+                await autoSyncTable(this.context)
+                await autoBackupTable(this.context)
+              })
+            }
           }
           .margin({
             bottom: $r('sys.float.ohos_id_elements_margin_vertical_m')
@@ -1006,7 +1009,8 @@ export default struct TodoPage {
             }))
               .selected(this.teamIndex!!)
               .value(this.teamValue!!)
-              .onSelect(index => {
+              .onSelect(async (index) => {
+                this.teamAdmin = false
                 if (index === 0) {
                   this.type = ''
                   this.teamId = ''
@@ -1015,6 +1019,8 @@ export default struct TodoPage {
                     this.type = 'complete'
                   }
                   this.teamId = this.teamIdArray[this.teamIndex - 1]
+                  const teamAccountInfo = await getTeamAccountInfo(this.teamId)
+                  this.teamAdmin = teamAccountInfo.admin === 'true' ? true : false
                 }
                 this.loading = true
               })
@@ -1493,6 +1499,10 @@ export default struct TodoPage {
             if (cloudServiceStatus && getKeyAlg()) {
               this.enableCloudBackup = true
             }
+          }
+          if (this.teamId) {
+            const teamAccountInfo = await getTeamAccountInfo(this.teamId)
+            this.teamAdmin = teamAccountInfo.admin === 'true' ? true : false
           }
         }
       })

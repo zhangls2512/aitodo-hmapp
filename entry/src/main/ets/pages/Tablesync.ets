@@ -119,6 +119,7 @@ struct Tablesync {
                           relationalStore.DistributedType.DISTRIBUTED_DEVICE, {
                             autoSync: false
                           })
+                        await rdbStore.close()
                         setFlushPreference(this.context, 'dataSetting', 'on', isOn)
                       }
                     }
@@ -642,6 +643,7 @@ struct Tablesync {
                       await rdbStore.setDistributedTables(['todo'], relationalStore.DistributedType.DISTRIBUTED_CLOUD, {
                         autoSync: false
                       })
+                      await rdbStore.close()
                       setFlushPreference(this.context, 'dataSetting', 'huaweiCloudSyncOn', isOn)
                     }
                   })
@@ -789,6 +791,7 @@ struct Tablesync {
                       (progressDetails) => {
                         this.huaweiCloudSyncProgressDetails = progressDetails
                       })
+                    await huaweiCloudSyncRdbStore.close()
                   })
                 Image($r('app.media.down'))
                   .height(24)
@@ -812,6 +815,7 @@ struct Tablesync {
                       (progressDetails) => {
                         this.huaweiCloudSyncProgressDetails = progressDetails
                       })
+                    await huaweiCloudSyncRdbStore.close()
                   })
                 Image($r('app.media.time'))
                   .height(24)
@@ -835,6 +839,7 @@ struct Tablesync {
                       (progressDetails) => {
                         this.huaweiCloudSyncProgressDetails = progressDetails
                       })
+                    await huaweiCloudSyncRdbStore.close()
                   })
               }
               .borderRadius(12)
