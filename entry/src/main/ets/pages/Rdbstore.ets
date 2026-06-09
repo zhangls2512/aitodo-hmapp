@@ -52,8 +52,7 @@ struct Rdbstore {
                 .fontWeight(FontWeight.Medium)
             }
             .margin({
-              bottom: $r('sys.float.ohos_id_elements_margin_vertical_m'),
-              top: $r('sys.float.ohos_id_elements_margin_vertical_l')
+              bottom: $r('sys.float.ohos_id_elements_margin_vertical_m')
             })
 
             if (this.indexArray.length === 0) {
@@ -282,6 +281,9 @@ struct Rdbstore {
               })
           }
           .layoutWeight(1)
+          .margin({
+            top: $r('sys.float.ohos_id_elements_margin_vertical_l')
+          })
         }
         .alignItems(HorizontalAlign.Start)
         .margin({
