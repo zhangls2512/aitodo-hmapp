@@ -39,4 +39,5 @@ export async function deleteIndex(context: Context, storeName: string, indexName
     securityLevel: relationalStore.SecurityLevel.S1
   })
   await rdbStore.executeSql('DROP INDEX IF EXISTS ' + indexName)
+  await rdbStore.close()
 }
