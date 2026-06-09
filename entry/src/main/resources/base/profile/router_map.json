@@ -1,6 +1,11 @@
 {
   "routerMap": [
     {
+      "name": "Rdbstore",
+      "pageSourceFile": "src/main/ets/pages/Rdbstore.ets",
+      "buildFunction": "RdbstoreBuilder"
+    },
+    {
       "name": "About",
       "pageSourceFile": "src/main/ets/pages/About.ets",
       "buildFunction": "AboutBuilder"

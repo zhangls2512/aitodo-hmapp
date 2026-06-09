@@ -417,7 +417,7 @@ struct Debugsetting {
                 })
               })
 
-              if (deviceInfo.deviceType !== 'tablet') {
+              if (deviceInfo.deviceType === 'phone') {
                 Divider()
                   .padding({
                     left: 12,
@@ -554,8 +554,7 @@ struct Debugsetting {
                   right: 12
                 })
               Row() {
-                Text('清除全部数据并退出')
-                  .fontColor($r('sys.color.warning'))
+                Text('关系型数据库')
                   .fontWeight(FontWeight.Medium)
                   .layoutWeight(1)
                   .margin({
@@ -583,6 +582,49 @@ struct Debugsetting {
                 }
                 if (isHover) {
                   this.hoverId = 5
+                }
+              })
+              .onClick(() => {
+                this.pageInfos.pushPath({
+                  name: 'Rdbstore'
+                })
+              })
+
+              Divider()
+                .padding({
+                  left: 12,
+                  right: 12
+                })
+              Row() {
+                Text('清除全部数据并退出')
+                  .fontColor($r('sys.color.warning'))
+                  .fontWeight(FontWeight.Medium)
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
+                Image($r('app.media.right'))
+                  .fillColor($r('sys.color.icon_fourth'))
+                  .height(12)
+                  .width(12)
+              }
+              .borderRadius(12)
+              .padding(12)
+              .stateStyles({
+                normal: {
+                  .backgroundColor(this.hoverId === 6 ? $r('sys.color.interactive_hover') :
+                    $r('sys.color.ohos_id_color_card_bg'))
+                },
+                pressed: {
+                  .backgroundColor($r('sys.color.interactive_pressed'))
+                }
+              })
+              .onHover(isHover => {
+                if (!isHover) {
+                  this.hoverId = -1
+                }
+                if (isHover) {
+                  this.hoverId = 6
                 }
               })
               .onClick(async () => {
@@ -629,7 +671,7 @@ struct Debugsetting {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor(this.hoverId === 6 ? $r('sys.color.interactive_hover') :
+                  .backgroundColor(this.hoverId === 7 ? $r('sys.color.interactive_hover') :
                     $r('sys.color.ohos_id_color_card_bg'))
                 },
                 pressed: {
@@ -641,7 +683,7 @@ struct Debugsetting {
                   this.hoverId = -1
                 }
                 if (isHover) {
-                  this.hoverId = 6
+                  this.hoverId = 7
                 }
               })
               .onClick(async () => {
@@ -707,7 +749,7 @@ struct Debugsetting {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor(this.hoverId === 7 ? $r('sys.color.interactive_hover') :
+                  .backgroundColor(this.hoverId === 8 ? $r('sys.color.interactive_hover') :
                     $r('sys.color.ohos_id_color_card_bg'))
                 },
                 pressed: {
@@ -719,7 +761,7 @@ struct Debugsetting {
                   this.hoverId = -1
                 }
                 if (isHover) {
-                  this.hoverId = 7
+                  this.hoverId = 8
                 }
               })
               .onClick(() => {
@@ -747,7 +789,7 @@ struct Debugsetting {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor(this.hoverId === 8 ? $r('sys.color.interactive_hover') :
+                  .backgroundColor(this.hoverId === 9 ? $r('sys.color.interactive_hover') :
                     $r('sys.color.ohos_id_color_card_bg'))
                 },
                 pressed: {
@@ -759,7 +801,7 @@ struct Debugsetting {
                   this.hoverId = -1
                 }
                 if (isHover) {
-                  this.hoverId = 8
+                  this.hoverId = 9
                 }
               })
               .onClick(async () => {
@@ -792,7 +834,7 @@ struct Debugsetting {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor(this.hoverId === 9 ? $r('sys.color.interactive_hover') :
+                  .backgroundColor(this.hoverId === 10 ? $r('sys.color.interactive_hover') :
                     $r('sys.color.ohos_id_color_card_bg'))
                 },
                 pressed: {
@@ -804,7 +846,7 @@ struct Debugsetting {
                   this.hoverId = -1
                 }
                 if (isHover) {
-                  this.hoverId = 9
+                  this.hoverId = 10
                 }
               })
               .onClick(() => {
@@ -1048,7 +1090,7 @@ struct Debugsetting {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor(this.hoverId === 10 ? $r('sys.color.interactive_hover') :
+                  .backgroundColor(this.hoverId === 11 ? $r('sys.color.interactive_hover') :
                     $r('sys.color.ohos_id_color_card_bg'))
                 },
                 pressed: {
@@ -1060,7 +1102,7 @@ struct Debugsetting {
                   this.hoverId = -1
                 }
                 if (isHover) {
-                  this.hoverId = 10
+                  this.hoverId = 11
                 }
               })
               .onClick(() => {
@@ -1090,7 +1132,7 @@ struct Debugsetting {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor(this.hoverId === 11 ? $r('sys.color.interactive_hover') :
+                  .backgroundColor(this.hoverId === 12 ? $r('sys.color.interactive_hover') :
                     $r('sys.color.ohos_id_color_card_bg'))
                 },
                 pressed: {
@@ -1102,7 +1144,7 @@ struct Debugsetting {
                   this.hoverId = -1
                 }
                 if (isHover) {
-                  this.hoverId = 11
+                  this.hoverId = 12
                 }
               })
               .onClick(() => {
