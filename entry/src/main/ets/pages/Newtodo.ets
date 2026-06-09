@@ -26,7 +26,7 @@ import { checkPermission } from '../common/Permission'
 import { getFlushPreference } from '../common/Preference'
 import { isProxyReminderEnabled } from '../common/Proxyreminder'
 import { teamRequest } from '../common/Request'
-import { getDateTimeStringFromTimeStamp } from '../common/Stringformat'
+import { getDateTimeStringFromTimeStamp, stringSplit } from '../common/Stringformat'
 import { getTeamUserList } from '../common/Teamutil'
 import { OpenAppByTypeValue } from './Todoinfo'
 
@@ -160,7 +160,7 @@ export default struct Newtodo {
             this.recurrenceByDay = []
             const recurrenceRule = dateTime.rrule
             const tokens = recurrenceRule.split(';')
-            const keyValues = tokens.map(item => item.split('=', 2))
+            const keyValues = tokens.map((item): string[] => stringSplit(item, '=', 2))
             keyValues.forEach(item => {
               const key = item[0]
               const value = item[1]

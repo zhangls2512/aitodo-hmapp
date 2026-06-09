@@ -25,6 +25,19 @@ export async function getTeamUserList(context: Context, teamId: string) {
   return result
 }
 
+export async function deleteCompleteTeamTodo(context: Context, teamId: string) {
+  const rdbStore = await relationalStore.getRdbStore(context, {
+    name: 'todo',
+    securityLevel: relationalStore.SecurityLevel.S1,
+    encrypt: true,
+    allowRebuild: true
+  })
+  const predicates = new relationalStore.RdbPredicates('todo')
+  predicates.equalTo('teamId', teamId)
+  rdbStore.deleteSync(predicates)
+  await rdbStore.close()
+}
+
 export async function syncCompleteTeamTodo(context: Context, teamId: string, autoSync = true) {
   let result: Todo[] = []
   let after = true
@@ -47,15 +60,13 @@ export async function syncCompleteTeamTodo(context: Context, teamId: string, aut
     }
   }
   if (after) {
+    await deleteCompleteTeamTodo(context, teamId)
     const rdbStore = await relationalStore.getRdbStore(context, {
       name: 'todo',
       securityLevel: relationalStore.SecurityLevel.S1,
       encrypt: true,
       allowRebuild: true
     })
-    const predicates = new relationalStore.RdbPredicates('todo')
-    predicates.equalTo('teamId', teamId)
-    rdbStore.deleteSync(predicates)
     result.forEach(item => {
       rdbStore.insertSync('todo', {
         id: item.id,
@@ -77,6 +88,7 @@ export async function syncCompleteTeamTodo(context: Context, teamId: string, aut
         cloudBackupTime: JSON.stringify([])
       })
     })
+    await rdbStore.close()
     if (autoSync) {
       await autoSyncTable(context)
     }
