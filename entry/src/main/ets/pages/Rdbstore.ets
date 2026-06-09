@@ -1,5 +1,5 @@
 import { common } from '@kit.AbilityKit'
-import { LengthMetrics, promptAction } from '@kit.ArkUI'
+import { LengthMetrics } from '@kit.ArkUI'
 import { hdsMaterial, HdsNavDestination, HdsNavDestinationTitleMode, ScrollEffectType } from '@kit.UIDesignKit'
 import { deleteIndex, deleteRdbStoreData, getAllData } from '../common/Rdbstore'
 
