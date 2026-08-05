@@ -1052,6 +1052,10 @@ export default struct TodoPage {
               top: $r('sys.float.ohos_id_elements_margin_vertical_m')
             })
             .searchButton('搜索')
+            .systemMaterial(new uiMaterial.ImmersiveMaterial({
+              style: uiMaterial.ImmersiveStyle.REGULAR,
+              interactive: true
+            }))
           Scroll() {
             Row() {
               ForEach(this.tags, (item: string, index) => {
