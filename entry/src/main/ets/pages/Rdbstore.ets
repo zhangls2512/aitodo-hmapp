@@ -12,7 +12,6 @@ export function RdbstoreBuilder() {
 struct Rdbstore {
   @Local dataArray: string[][][] = []
   @Local indexArray: string [][][] = []
-  @Local hoverId: string = ''
   UIContext = this.getUIContext()
   context = this.UIContext.getHostContext() as common.UIAbilityContext
   storeName = 'todo'
@@ -64,7 +63,7 @@ struct Rdbstore {
               })
               .width('100%')
             }
-            ForEach(this.indexArray, (item: string[][], index) => {
+            ForEach(this.indexArray, (item: string[][]) => {
               ListItem() {
                 Column() {
                   ForEach(item, (inItem: string[], inIndex) => {
@@ -112,19 +111,13 @@ struct Rdbstore {
                   .padding(12)
                   .stateStyles({
                     normal: {
-                      .backgroundColor(this.hoverId === '0,' + index ? $r('sys.color.interactive_hover') :
-                        $r('sys.color.ohos_id_color_card_bg'))
+                      .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                    },
+                    hovered: {
+                      .backgroundColor($r('sys.color.interactive_hover'))
                     },
                     pressed: {
                       .backgroundColor($r('sys.color.interactive_pressed'))
-                    }
-                  })
-                  .onHover(isHover => {
-                    if (!isHover) {
-                      this.hoverId = ''
-                    }
-                    if (isHover) {
-                      this.hoverId = '0,' + index
                     }
                   })
                   .onClick(async () => {
@@ -178,7 +171,7 @@ struct Rdbstore {
               })
               .width('100%')
             }
-            ForEach(this.dataArray, (item: string[][], index) => {
+            ForEach(this.dataArray, (item: string[][]) => {
               ListItem() {
                 Column() {
                   ForEach(item, (inItem: string[], inIndex) => {
@@ -227,19 +220,13 @@ struct Rdbstore {
                   .padding(12)
                   .stateStyles({
                     normal: {
-                      .backgroundColor(this.hoverId === '1,' + index ? $r('sys.color.interactive_hover') :
-                        $r('sys.color.ohos_id_color_card_bg'))
+                      .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                    },
+                    hovered: {
+                      .backgroundColor($r('sys.color.interactive_hover'))
                     },
                     pressed: {
                       .backgroundColor($r('sys.color.interactive_pressed'))
-                    }
-                  })
-                  .onHover(isHover => {
-                    if (!isHover) {
-                      this.hoverId = ''
-                    }
-                    if (isHover) {
-                      this.hoverId = '1,' + index
                     }
                   })
                   .onClick(async () => {

@@ -1,7 +1,6 @@
 import { relationalStore } from '@kit.ArkData'
 import { util } from '@kit.ArkTS'
 import { promptAction } from '@kit.ArkUI'
-import { batteryInfo, power } from '@kit.BasicServicesKit'
 import { calendarManager } from '@kit.CalendarKit'
 import { rcp } from '@kit.RemoteCommunicationKit'
 import { caldavBackup, caldavDelete, caldavGet } from './Caldav'
@@ -24,19 +23,6 @@ interface Item {
 }
 
 export async function autoSyncTable(context: Context, fromDeviceId?: string) {
-  const pauseAutoSyncWhenLowBatteryCapacityLevel =
-    getFlushPreference(context, 'dataSetting', 'pauseAutoSyncWhenLowBatteryCapacityLevel', false)
-  const pauseAutoSyncWhenPowerSave = getFlushPreference(context, 'dataSetting', 'pauseAutoSyncWhenPowerSave', false)
-  const lowBatteryCapacityLevel =
-    getFlushPreference(context, 'debugSetting', 'lowBatteryCapacityLevel', batteryInfo.BatteryCapacityLevel.LEVEL_LOW)
-  if (pauseAutoSyncWhenLowBatteryCapacityLevel && batteryInfo.batteryCapacityLevel >= lowBatteryCapacityLevel) {
-    return
-  }
-  const currentPowerMode = power.getPowerMode()
-  if (pauseAutoSyncWhenPowerSave && currentPowerMode !== power.DevicePowerMode.MODE_NORMAL &&
-    currentPowerMode !== power.DevicePowerMode.MODE_PERFORMANCE) {
-    return
-  }
   const autoSync = getFlushPreference(context, 'dataSetting', 'autoSync', false)
   if (autoSync) {
     const autoSyncDevices: Item[] = getFlushPreference(context, 'dataSetting', 'autoSyncDevices', []) as Item[]
@@ -220,19 +206,6 @@ export async function systemCalendarSyncTable(context: Context, mode: 'push' | '
 }
 
 export async function autoBackupTable(context: Context, caldav = true) {
-  const pauseAutoBackupWhenLowBatteryCapacityLevel =
-    getFlushPreference(context, 'dataSetting', 'pauseAutoSyncWhenLowBatteryCapacityLevel', false)
-  const pauseAutoBackupWhenPowerSave = getFlushPreference(context, 'dataSetting', 'pauseAutoSyncWhenPowerSave', false)
-  const lowBatteryCapacityLevel =
-    getFlushPreference(context, 'debugSetting', 'lowBatteryCapacityLevel', batteryInfo.BatteryCapacityLevel.LEVEL_LOW)
-  if (pauseAutoBackupWhenLowBatteryCapacityLevel && batteryInfo.batteryCapacityLevel >= lowBatteryCapacityLevel) {
-    return
-  }
-  const currentPowerMode = power.getPowerMode()
-  if (pauseAutoBackupWhenPowerSave && currentPowerMode !== power.DevicePowerMode.MODE_NORMAL &&
-    currentPowerMode !== power.DevicePowerMode.MODE_PERFORMANCE) {
-    return
-  }
   const autoBackup = getFlushPreference(context, 'dataSetting', 'autoBackup', true)
   if (autoBackup) {
     await backupTable(context)

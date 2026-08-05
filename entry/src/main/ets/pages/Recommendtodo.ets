@@ -20,7 +20,6 @@ export default struct Recommendtodo {
   @Local preferType: number = 1
   @Local todoArray: Todo[] = []
   @Local loading: boolean = false
-  @Local hoverId: number = -1
   UIContext = this.getUIContext()
   context = this.UIContext.getHostContext() as common.UIAbilityContext
   todoId = ''
@@ -222,19 +221,13 @@ export default struct Recommendtodo {
                   .padding(12)
                   .stateStyles({
                     normal: {
-                      .backgroundColor(this.hoverId === index ? $r('sys.color.interactive_hover') :
-                        $r('sys.color.comp_background_primary'))
+                      .backgroundColor($r('sys.color.comp_background_primary'))
+                    },
+                    hovered: {
+                      .backgroundColor($r('sys.color.interactive_hover'))
                     },
                     pressed: {
-                      .backgroundColor($r('sys.color.comp_background_secondary'))
-                    }
-                  })
-                  .onHover(isHover => {
-                    if (!isHover) {
-                      this.hoverId = -1
-                    }
-                    if (isHover) {
-                      this.hoverId = index
+                      .backgroundColor($r('sys.color.interactive_pressed'))
                     }
                   })
                   .bindContextMenu(this.MenuBuilder(item), ResponseType.LongPress, {

@@ -51,7 +51,6 @@ export default struct Todoinfo {
   @Local allowReviewUids: string[] | undefined = undefined
   @Local recentCompleteTime: TeamCompleteTimeItem[] | undefined = undefined
   @Local reviewRecentCompleteTime: TeamCompleteTimeItem[] | undefined = undefined
-  @Local hoverId: number = -1
   UIContext = this.getUIContext()
   context = this.UIContext.getHostContext() as common.UIAbilityContext
   freqMap: Record<string, string> = {
@@ -408,7 +407,7 @@ export default struct Todoinfo {
           top: $r('sys.float.ohos_id_elements_margin_vertical_l')
         })
       }
-      ForEach(this.action, (item: Action, index) => {
+      ForEach(this.action, (item: Action) => {
         ListItem() {
           Column() {
             Row() {
@@ -433,19 +432,13 @@ export default struct Todoinfo {
             .padding(12)
             .stateStyles({
               normal: {
-                .backgroundColor(this.hoverId === index ? $r('sys.color.interactive_hover') :
-                  $r('sys.color.ohos_id_color_card_bg'))
+                .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+              },
+              hovered: {
+                .backgroundColor($r('sys.color.interactive_hover'))
               },
               pressed: {
                 .backgroundColor($r('sys.color.interactive_pressed'))
-              }
-            })
-            .onHover(isHover => {
-              if (!isHover) {
-                this.hoverId = -1
-              }
-              if (isHover) {
-                this.hoverId = index
               }
             })
             .onClick(async () => {

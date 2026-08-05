@@ -12,7 +12,8 @@ export function CustomfreqlistBuilder() {
 struct Customfreqlist {
   @Local customFreqArray: CustomFreq[] = []
   @Local customFreqName: string = ''
-  context = this.getUIContext().getHostContext() as common.UIAbilityContext
+  UIContext = this.getUIContext()
+  context = this.UIContext.getHostContext() as common.UIAbilityContext
   pageInfos = new NavPathStack()
 
   get() {
@@ -89,9 +90,26 @@ struct Customfreqlist {
                   })
                 Image($r('app.media.delete'))
                   .height(24)
-                  .onClick(() => {
-                    removeCustomFreq(this.context, item.name)
-                    this.get()
+                  .onClick(async () => {
+                    const promptAction = this.UIContext.getPromptAction()
+                    const data = await promptAction.showDialog({
+                      title: '提示',
+                      message: '删除成功后无法恢复，确定删除？',
+                      buttons: [
+                        {
+                          text: '取消',
+                          color: $r('sys.color.font_primary')
+                        },
+                        {
+                          text: '删除',
+                          color: $r('sys.color.warning')
+                        }
+                      ]
+                    })
+                    if (data.index === 1) {
+                      removeCustomFreq(this.context, item.name)
+                      this.get()
+                    }
                   })
               }
               .borderRadius(12)
