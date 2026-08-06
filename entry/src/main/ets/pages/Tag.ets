@@ -37,7 +37,7 @@ struct TagPage {
               text: this.tag!!
             })
               .enableAutoSpacing(true)
-            Button('添加')
+            Button('新增')
               .enabled(this.tag !== '' ? true : false)
               .margin({
                 top: $r('sys.float.ohos_id_elements_margin_vertical_m')
@@ -55,6 +55,9 @@ struct TagPage {
                   priority: 5
                 })
                 await setTag(this.context, this.tagArray)
+                await promptAction.openToast({
+                  message: '新增成功'
+                })
                 this.tag = ''
               })
           }
@@ -115,6 +118,9 @@ struct TagPage {
                     if (data.index === 1) {
                       this.tagArray.splice(index, 1)
                       await setTag(this.context, this.tagArray)
+                      await promptAction.openToast({
+                        message: '删除成功'
+                      })
                     }
                   })
               }
