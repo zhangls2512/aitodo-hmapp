@@ -8,9 +8,9 @@ import {
   Want,
   wantConstant
 } from '@kit.AbilityKit'
-import { updateManager } from '@kit.AppGalleryKit'
+import { appInfoManager, updateManager } from '@kit.AppGalleryKit'
 import { relationalStore, uniformTypeDescriptor } from '@kit.ArkData'
-import { promptAction, window } from '@kit.ArkUI'
+import { promptAction, uiAppearance, window } from '@kit.ArkUI'
 import { batteryInfo, commonEventManager, deviceInfo } from '@kit.BasicServicesKit'
 import { fileIo, fileUri } from '@kit.CoreFileKit'
 import { statusBarManager } from '@kit.DeskTopExtensionKit'
@@ -28,6 +28,7 @@ import { deleteTodo } from '../common/Datachange'
 import { write } from '../common/File'
 import openLink from '../common/Openlink'
 import { getFlushPreference, getTempPreference, setTempPreference } from '../common/Preference'
+import { selectDynamicIcon } from '../common/Selectdynamicicon'
 import { autoBackupTable, autoSyncTable } from '../common/Table'
 import { syncAllTeamCompleteTodo } from '../common/Teamutil'
 
@@ -46,6 +47,34 @@ interface EventData {
 
 export default class EntryAbility extends UIAbility {
   async appInit(want: Want) {
+    const iconMode = getFlushPreference(this.context, 'commonSetting', 'iconMode', 1)
+    const colorMode = getFlushPreference(this.context, 'commonSetting', 'colorMode', 0)
+    try {
+      if (iconMode === 0) {
+        if (colorMode === 0) {
+          const systemColorMode = uiAppearance.getDarkMode()
+          if (systemColorMode === 0) {
+            await appInfoManager.selectDynamicIcon('dark_' + deviceInfo.deviceType)
+          }
+          if (systemColorMode === 1) {
+            await appInfoManager.disableDynamicIcon()
+          }
+        }
+        if (colorMode === 1) {
+          await appInfoManager.disableDynamicIcon()
+        }
+        if (colorMode === 2) {
+          await appInfoManager.selectDynamicIcon('dark_' + deviceInfo.deviceType)
+        }
+      }
+      if (iconMode === 1) {
+        await appInfoManager.disableDynamicIcon()
+      }
+      if (iconMode === 2) {
+        await appInfoManager.selectDynamicIcon('dark_' + deviceInfo.deviceType)
+      }
+    } catch {
+    }
     await notificationManager.setBadgeNumber(0)
     if (want.parameters?.noticeUrl) {
       await openLink(this.context, want.parameters.noticeUrl as string)
@@ -749,7 +778,7 @@ export default class EntryAbility extends UIAbility {
       try {
         await sensor.getSingleSensor(sensor.SensorId.AMBIENT_LIGHT)
         let lastUpdateTime = 0
-        sensor.on(sensor.SensorId.AMBIENT_LIGHT, (event) => {
+        sensor.on(sensor.SensorId.AMBIENT_LIGHT, async (event) => {
           const currentTime = Date.now()
           if (currentTime - lastUpdateTime >= 3000) {
             const currentColorMode = getFlushPreference(this.context, 'commonSetting', 'colorMode', 0)
@@ -759,10 +788,12 @@ export default class EntryAbility extends UIAbility {
               if (event.intensity >= 30 &&
                 this.context.config.colorMode === ConfigurationConstant.ColorMode.COLOR_MODE_DARK) {
                 applicationContext.setColorMode(ConfigurationConstant.ColorMode.COLOR_MODE_LIGHT)
+                await selectDynamicIcon(this.context)
               }
               if (event.intensity <= 20 &&
                 this.context.config.colorMode === ConfigurationConstant.ColorMode.COLOR_MODE_LIGHT) {
                 applicationContext.setColorMode(ConfigurationConstant.ColorMode.COLOR_MODE_DARK)
+                await selectDynamicIcon(this.context)
               }
             } else {
               sensor.off(sensor.SensorId.AMBIENT_LIGHT)
@@ -783,6 +814,10 @@ export default class EntryAbility extends UIAbility {
       } catch {
       }
     }
+  }
+
+  async onConfigurationUpdate() {
+    await selectDynamicIcon(this.context)
   }
 
   async onPrepareToTerminateAsync() {

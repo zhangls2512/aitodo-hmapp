@@ -7,6 +7,7 @@ import { TodoItem } from './Dataimport'
 import { getPermission } from './Permission'
 import { getFlushPreference } from './Preference'
 import { getRecentTodoFromFreq } from './Rrule'
+import { nextDayTimeStamp } from './Stringformat'
 import { getTagMap } from './Tag'
 
 export interface TeamCompleteTimeItem {
@@ -53,7 +54,19 @@ export interface Todo {
   allowReviewUids?: string[]
 }
 
-export async function isTodoCompleted(context: Context, id: string, currentTime: number) {
+function isTodoCompleted(info: Todo) {
+  if (!info.recurrenceRule && info.recentCompletedTime !== -1) {
+    return true
+  }
+  if (info.recurrenceRule) {
+    if (info.recentCompletedTime >= info.startTime) {
+      return true
+    }
+  }
+  return false
+}
+
+export async function isTodoCompletedHeavy(context: Context, id: string, currentTime: number) {
   const info = await getTodoInfo(context, id)
   if (info !== 'fail') {
     if (!info.recurrenceRule && info.recentCompletedTime !== -1) {
@@ -179,18 +192,18 @@ export async function getCanCompletedTodoList(context: Context, currentTime: num
       action: JSON.parse(resultSet.getValue(actionIndex) as string) as Action[],
       bz: resultSet.getValue(bzIndex) as string,
       recentCompletedTime: resultSet.getValue(recentCompletedTimeIndex) as number,
-      isCompleted: await isTodoCompleted(context, resultSet.getValue(idIndex) as string, currentTime),
+      isCompleted: false,
       updateTime: resultSet.getValue(updateTimeIndex) as number,
       cloudBackupTime: JSON.parse(resultSet.getValue(cloudBackupTimeIndex) as string) as CloudBackupTimeItem[]
     }
     info.teamName = await getTeamName(info.teamId)
     if (info.recurrenceRule) {
       const recentTodoStartEndTime =
-        getRecentTodoFromFreq(context, info.recurrenceRule, info.startTime, info.endTime, info.excludeTime,
-          currentTime)
+        getRecentTodoFromFreq(context, info.recurrenceRule, info.startTime, info.endTime, info.excludeTime, currentTime)
       info.startTime = recentTodoStartEndTime.startTime
       info.endTime = recentTodoStartEndTime.endTime
     }
+    info.isCompleted = isTodoCompleted(info)
     if (!info.teamId) {
       const canCompleted = await canCompleteTodo(context, info.id, !info.isCompleted, Date.now())
       if (canCompleted) {
@@ -303,20 +316,21 @@ export async function getCurrentTimePersonalTodoList(context: Context, currentTi
       action: JSON.parse(resultSet.getValue(actionIndex) as string) as Action[],
       bz: resultSet.getValue(bzIndex) as string,
       recentCompletedTime: resultSet.getValue(recentCompletedTimeIndex) as number,
-      isCompleted: await isTodoCompleted(context, resultSet.getValue(idIndex) as string, currentTime),
+      isCompleted: false,
       updateTime: resultSet.getValue(updateTimeIndex) as number,
       cloudBackupTime: JSON.parse(resultSet.getValue(cloudBackupTimeIndex) as string) as CloudBackupTimeItem[],
       isCloudBackup: false
     }
     if (info.recurrenceRule) {
       const recentTodoStartEndTime =
-        getRecentTodoFromFreq(context, info.recurrenceRule, info.startTime, info.endTime, info.excludeTime,
-          currentTime)
+        getRecentTodoFromFreq(context, info.recurrenceRule, info.startTime, info.endTime, info.excludeTime, currentTime)
       info.startTime = recentTodoStartEndTime.startTime
       info.endTime = recentTodoStartEndTime.endTime
     }
-    info.canCompleted = await canCompleteTodo(context, info.id, !info.isCompleted, Date.now())
-    if (currentTime + 86400000 > info.startTime && (info.endTime === -1 || currentTime < info.endTime)) {
+    if (info.startTime !== -1 && info.startTime < nextDayTimeStamp(currentTime) &&
+      (info.endTime === -1 || currentTime < info.endTime)) {
+      info.isCompleted = isTodoCompleted(info)
+      info.canCompleted = await canCompleteTodo(context, info.id, !info.isCompleted, Date.now())
       const accountInfo = await getPersonalAccountInfo()
       const cloudBackupTimeItem = info.cloudBackupTime.find(item => item.uid === accountInfo.uid)
       if (cloudBackupTimeItem) {

@@ -705,6 +705,8 @@ export default struct Newtodo {
             .onClick(() => {
               this.UIContext.showDatePickerDialog({
                 selected: this.recurrenceUntil === -1 ? new Date() : new Date(this.recurrenceUntil),
+                showTime: true,
+                useMilitaryTime: true,
                 onDateAccept: async (value) => {
                   const time = value.getTime()
                   if (time < this.startTime) {

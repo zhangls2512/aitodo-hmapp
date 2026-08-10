@@ -13,6 +13,7 @@ import { getPermission } from './Permission'
 import { getFlushPreference } from './Preference'
 import { globalDefaultSession } from './Request'
 import { parseRRule, stringifyRRule } from './Rrule'
+import { nextDayTimeStamp } from './Stringformat'
 import { getWebdavServerInfo } from './Webdavserver'
 
 interface Item {
@@ -20,6 +21,11 @@ interface Item {
   deviceName: string,
   deviceType: string,
   networkId: string
+}
+
+export interface SystemCalendarEvent {
+  systemCalendar: calendarManager.CalendarAccount,
+  eventId: number
 }
 
 export async function autoSyncTable(context: Context, fromDeviceId?: string) {
@@ -93,19 +99,20 @@ async function huaweiCloudSyncTable(context: Context) {
   }
 }
 
-export async function systemCalendarSyncTable(context: Context, mode: 'push' | 'pull') {
-  if (getPermission('ohos.permission.READ_CALENDAR') && getPermission('ohos.permission.WRITE_CALENDAR')) {
+export async function systemCalendarSyncTable(context: Context, mode: 'push' | 'pull',
+  systemCalendar?: calendarManager.CalendarAccount) {
+  if (getPermission('ohos.permission.READ_WHOLE_CALENDAR') && getPermission('ohos.permission.WRITE_WHOLE_CALENDAR')) {
     const systemCalendarManager = calendarManager.getCalendarManager(context)
     const allCalendars = await systemCalendarManager.getAllCalendars()
     const calendars = allCalendars.map(item => item.getAccount())
-    if (!calendars.find(item => item.name === 'com.zhangxm.aitodo')) {
+    if (!systemCalendar && !calendars.find(item => item.name === 'com.zhangxm.aitodo')) {
       await systemCalendarManager.createCalendar({
         name: 'com.zhangxm.aitodo',
         type: calendarManager.CalendarType.LOCAL,
         displayName: '轩铭智能待办'
       })
     }
-    const calendar = await systemCalendarManager.getCalendar({
+    const calendar = await systemCalendarManager.getCalendar(systemCalendar ?? {
       name: 'com.zhangxm.aitodo',
       type: calendarManager.CalendarType.LOCAL,
       displayName: '轩铭智能待办'
@@ -114,19 +121,19 @@ export async function systemCalendarSyncTable(context: Context, mode: 'push' | '
     const todos = await getPersonalTodoList(context)
     if (mode === 'push') {
       const promisesa = todos.map(async (item) => {
-        const eventItem = events.find(eventItem => eventItem.identifier === item.id)
+        const eventItem = events.find(eventItem => eventItem.identifier === item.id + ';' + calendar.id)
         const event: calendarManager.Event = {
           type: calendarManager.EventType.NORMAL,
           title: item.content,
           location: {
-            latitude: item.location.latitude,
-            longitude: item.location.longitude,
+            latitude: item.location.latitude === -1 ? undefined : item.location.latitude,
+            longitude: item.location.longitude === -1 ? undefined : item.location.longitude,
             location: item.location.location
           },
           startTime: item.startTime,
-          endTime: item.endTime,
+          endTime: item.endTime === -1 ? nextDayTimeStamp(item.startTime) : item.endTime,
           description: item.bz,
-          identifier: item.id
+          identifier: item.id + ';' + calendar.id
         }
         if (item.recurrenceRule) {
           event.recurrenceRule = {
@@ -141,10 +148,7 @@ export async function systemCalendarSyncTable(context: Context, mode: 'push' | '
           }
         }
         if (!eventItem) {
-          try {
-            await calendar.addEvent(event)
-          } catch {
-          }
+          await calendar.addEvent(event)
         } else {
           event.id = eventItem.id
           await calendar.updateEvent(event)
@@ -152,7 +156,7 @@ export async function systemCalendarSyncTable(context: Context, mode: 'push' | '
       })
       await Promise.all(promisesa)
       const promisesb = events.map(async (item) => {
-        if (!todos.find(todoItem => todoItem.id === item.identifier)) {
+        if (!todos.find(todoItem => todoItem.id === String(item.identifier).split(';')[0])) {
           await calendar.deleteEvent(item.id)
         }
       })
@@ -169,8 +173,9 @@ export async function systemCalendarSyncTable(context: Context, mode: 'push' | '
             excludeTime.push(item)
           })
         }
+        const id = String(item.identifier).split(';')[0]
         todoArray.push({
-          id: String(item.identifier),
+          id: id ? id : util.generateRandomUUID(),
           content: String(item.title),
           priority: 0,
           startTime: item.startTime,
@@ -194,7 +199,7 @@ export async function systemCalendarSyncTable(context: Context, mode: 'push' | '
       }
       await importTodoArray(context, todoArray, relationalStore.ConflictResolution.ON_CONFLICT_REPLACE)
       const promisesb = todos.map(async (item) => {
-        if (!events.find(eventItem => eventItem.identifier === item.id)) {
+        if (!events.find(eventItem => String(eventItem.identifier).split(';')[0] === item.id)) {
           await deleteTodo(context, item.id)
         }
       })
@@ -203,6 +208,38 @@ export async function systemCalendarSyncTable(context: Context, mode: 'push' | '
     return 'success'
   }
   return 'fail'
+}
+
+export async function getSystemCalendarList(context: Context) {
+  if (getPermission('ohos.permission.READ_WHOLE_CALENDAR')) {
+    const systemCalendarManager = calendarManager.getCalendarManager(context)
+    const allCalendars = await systemCalendarManager.getAllCalendars()
+    return allCalendars.map(item => item.getAccount())
+  }
+  return []
+}
+
+export async function getSystemCalendarEvent(context: Context, id: string) {
+  if (getPermission('ohos.permission.READ_WHOLE_CALENDAR')) {
+    const systemCalendarManager = calendarManager.getCalendarManager(context)
+    const allCalendars = await systemCalendarManager.getAllCalendars()
+    const calendars = allCalendars.map(item => item.getAccount())
+    const result: SystemCalendarEvent[] = []
+    for (let i = 0; i < calendars.length; i++) {
+      const item = calendars[i]
+      const calendar = await systemCalendarManager.getCalendar(item)
+      const events = await calendar.getEvents()
+      const event = events.find(eventItem => eventItem.identifier === id + ';' + calendar.id)
+      if (event) {
+        result.push({
+          systemCalendar: item,
+          eventId: event.id ?? -1
+        })
+      }
+    }
+    return result
+  }
+  return []
 }
 
 export async function autoBackupTable(context: Context, caldav = true) {

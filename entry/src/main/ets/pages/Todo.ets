@@ -410,15 +410,6 @@ export default struct TodoPage {
               })
           }
         }
-        MenuItem({
-          startIcon: $r('app.media.info'),
-          content: '详情'
-        })
-          .onClick(() => {
-            this.todoId = item.id
-            this.todoInfo = JSON.stringify(item)
-            this.isShowInfoSheet = true
-          })
         if (!this.teamId) {
           MenuItem({
             startIcon: $r('app.media.share'),
@@ -1128,16 +1119,18 @@ export default struct TodoPage {
                         type: ToggleType.Checkbox,
                         isOn: this.multipleSelectArray.some(selectItem => selectItem.id === item.id)
                       })
+                        .hitTestBehavior(HitTestMode.Block)
                         .margin({
                           right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
                         })
                         .onChange(isOn => {
-                          if (!isOn) {
+                          const exist = this.multipleSelectArray.find(selectItem => selectItem.id === item.id)
+                          if (!isOn && exist) {
                             this.multipleSelectArray.splice(
                               this.multipleSelectArray.findIndex(selectItem => selectItem.id ===
                                 item.id), 1)
                           }
-                          if (isOn) {
+                          if (isOn && !exist) {
                             this.multipleSelectArray.push(item)
                           }
                         })
@@ -1350,6 +1343,23 @@ export default struct TodoPage {
                     pressed: {
                       .backgroundColor($r('sys.color.interactive_pressed'))
                     }
+                  })
+                  .onClick(() => {
+                    if (this.multipleSelect) {
+                      const exist = this.multipleSelectArray.find(selectItem => selectItem.id === item.id)
+                      if (exist) {
+                        this.multipleSelectArray.splice(
+                          this.multipleSelectArray.findIndex(selectItem => selectItem.id ===
+                            item.id), 1)
+                      }
+                      if (!exist) {
+                        this.multipleSelectArray.push(item)
+                      }
+                      return
+                    }
+                    this.todoId = item.id
+                    this.todoInfo = JSON.stringify(item)
+                    this.isShowInfoSheet = true
                   })
                   .bindContextMenu(this.MenuBuilder(item), ResponseType.LongPress, {
                     hapticFeedbackMode: HapticFeedbackMode.AUTO

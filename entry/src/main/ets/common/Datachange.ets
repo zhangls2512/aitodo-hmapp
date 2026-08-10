@@ -4,7 +4,7 @@ import { promptAction } from '@kit.ArkUI'
 import { getPersonalAccountAccessToken, getPersonalAccountInfo } from './Account'
 import { caldavBackup, caldavDelete } from './Caldav'
 import { encrypt } from './Crypto'
-import { CloudBackupTimeItem, getTodoInfo, isTodoCompleted } from './Dataget'
+import { CloudBackupTimeItem, getTodoInfo, isTodoCompletedHeavy } from './Dataget'
 import { TodoItem } from './Dataimport'
 import { getFlushPreference } from './Preference'
 import { cancelProxyReminder, setProxyReminder } from './Proxyreminder'
@@ -350,7 +350,7 @@ export async function canCompleteTodo(context: Context, id: string, complete: bo
         }
       }
       for (let i = 0; i < info.dependency.length; i++) {
-        const completed = await isTodoCompleted(context, info.dependency[i], completedTime)
+        const completed = await isTodoCompletedHeavy(context, info.dependency[i], completedTime)
         if (!completed) {
           if (prompt) {
             await promptAction.openToast({

@@ -10,7 +10,7 @@ import { write } from '../common/File'
 import { checkPermission } from '../common/Permission'
 import { getFlushPreference, setFlushPreference } from '../common/Preference'
 import { getSizeString } from '../common/Stringformat'
-import { syncTable, systemCalendarSyncTable } from '../common/Table'
+import { getSystemCalendarList, syncTable, systemCalendarSyncTable } from '../common/Table'
 
 interface Item {
   deviceId: string,
@@ -904,37 +904,50 @@ struct Tablesync {
                 }
               })
               .onClick(async () => {
-                const promptAction = this.UIContext.getPromptAction()
-                const data = await promptAction.showActionMenu({
-                  title: '选择同步模式',
-                  buttons: [
-                    {
-                      text: '推送 (本应用 > 系统日历)',
-                      color: $r('sys.color.font_primary')
-                    },
-                    {
-                      text: '拉取 (系统日历 > 本应用)',
-                      color: $r('sys.color.font_primary')
+                const systemCalendars = await getSystemCalendarList(this.context)
+                if (systemCalendars.length === 0) {
+                  await promptAction.openToast({
+                    message: '无系统日历'
+                  })
+                  return
+                }
+                this.UIContext.showTextPickerDialog({
+                  range: systemCalendars.map(item => item.displayName ? item.displayName : item.name),
+                  canLoop: false,
+                  onAccept: async (value) => {
+                    const promptAction = this.UIContext.getPromptAction()
+                    const data = await promptAction.showActionMenu({
+                      title: '选择同步模式',
+                      buttons: [
+                        {
+                          text: '推送 (本应用 > 系统日历)',
+                          color: $r('sys.color.font_primary')
+                        },
+                        {
+                          text: '拉取 (系统日历 > 本应用)',
+                          color: $r('sys.color.font_primary')
+                        }
+                      ]
+                    })
+                    let res = ''
+                    if (data.index === 0) {
+                      res = await systemCalendarSyncTable(this.context, 'push', systemCalendars[value.index as number])
                     }
-                  ]
+                    if (data.index === 1) {
+                      res = await systemCalendarSyncTable(this.context, 'pull', systemCalendars[value.index as number])
+                    }
+                    if (res === 'success') {
+                      await promptAction.openToast({
+                        message: '同步成功'
+                      })
+                    }
+                    if (res === 'fail') {
+                      await promptAction.openToast({
+                        message: '同步失败'
+                      })
+                    }
+                  }
                 })
-                let res = ''
-                if (data.index === 0) {
-                  res = await systemCalendarSyncTable(this.context, 'push')
-                }
-                if (data.index === 1) {
-                  res = await systemCalendarSyncTable(this.context, 'pull')
-                }
-                if (res === 'success') {
-                  await promptAction.openToast({
-                    message: '同步成功'
-                  })
-                }
-                if (res === 'fail') {
-                  await promptAction.openToast({
-                    message: '同步失败'
-                  })
-                }
               })
             }
             .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
@@ -1077,8 +1090,8 @@ struct Tablesync {
       if (res) {
         this.availableDeviceArray = await this.deviceManager.getAvailableDeviceList() as Item[]
       }
-      await checkPermission(this.context, this.UIContext, 'ohos.permission.READ_CALENDAR')
-      await checkPermission(this.context, this.UIContext, 'ohos.permission.WRITE_CALENDAR')
+      await checkPermission(this.context, this.UIContext, 'ohos.permission.READ_WHOLE_CALENDAR')
+      await checkPermission(this.context, this.UIContext, 'ohos.permission.WRITE_WHOLE_CALENDAR')
     })
     .onDisAppear(() => {
       distributedDeviceManager.releaseDeviceManager(this.deviceManager)

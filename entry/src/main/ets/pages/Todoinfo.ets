@@ -1,5 +1,6 @@
 import { common, Want, wantConstant } from '@kit.AbilityKit'
 import { LoadingDialog, promptAction } from '@kit.ArkUI'
+import { calendarManager } from '@kit.CalendarKit'
 import { fileShare } from '@kit.CoreFileKit'
 import { mapCommon, MapComponent, petalMaps } from '@kit.MapKit'
 import { filePreview } from '@kit.PreviewKit'
@@ -13,6 +14,7 @@ import { getFlushPreference } from '../common/Preference'
 import { isProxyReminderOn } from '../common/Proxyreminder'
 import { teamRequest } from '../common/Request'
 import { getDateTimeStringFromTimeStamp, stringSplit } from '../common/Stringformat'
+import { getSystemCalendarEvent, SystemCalendarEvent } from '../common/Table'
 
 export interface OpenAppByTypeValue {
   type: string,
@@ -51,6 +53,7 @@ export default struct Todoinfo {
   @Local allowReviewUids: string[] | undefined = undefined
   @Local recentCompleteTime: TeamCompleteTimeItem[] | undefined = undefined
   @Local reviewRecentCompleteTime: TeamCompleteTimeItem[] | undefined = undefined
+  @Local systemCalendarEvent: SystemCalendarEvent[] = []
   UIContext = this.getUIContext()
   context = this.UIContext.getHostContext() as common.UIAbilityContext
   freqMap: Record<string, string> = {
@@ -423,10 +426,6 @@ export default struct Todoinfo {
                   })
               }
               .alignItems(HorizontalAlign.Start)
-              .layoutWeight(1)
-              .margin({
-                right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-              })
             }
             .borderRadius(12)
             .padding(12)
@@ -441,6 +440,7 @@ export default struct Todoinfo {
                 .backgroundColor($r('sys.color.interactive_pressed'))
               }
             })
+            .width('100%')
             .onClick(async () => {
               if (item.type === 'openApp') {
                 const want = JSON.parse(item.value) as Want
@@ -505,6 +505,52 @@ export default struct Todoinfo {
                   await copy(this.context, this.UIContext, item.value)
                 })
             )
+          }
+          .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+          .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
+          .padding($r('sys.float.ohos_id_corner_radius_mark'))
+        }
+        .margin({
+          top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+        })
+      })
+      if (this.systemCalendarEvent.length > 0) {
+        ListItem() {
+          Text('系统日历日程')
+            .fontWeight(FontWeight.Medium)
+        }
+        .margin({
+          bottom: $r('sys.float.ohos_id_elements_margin_vertical_m'),
+          top: $r('sys.float.ohos_id_elements_margin_vertical_l')
+        })
+      }
+      ForEach(this.systemCalendarEvent, (item: SystemCalendarEvent) => {
+        ListItem() {
+          Column() {
+            Row() {
+              Text(item.systemCalendar.displayName ? item.systemCalendar.displayName : item.systemCalendar.name)
+                .enableAutoSpacing(true)
+                .fontWeight(FontWeight.Medium)
+            }
+            .borderRadius(12)
+            .padding(12)
+            .stateStyles({
+              normal: {
+                .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+              },
+              hovered: {
+                .backgroundColor($r('sys.color.interactive_hover'))
+              },
+              pressed: {
+                .backgroundColor($r('sys.color.interactive_pressed'))
+              }
+            })
+            .width('100%')
+            .onClick(async () => {
+              const systemCalendarManager = calendarManager.getCalendarManager(this.context)
+              const calendar = await systemCalendarManager.getCalendar(item.systemCalendar)
+              await calendar.openEventEditPage(item.eventId)
+            })
           }
           .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
           .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
@@ -614,6 +660,7 @@ export default struct Todoinfo {
       let todoInfo: Todo | undefined = undefined
       if (!this.teamId) {
         todoInfo = await getTodoInfo(this.context, this.todoId) as Todo
+        this.systemCalendarEvent = await getSystemCalendarEvent(this.context, todoInfo.id)
       }
       if (this.teamId) {
         todoInfo = JSON.parse(this.todoInfo)

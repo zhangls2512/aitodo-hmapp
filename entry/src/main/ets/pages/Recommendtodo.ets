@@ -37,22 +37,6 @@ export default struct Recommendtodo {
   }
 
   @Builder
-  MenuBuilder(item: Todo) {
-    Menu() {
-      MenuItem({
-        startIcon: $r('app.media.info'),
-        content: '详情'
-      })
-        .onClick(() => {
-          this.todoId = item.id
-          this.teamId = item.teamId
-          this.todoInfo = JSON.stringify(item)
-          this.isShowInfoSheet = true
-        })
-    }
-  }
-
-  @Builder
   NewSheetBuilder() {
     NewTodo({
       teamId: ''
@@ -86,6 +70,7 @@ export default struct Recommendtodo {
                       type: ToggleType.Checkbox,
                       isOn: item.isCompleted
                     })
+                      .hitTestBehavior(HitTestMode.Block)
                       .margin({
                         right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
                       })
@@ -230,11 +215,11 @@ export default struct Recommendtodo {
                       .backgroundColor($r('sys.color.interactive_pressed'))
                     }
                   })
-                  .bindContextMenu(this.MenuBuilder(item), ResponseType.LongPress, {
-                    hapticFeedbackMode: HapticFeedbackMode.AUTO
-                  })
-                  .bindContextMenu(this.MenuBuilder(item), ResponseType.RightClick, {
-                    hapticFeedbackMode: HapticFeedbackMode.AUTO
+                  .onClick(() => {
+                    this.todoId = item.id
+                    this.teamId = item.teamId
+                    this.todoInfo = JSON.stringify(item)
+                    this.isShowInfoSheet = true
                   })
                 }
                 .backgroundColor($r('sys.color.comp_background_primary'))
