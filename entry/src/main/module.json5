@@ -163,11 +163,6 @@
         "name": "StatusBarViewAbility",
         "srcEntry": "./ets/statusbarviewability/StatusBarViewAbility.ets",
         "type": "statusBarView"
-      },
-      {
-        "name": "FenceAbility",
-        "srcEntry": "./ets/fenceability/FenceAbility.ets",
-        "type": "fence"
       }
     ],
     "requestPermissions": [
