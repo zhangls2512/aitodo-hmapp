@@ -4,7 +4,7 @@
       "intentName": "NewTodo",
       "domain": "",
       "intentVersion": "1.0.0",
-      "srcEntry": "./ets/entryability/InsightIntentExecutorImpl.ets",
+      "srcEntry": "./ets/insightintents/ExecutorImpl.ets",
       "uiAbility": {
         "ability": "EntryAbility",
         "executeMode": [
@@ -16,7 +16,7 @@
       "intentName": "GetRecommendTodo",
       "domain": "",
       "intentVersion": "1.0.0",
-      "srcEntry": "./ets/entryability/InsightIntentExecutorImpl.ets",
+      "srcEntry": "./ets/insightintents/ExecutorImpl.ets",
       "uiAbility": {
         "ability": "EntryAbility",
         "executeMode": [
@@ -28,7 +28,7 @@
       "intentName": "GetCurrentTimePersonalTodo",
       "domain": "",
       "intentVersion": "1.0.0",
-      "srcEntry": "./ets/entryability/InsightIntentExecutorImpl.ets",
+      "srcEntry": "./ets/insightintents/ExecutorImpl.ets",
       "uiAbility": {
         "ability": "EntryAbility",
         "executeMode": [

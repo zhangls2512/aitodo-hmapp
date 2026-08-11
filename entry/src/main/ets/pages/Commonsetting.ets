@@ -11,6 +11,7 @@ import { CustomFreq, setCustomFreq } from '../common/Customfreq'
 import { downloadParameter } from '../common/Parameter'
 import { getFlushPreference, setFlushPreference } from '../common/Preference'
 import { restartApp } from '../common/Restartapp'
+import { selectDynamicIcon } from '../common/Selectdynamicicon'
 
 @Builder
 export function CommonsettingBuilder() {
@@ -19,6 +20,8 @@ export function CommonsettingBuilder() {
 
 @ComponentV2
 struct Commonsetting {
+  @Local iconModeIndex: number = 1
+  @Local iconModeValue: string = '浅色'
   @Local allowContinue: boolean = false
   @Local exitAfterContinue: boolean = false
   @Local allowRestore: boolean = false
@@ -49,7 +52,6 @@ struct Commonsetting {
   @Local checkVersionUpdateValue: string = '非流量下'
   @Local openLinkTypeIndex: number = 0
   @Local openLinkTypeValue: string = '系统默认'
-  @Local hoverId: number = -1
   UIContext = this.getUIContext()
   context = this.UIContext.getHostContext() as common.UIAbilityContext
   pageInfos = new NavPathStack()
@@ -78,6 +80,43 @@ struct Commonsetting {
                 right: 12
               })
             Column() {
+              Row() {
+                Column() {
+                  Text('图标模式')
+                    .fontWeight(FontWeight.Medium)
+                  Text('仅在使用未个性化定制应用图标的主题时生效')
+                    .fontColor($r('sys.color.font_secondary'))
+                    .fontSize($r('sys.float.ohos_id_text_size_body2'))
+                    .margin({
+                      top: $r('sys.float.ohos_id_text_margin_vertical')
+                    })
+                }
+                .alignItems(HorizontalAlign.Start)
+                .layoutWeight(1)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
+
+                Select([
+                  { value: '自动' },
+                  { value: '浅色' },
+                  { value: '深色' }
+                ])
+                  .selected(this.iconModeIndex!!)
+                  .value(this.iconModeValue!!)
+                  .onSelect(async (index) => {
+                    setFlushPreference(this.context, 'commonSetting', 'iconMode', index)
+                    await selectDynamicIcon(this.context)
+                  })
+              }
+              .borderRadius(12)
+              .padding(12)
+
+              Divider()
+                .padding({
+                  left: 12,
+                  right: 12
+                })
               Row() {
                 Text('接续')
                   .fontWeight(FontWeight.Medium)
@@ -517,19 +556,13 @@ struct Commonsetting {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor(this.hoverId === 0 ? $r('sys.color.interactive_hover') :
-                    $r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                },
+                hovered: {
+                  .backgroundColor($r('sys.color.interactive_hover'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
-                }
-              })
-              .onHover(isHover => {
-                if (!isHover) {
-                  this.hoverId = -1
-                }
-                if (isHover) {
-                  this.hoverId = 0
                 }
               })
               .onClick(async () => {
@@ -540,8 +573,11 @@ struct Commonsetting {
                     const photoPicker = new photoAccessHelper.PhotoViewPicker()
                     const pickerres = await photoPicker.select({
                       MIMEType: photoAccessHelper.PhotoViewMIMETypes.IMAGE_TYPE,
+                      showDateOnScrollbar: true,
+                      preferredCompatibleMode: photoAccessHelper.PreferredCompatibleMode.CURRENT,
                       maxSelectNumber: 1,
-                      isOriginalSupported: false
+                      isOriginalSupported: false,
+                      isDestroyedWithNavigation: true
                     })
                     const fileSource = fileIo.openSync(pickerres.photoUris[0])
                     const imageSource = image.createImageSource(fileSource.fd)
@@ -585,8 +621,11 @@ struct Commonsetting {
                       const photoPicker = new photoAccessHelper.PhotoViewPicker()
                       const pickerres = await photoPicker.select({
                         MIMEType: photoAccessHelper.PhotoViewMIMETypes.IMAGE_TYPE,
+                        showDateOnScrollbar: true,
+                        preferredCompatibleMode: photoAccessHelper.PreferredCompatibleMode.CURRENT,
                         maxSelectNumber: 1,
-                        isOriginalSupported: false
+                        isOriginalSupported: false,
+                        isDestroyedWithNavigation: true
                       })
                       const fileSource = fileIo.openSync(pickerres.photoUris[0])
                       const imageSource = image.createImageSource(fileSource.fd)
@@ -714,19 +753,13 @@ struct Commonsetting {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor(this.hoverId === 1 ? $r('sys.color.interactive_hover') :
-                    $r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                },
+                hovered: {
+                  .backgroundColor($r('sys.color.interactive_hover'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
-                }
-              })
-              .onHover(isHover => {
-                if (!isHover) {
-                  this.hoverId = -1
-                }
-                if (isHover) {
-                  this.hoverId = 1
                 }
               })
               .onClick(() => {
@@ -756,19 +789,13 @@ struct Commonsetting {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor(this.hoverId === 2 ? $r('sys.color.interactive_hover') :
-                    $r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                },
+                hovered: {
+                  .backgroundColor($r('sys.color.interactive_hover'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
-                }
-              })
-              .onHover(isHover => {
-                if (!isHover) {
-                  this.hoverId = -1
-                }
-                if (isHover) {
-                  this.hoverId = 2
                 }
               })
               .onClick(() => {
@@ -798,19 +825,13 @@ struct Commonsetting {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor(this.hoverId === 3 ? $r('sys.color.interactive_hover') :
-                    $r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                },
+                hovered: {
+                  .backgroundColor($r('sys.color.interactive_hover'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
-                }
-              })
-              .onHover(isHover => {
-                if (!isHover) {
-                  this.hoverId = -1
-                }
-                if (isHover) {
-                  this.hoverId = 3
                 }
               })
               .onClick(async () => {
@@ -849,19 +870,13 @@ struct Commonsetting {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor(this.hoverId === 4 ? $r('sys.color.interactive_hover') :
-                    $r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                },
+                hovered: {
+                  .backgroundColor($r('sys.color.interactive_hover'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
-                }
-              })
-              .onHover(isHover => {
-                if (!isHover) {
-                  this.hoverId = -1
-                }
-                if (isHover) {
-                  this.hoverId = 4
                 }
               })
               .onClick(() => {
@@ -993,6 +1008,17 @@ struct Commonsetting {
     .titleMode(HdsNavDestinationTitleMode.MODAL)
     .onReady(async (context) => {
       this.pageInfos = context.pathStack
+      const iconMode = getFlushPreference(this.context, 'commonSetting', 'iconMode', 1)
+      this.iconModeIndex = iconMode as number
+      if (iconMode === 0) {
+        this.iconModeValue = '自动'
+      }
+      if (iconMode === 1) {
+        this.iconModeValue = '浅色'
+      }
+      if (iconMode === 2) {
+        this.iconModeValue = '深色'
+      }
       this.allowContinue = getFlushPreference(this.context, 'commonSetting', 'allowContinue', true) as boolean
       this.exitAfterContinue = getFlushPreference(this.context, 'commonSetting', 'exitAfterContinue', true) as boolean
       this.allowRestore = getFlushPreference(this.context, 'commonSetting', 'allowRestore', true) as boolean

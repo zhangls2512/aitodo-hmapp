@@ -14,15 +14,15 @@ export function NewpasskeyBuilder() {
 @ComponentV2
 struct Newpasskey {
   @Local email: string = ''
+  @Local mfa: string = ''
+  @Local emailcode: string = ''
+  @Local buttonEnabled: boolean = true
   @Local credentialId: string = ''
   @Local publicKey: string = ''
   @Local type: string = 'mfa'
   @Local buttonText: string = '获取验证码'
   context = this.getUIContext().getHostContext() as common.UIAbilityContext
   pageInfos = new NavPathStack()
-  mfa = ''
-  emailcode = ''
-  buttonEnabled = true
   dialogControllerProgress = new CustomDialogController({
     builder: LoadingDialog({
       content: '请求中...'

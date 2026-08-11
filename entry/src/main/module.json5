@@ -14,6 +14,10 @@
       {
         "name": "client_id",
         "value": "6917571182378882466"
+      },
+      {
+        "name": "ohos.arkui.UIMaterial.state",
+        "value": "enable"
       }
     ],
     "abilities": [
@@ -230,7 +234,7 @@
         }
       },
       {
-        "name": "ohos.permission.READ_CALENDAR",
+        "name": "ohos.permission.READ_WHOLE_CALENDAR",
         "reason": "$string:READ_CALENDAR_reason",
         "usedScene": {
           "abilities": [
@@ -240,7 +244,7 @@
         }
       },
       {
-        "name": "ohos.permission.WRITE_CALENDAR",
+        "name": "ohos.permission.WRITE_WHOLE_CALENDAR",
         "reason": "$string:WRITE_CALENDAR_reason",
         "usedScene": {
           "abilities": [
@@ -252,6 +256,7 @@
     ],
     "compressNativeLibs": true,
     "fileContextMenu": "$profile:menu",
-    "routerMap": "$profile:router_map"
+    "routerMap": "$profile:router_map",
+    "shareFiles": "$profile:share_files"
   }
 }

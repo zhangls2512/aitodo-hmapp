@@ -126,7 +126,7 @@ export async function isProxyReminderOn(id: string) {
 
 export async function isProxyReminderEnabled() {
   const res = await getProxyReminderList()
-  if (res.length < 30) {
+  if (res.length < 64) {
     return true
   }
   return false

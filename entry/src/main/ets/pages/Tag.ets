@@ -12,7 +12,8 @@ export function TagBuilder() {
 struct TagPage {
   @Local tagArray: Tag[] = []
   @Local tag: string = ''
-  context = this.getUIContext().getHostContext() as common.UIAbilityContext
+  UIContext = this.getUIContext()
+  context = this.UIContext.getHostContext() as common.UIAbilityContext
 
   build() {
     HdsNavDestination() {
@@ -36,7 +37,7 @@ struct TagPage {
               text: this.tag!!
             })
               .enableAutoSpacing(true)
-            Button('添加')
+            Button('新增')
               .enabled(this.tag !== '' ? true : false)
               .margin({
                 top: $r('sys.float.ohos_id_elements_margin_vertical_m')
@@ -54,6 +55,9 @@ struct TagPage {
                   priority: 5
                 })
                 await setTag(this.context, this.tagArray)
+                await promptAction.openToast({
+                  message: '新增成功'
+                })
                 this.tag = ''
               })
           }
@@ -96,8 +100,28 @@ struct TagPage {
                 Image($r('app.media.delete'))
                   .height(24)
                   .onClick(async () => {
-                    this.tagArray.splice(index, 1)
-                    await setTag(this.context, this.tagArray)
+                    const promptAction = this.UIContext.getPromptAction()
+                    const data = await promptAction.showDialog({
+                      title: '提示',
+                      message: '删除成功后无法恢复，确定删除？',
+                      buttons: [
+                        {
+                          text: '取消',
+                          color: $r('sys.color.font_primary')
+                        },
+                        {
+                          text: '删除',
+                          color: $r('sys.color.warning')
+                        }
+                      ]
+                    })
+                    if (data.index === 1) {
+                      this.tagArray.splice(index, 1)
+                      await setTag(this.context, this.tagArray)
+                      await promptAction.openToast({
+                        message: '删除成功'
+                      })
+                    }
                   })
               }
               .borderRadius(12)

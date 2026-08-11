@@ -3,6 +3,7 @@ import { preferences } from '@kit.ArkData'
 import { LengthMetrics, promptAction } from '@kit.ArkUI'
 import { webview } from '@kit.ArkWeb'
 import { batteryInfo, deviceInfo } from '@kit.BasicServicesKit'
+import { netBoost } from '@kit.NetworkBoostKit'
 import { hdsMaterial, HdsNavDestination, HdsNavDestinationTitleMode, ScrollEffectType } from '@kit.UIDesignKit'
 import { getFlushPreference, setFlushPreference } from '../common/Preference'
 import { restartApp } from '../common/Restartapp'
@@ -24,8 +25,7 @@ struct Debugsetting {
   @Local deleteErrorLogBeforeUpdateTimeWhenAppLaunch: boolean = false
   @Local autoUploadErrorLog: boolean = false
   @Local showMemoryLevelChange: boolean = false
-  @Local lowBatteryCapacityLevelIndex: number = 3
-  @Local lowBatteryCapacityLevelValue: string = '低'
+  @Local processCache: boolean = false
   @Local showNetAvailableStatusChange: boolean = false
   @Local showNetBlockStatusChange: boolean = false
   @Local showNetLost: boolean = false
@@ -34,15 +34,14 @@ struct Debugsetting {
   @Local showNetSceneChange: boolean = false
   @Local autoReportHighLatency: boolean = false
   @Local highLatencyThreshold: string = '200'
-  @Local optimizeParserBudget: boolean = true
+  @Local entryLowPowerModeWhenLowBatteryLevel: boolean = false
+  @Local optimizeParserBudget: boolean = false
   @Local destroyModeIndex: webview.WebDestroyMode = webview.WebDestroyMode.NORMAL_MODE
   @Local destroyModeValue: string = '普通'
   @Local allService: boolean = false
-  @Local hoverId: number = -1
   UIContext = this.getUIContext()
   context = this.UIContext.getHostContext() as common.UIAbilityContext
   pageInfos = new NavPathStack()
-  processCache = false
 
   getSetting() {
     const globalErrorShowType = getFlushPreference(this.context, 'debugSetting', 'globalErrorShowType', 0)
@@ -60,30 +59,6 @@ struct Debugsetting {
     this.showMemoryLevelChange =
       getFlushPreference(this.context, 'debugSetting', 'showMemoryLevelChange', false) as boolean
     this.processCache = getFlushPreference(this.context, 'debugSetting', 'processCache', true) as boolean
-    const lowBatteryCapacityLevel = getFlushPreference(this.context, 'debugSetting', 'lowBatteryCapacityLevel',
-      batteryInfo.BatteryCapacityLevel.LEVEL_LOW) as batteryInfo.BatteryCapacityLevel
-    this.lowBatteryCapacityLevelIndex = lowBatteryCapacityLevel - 1
-    if (lowBatteryCapacityLevel === 1) {
-      this.lowBatteryCapacityLevelValue = '满'
-    }
-    if (lowBatteryCapacityLevel === 2) {
-      this.lowBatteryCapacityLevelValue = '高'
-    }
-    if (lowBatteryCapacityLevel === 3) {
-      this.lowBatteryCapacityLevelValue = '正常'
-    }
-    if (lowBatteryCapacityLevel === 4) {
-      this.lowBatteryCapacityLevelValue = '低'
-    }
-    if (lowBatteryCapacityLevel === 5) {
-      this.lowBatteryCapacityLevelValue = '告警'
-    }
-    if (lowBatteryCapacityLevel === 6) {
-      this.lowBatteryCapacityLevelValue = '极低'
-    }
-    if (lowBatteryCapacityLevel === 7) {
-      this.lowBatteryCapacityLevelValue = '关机'
-    }
     this.autoReportHighLatency =
       getFlushPreference(this.context, 'debugSetting', 'autoReportHighLatency', true) as boolean
     this.showNetAvailableStatusChange =
@@ -96,6 +71,8 @@ struct Debugsetting {
     this.showNetQosChange = getFlushPreference(this.context, 'debugSetting', 'showNetQosChange', false) as boolean
     this.showNetSceneChange = getFlushPreference(this.context, 'debugSetting', 'showNetSceneChange', false) as boolean
     this.highLatencyThreshold = String(getFlushPreference(this.context, 'debugSetting', 'highLatencyThreshold', 200))
+    this.entryLowPowerModeWhenLowBatteryLevel =
+      getFlushPreference(this.context, 'debugSetting', 'entryLowPowerModeWhenLowBatteryLevel', true) as boolean
     this.optimizeParserBudget =
       getFlushPreference(this.context, 'debugSetting', 'optimizeParserBudget', true) as boolean
     const destroyMode =
@@ -245,19 +222,13 @@ struct Debugsetting {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor(this.hoverId === 0 ? $r('sys.color.interactive_hover') :
-                    $r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                },
+                hovered: {
+                  .backgroundColor($r('sys.color.interactive_hover'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
-                }
-              })
-              .onHover(isHover => {
-                if (!isHover) {
-                  this.hoverId = -1
-                }
-                if (isHover) {
-                  this.hoverId = 0
                 }
               })
               .onClick(() => {
@@ -287,19 +258,13 @@ struct Debugsetting {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor(this.hoverId === 1 ? $r('sys.color.interactive_hover') :
-                    $r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                },
+                hovered: {
+                  .backgroundColor($r('sys.color.interactive_hover'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
-                }
-              })
-              .onHover(isHover => {
-                if (!isHover) {
-                  this.hoverId = -1
-                }
-                if (isHover) {
-                  this.hoverId = 1
                 }
               })
               .onClick(() => {
@@ -353,19 +318,13 @@ struct Debugsetting {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor(this.hoverId === 2 ? $r('sys.color.interactive_hover') :
-                    $r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                },
+                hovered: {
+                  .backgroundColor($r('sys.color.interactive_hover'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
-                }
-              })
-              .onHover(isHover => {
-                if (!isHover) {
-                  this.hoverId = -1
-                }
-                if (isHover) {
-                  this.hoverId = 2
                 }
               })
               .onClick(async () => {
@@ -381,7 +340,7 @@ struct Debugsetting {
                   right: 12
                 })
               Row() {
-                Text('转储当前线程虚拟机原始堆快照')
+                Text('转储虚拟机原始堆快照')
                   .fontWeight(FontWeight.Medium)
                   .layoutWeight(1)
                   .margin({
@@ -396,19 +355,13 @@ struct Debugsetting {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor(this.hoverId === 3 ? $r('sys.color.interactive_hover') :
-                    $r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                },
+                hovered: {
+                  .backgroundColor($r('sys.color.interactive_hover'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
-                }
-              })
-              .onHover(isHover => {
-                if (!isHover) {
-                  this.hoverId = -1
-                }
-                if (isHover) {
-                  this.hoverId = 3
                 }
               })
               .onClick(() => {
@@ -459,35 +412,6 @@ struct Debugsetting {
                 .borderRadius(12)
                 .padding(12)
               }
-              Divider()
-                .padding({
-                  left: 12,
-                  right: 12
-                })
-              Row() {
-                Text('电池电量低阈值')
-                  .fontWeight(FontWeight.Medium)
-                  .layoutWeight(1)
-                  .margin({
-                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                  })
-                Select([
-                  { value: '满' },
-                  { value: '高' },
-                  { value: '正常' },
-                  { value: '低' },
-                  { value: '告警' },
-                  { value: '极低' },
-                  { value: '关机' }
-                ])
-                  .selected(this.lowBatteryCapacityLevelIndex!!)
-                  .value(this.lowBatteryCapacityLevelValue!!)
-                  .onSelect(index => {
-                    setFlushPreference(this.context, 'debugSetting', 'lowBatteryCapacityLevel', index + 1)
-                  })
-              }
-              .borderRadius(12)
-              .padding(12)
             }
             .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
             .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
@@ -527,19 +451,13 @@ struct Debugsetting {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor(this.hoverId === 4 ? $r('sys.color.interactive_hover') :
-                    $r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                },
+                hovered: {
+                  .backgroundColor($r('sys.color.interactive_hover'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
-                }
-              })
-              .onHover(isHover => {
-                if (!isHover) {
-                  this.hoverId = -1
-                }
-                if (isHover) {
-                  this.hoverId = 4
                 }
               })
               .onClick(() => {
@@ -569,19 +487,13 @@ struct Debugsetting {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor(this.hoverId === 5 ? $r('sys.color.interactive_hover') :
-                    $r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                },
+                hovered: {
+                  .backgroundColor($r('sys.color.interactive_hover'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
-                }
-              })
-              .onHover(isHover => {
-                if (!isHover) {
-                  this.hoverId = -1
-                }
-                if (isHover) {
-                  this.hoverId = 5
                 }
               })
               .onClick(() => {
@@ -612,19 +524,13 @@ struct Debugsetting {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor(this.hoverId === 6 ? $r('sys.color.interactive_hover') :
-                    $r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                },
+                hovered: {
+                  .backgroundColor($r('sys.color.interactive_hover'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
-                }
-              })
-              .onHover(isHover => {
-                if (!isHover) {
-                  this.hoverId = -1
-                }
-                if (isHover) {
-                  this.hoverId = 6
                 }
               })
               .onClick(async () => {
@@ -671,19 +577,13 @@ struct Debugsetting {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor(this.hoverId === 7 ? $r('sys.color.interactive_hover') :
-                    $r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                },
+                hovered: {
+                  .backgroundColor($r('sys.color.interactive_hover'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
-                }
-              })
-              .onHover(isHover => {
-                if (!isHover) {
-                  this.hoverId = -1
-                }
-                if (isHover) {
-                  this.hoverId = 7
                 }
               })
               .onClick(async () => {
@@ -749,19 +649,13 @@ struct Debugsetting {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor(this.hoverId === 8 ? $r('sys.color.interactive_hover') :
-                    $r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                },
+                hovered: {
+                  .backgroundColor($r('sys.color.interactive_hover'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
-                }
-              })
-              .onHover(isHover => {
-                if (!isHover) {
-                  this.hoverId = -1
-                }
-                if (isHover) {
-                  this.hoverId = 8
                 }
               })
               .onClick(() => {
@@ -789,19 +683,13 @@ struct Debugsetting {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor(this.hoverId === 9 ? $r('sys.color.interactive_hover') :
-                    $r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                },
+                hovered: {
+                  .backgroundColor($r('sys.color.interactive_hover'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
-                }
-              })
-              .onHover(isHover => {
-                if (!isHover) {
-                  this.hoverId = -1
-                }
-                if (isHover) {
-                  this.hoverId = 9
                 }
               })
               .onClick(async () => {
@@ -834,19 +722,13 @@ struct Debugsetting {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor(this.hoverId === 10 ? $r('sys.color.interactive_hover') :
-                    $r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                },
+                hovered: {
+                  .backgroundColor($r('sys.color.interactive_hover'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
-                }
-              })
-              .onHover(isHover => {
-                if (!isHover) {
-                  this.hoverId = -1
-                }
-                if (isHover) {
-                  this.hoverId = 10
                 }
               })
               .onClick(() => {
@@ -1075,6 +957,35 @@ struct Debugsetting {
                   right: 12
                 })
               Row() {
+                Text('低电量时进入低功耗模式')
+                  .fontWeight(FontWeight.Medium)
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
+                Toggle({
+                  type: ToggleType.Switch,
+                  isOn: this.entryLowPowerModeWhenLowBatteryLevel!!
+                })
+                  .onChange(isOn => {
+                    if (!isOn) {
+                      netBoost.setLowPowerMode(false)
+                    }
+                    if (isOn) {
+                      netBoost.setLowPowerMode(batteryInfo.batteryCapacityLevel >= 4)
+                    }
+                    setFlushPreference(this.context, 'debugSetting', 'entryLowPowerModeWhenLowBatteryLevel', isOn)
+                  })
+              }
+              .borderRadius(12)
+              .padding(12)
+
+              Divider()
+                .padding({
+                  left: 12,
+                  right: 12
+                })
+              Row() {
                 Text('反馈传输体验')
                   .fontWeight(FontWeight.Medium)
                   .layoutWeight(1)
@@ -1090,19 +1001,13 @@ struct Debugsetting {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor(this.hoverId === 11 ? $r('sys.color.interactive_hover') :
-                    $r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                },
+                hovered: {
+                  .backgroundColor($r('sys.color.interactive_hover'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
-                }
-              })
-              .onHover(isHover => {
-                if (!isHover) {
-                  this.hoverId = -1
-                }
-                if (isHover) {
-                  this.hoverId = 11
                 }
               })
               .onClick(() => {
@@ -1132,19 +1037,13 @@ struct Debugsetting {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor(this.hoverId === 12 ? $r('sys.color.interactive_hover') :
-                    $r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                },
+                hovered: {
+                  .backgroundColor($r('sys.color.interactive_hover'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
-                }
-              })
-              .onHover(isHover => {
-                if (!isHover) {
-                  this.hoverId = -1
-                }
-                if (isHover) {
-                  this.hoverId = 12
                 }
               })
               .onClick(() => {
