@@ -4,6 +4,7 @@ import { LengthMetrics, LoadingDialog, promptAction } from '@kit.ArkUI'
 import { hdsMaterial, HdsNavDestination, HdsNavDestinationTitleMode, ScrollEffectType } from '@kit.UIDesignKit'
 import { getPersonalAccountAccessToken, getPersonalAccountInfo } from '../common/Account'
 import { developerRequest } from '../common/Request'
+import { Param } from './Webview'
 
 export interface Account {
   platform: string,
@@ -18,16 +19,16 @@ export function HuaweiaccountBuilder() {
 @ComponentV2
 struct Huaweiaccount {
   @Local email: string = ''
+  @Local mfa: string = ''
+  @Local emailcode: string = ''
+  @Local buttonEnabled: boolean = true
+  @Local agree: boolean = false
   @Local loading: boolean = false
   @Local isBind: boolean = false
   @Local type: string = 'mfa'
   @Local buttonText: string = '获取验证码'
   context = this.getUIContext().getHostContext() as common.UIAbilityContext
   pageInfos = new NavPathStack()
-  mfa = ''
-  emailcode = ''
-  buttonEnabled = true
-  agree = false
   dialogControllerProgress = new CustomDialogController({
     builder: LoadingDialog({
       content: '请求中...'
@@ -296,7 +297,10 @@ struct Huaweiaccount {
                       .onClick(() => {
                         this.pageInfos.pushPath({
                           name: 'Webview',
-                          param: 'https://privacy.consumer.huawei.com/legal/id/authentication-terms.htm?code=CN&language=zh-CN'
+                          param: {
+                            url: 'https://privacy.consumer.huawei.com/legal/id/authentication-terms.htm?code=CN&language=zh-CN',
+                            trust: true
+                          } as Param
                         })
                       })
                     Span('《关于华为账号与隐私的声明》')
@@ -304,7 +308,10 @@ struct Huaweiaccount {
                       .onClick(() => {
                         this.pageInfos.pushPath({
                           name: 'Webview',
-                          param: 'https://legal.cloud.huawei.com/terms/scope/huawei/id-hmos/privacy-statement.htm?code=CN&language=zh-CN'
+                          param: {
+                            url: 'https://legal.cloud.huawei.com/terms/scope/huawei/id-hmos/privacy-statement.htm?code=CN&language=zh-CN',
+                            trust: false
+                          } as Param
                         })
                       })
                     Span('。')

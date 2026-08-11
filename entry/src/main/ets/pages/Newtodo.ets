@@ -262,7 +262,9 @@ export default struct Newtodo {
   @Builder
   ChooseImageMenu() {
     Menu() {
-      MenuItem({ content: '拍照' })
+      MenuItem({
+        content: '拍照'
+      })
         .onClick(async () => {
           try {
             const pickerres = await cameraPicker.pick(this.context, [cameraPicker.PickerMediaType.PHOTO], {
@@ -272,47 +274,48 @@ export default struct Newtodo {
             const imageSource = image.createImageSource(fileSource.fd)
             const imagePixelMap = await imageSource.createPixelMap()
             await imageSource.release()
-            const initres = await textRecognition.init()
-            if (initres) {
-              this.dialogControllerProgress.open()
-              const textrecognitionres = await textRecognition.recognizeText({
-                pixelMap: imagePixelMap
-              })
-              await textRecognition.release()
-              await imagePixelMap.release()
-              this.dialogControllerProgress.close()
-              this.aiContent = textrecognitionres.value
-              await this.dealWithAiContent()
-            }
+            await textRecognition.init()
+            this.dialogControllerProgress.open()
+            const textrecognitionres = await textRecognition.recognizeText({
+              pixelMap: imagePixelMap
+            })
+            await textRecognition.release()
+            await imagePixelMap.release()
+            this.dialogControllerProgress.close()
+            this.aiContent = textrecognitionres.value
+            await this.dealWithAiContent()
           } catch {
           }
         })
-      MenuItem({ content: '从图库中选择' })
+      MenuItem({
+        content: '从图库中选择'
+      })
         .onClick(async () => {
           try {
             const photoPicker = new photoAccessHelper.PhotoViewPicker()
             const pickerres = await photoPicker.select({
               MIMEType: photoAccessHelper.PhotoViewMIMETypes.IMAGE_TYPE,
+              showDateOnScrollbar: true,
+              preferredCompatibleMode: photoAccessHelper.PreferredCompatibleMode.CURRENT,
               maxSelectNumber: 1,
               isPhotoTakingSupported: false,
-              isOriginalSupported: false
+              isOriginalSupported: false,
+              isDestroyedWithNavigation: true
             })
             const fileSource = fileIo.openSync(pickerres.photoUris[0])
             const imageSource = image.createImageSource(fileSource.fd)
             const imagePixelMap = await imageSource.createPixelMap()
             await imageSource.release()
-            const initres = await textRecognition.init()
-            if (initres) {
-              this.dialogControllerProgress.open()
-              const textrecognitionres = await textRecognition.recognizeText({
-                pixelMap: imagePixelMap
-              })
-              await textRecognition.release()
-              await imagePixelMap.release()
-              this.dialogControllerProgress.close()
-              this.aiContent = textrecognitionres.value
-              await this.dealWithAiContent()
-            }
+            await textRecognition.init()
+            this.dialogControllerProgress.open()
+            const textrecognitionres = await textRecognition.recognizeText({
+              pixelMap: imagePixelMap
+            })
+            await textRecognition.release()
+            await imagePixelMap.release()
+            this.dialogControllerProgress.close()
+            this.aiContent = textrecognitionres.value
+            await this.dealWithAiContent()
           } catch {
           }
         })
@@ -448,10 +451,6 @@ export default struct Newtodo {
             .maxLength(1000)
             .showCounter(true)
             .visualEffect(new hdsEffect.HdsEffectBuilder()
-              .pointLight({
-                sourceType: hdsEffect.PointLightSourceType.SOFT,
-                illuminatedType: hdsEffect.PointLightIlluminatedType.CONTENT
-              })
               .shaderEffect({
                 effectType: hdsEffect.EffectType.DUAL_EDGE_FLOW_LIGHT,
                 animation: {
@@ -706,6 +705,8 @@ export default struct Newtodo {
             .onClick(() => {
               this.UIContext.showDatePickerDialog({
                 selected: this.recurrenceUntil === -1 ? new Date() : new Date(this.recurrenceUntil),
+                showTime: true,
+                useMilitaryTime: true,
                 onDateAccept: async (value) => {
                   const time = value.getTime()
                   if (time < this.startTime) {

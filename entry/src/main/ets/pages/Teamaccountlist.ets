@@ -21,7 +21,6 @@ export function TeamaccountlistBuilder() {
 @ComponentV2
 struct Teamaccountlist {
   @Local teamAccountArray: TeamAccountItem[] = []
-  @Local hoverId: string = ''
   UIContext = this.getUIContext()
   context = this.UIContext.getHostContext() as common.UIAbilityContext
   pageInfos = new NavPathStack()
@@ -81,7 +80,7 @@ struct Teamaccountlist {
           })
           .width('100%')
         }
-        ForEach(this.teamAccountArray, (item: TeamAccountItem, index) => {
+        ForEach(this.teamAccountArray, (item: TeamAccountItem) => {
           ListItem() {
             Column() {
               Row() {
@@ -100,19 +99,13 @@ struct Teamaccountlist {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor(this.hoverId === '0,' + index ? $r('sys.color.interactive_hover') :
-                    $r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                },
+                hovered: {
+                  .backgroundColor($r('sys.color.interactive_hover'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
-                }
-              })
-              .onHover(isHover => {
-                if (!isHover) {
-                  this.hoverId = ''
-                }
-                if (isHover) {
-                  this.hoverId = '0,' + index
                 }
               })
               .onClick(async () => {
@@ -183,19 +176,13 @@ struct Teamaccountlist {
                 .padding(12)
                 .stateStyles({
                   normal: {
-                    .backgroundColor(this.hoverId === '1,' + index ? $r('sys.color.interactive_hover') :
-                      $r('sys.color.ohos_id_color_card_bg'))
+                    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                  },
+                  hovered: {
+                    .backgroundColor($r('sys.color.interactive_hover'))
                   },
                   pressed: {
                     .backgroundColor($r('sys.color.interactive_pressed'))
-                  }
-                })
-                .onHover(isHover => {
-                  if (!isHover) {
-                    this.hoverId = ''
-                  }
-                  if (isHover) {
-                    this.hoverId = '1,' + index
                   }
                 })
                 .onClick(async () => {
@@ -233,19 +220,13 @@ struct Teamaccountlist {
                 .padding(12)
                 .stateStyles({
                   normal: {
-                    .backgroundColor(this.hoverId === '2,' + index ? $r('sys.color.interactive_hover') :
-                      $r('sys.color.ohos_id_color_card_bg'))
+                    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                  },
+                  hovered: {
+                    .backgroundColor($r('sys.color.interactive_hover'))
                   },
                   pressed: {
                     .backgroundColor($r('sys.color.interactive_pressed'))
-                  }
-                })
-                .onHover(isHover => {
-                  if (!isHover) {
-                    this.hoverId = ''
-                  }
-                  if (isHover) {
-                    this.hoverId = '2,' + index
                   }
                 })
                 .onClick(async () => {
@@ -298,19 +279,13 @@ struct Teamaccountlist {
                 .padding(12)
                 .stateStyles({
                   normal: {
-                    .backgroundColor(this.hoverId === '3,' + index ? $r('sys.color.interactive_hover') :
-                      $r('sys.color.ohos_id_color_card_bg'))
+                    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                  },
+                  hovered: {
+                    .backgroundColor($r('sys.color.interactive_hover'))
                   },
                   pressed: {
                     .backgroundColor($r('sys.color.interactive_pressed'))
-                  }
-                })
-                .onHover(isHover => {
-                  if (!isHover) {
-                    this.hoverId = ''
-                  }
-                  if (isHover) {
-                    this.hoverId = '3,' + index
                   }
                 })
                 .onClick(() => {
@@ -347,19 +322,13 @@ struct Teamaccountlist {
                 .padding(12)
                 .stateStyles({
                   normal: {
-                    .backgroundColor(this.hoverId === '4,' + index ? $r('sys.color.interactive_hover') :
-                      $r('sys.color.ohos_id_color_card_bg'))
+                    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                  },
+                  hovered: {
+                    .backgroundColor($r('sys.color.interactive_hover'))
                   },
                   pressed: {
                     .backgroundColor($r('sys.color.interactive_pressed'))
-                  }
-                })
-                .onHover(isHover => {
-                  if (!isHover) {
-                    this.hoverId = ''
-                  }
-                  if (isHover) {
-                    this.hoverId = '4,' + index
                   }
                 })
                 .onClick(async () => {

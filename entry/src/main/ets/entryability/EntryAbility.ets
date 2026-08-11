@@ -1,6 +1,5 @@
 import {
   AbilityConstant,
-  appRecovery,
   bundleManager,
   ConfigurationConstant,
   contextConstant,
@@ -9,14 +8,14 @@ import {
   Want,
   wantConstant
 } from '@kit.AbilityKit'
-import { updateManager } from '@kit.AppGalleryKit'
+import { appInfoManager, updateManager } from '@kit.AppGalleryKit'
 import { relationalStore, uniformTypeDescriptor } from '@kit.ArkData'
-import { promptAction, window } from '@kit.ArkUI'
-import { commonEventManager, deviceInfo } from '@kit.BasicServicesKit'
+import { promptAction, uiAppearance, window } from '@kit.ArkUI'
+import { batteryInfo, commonEventManager, deviceInfo } from '@kit.BasicServicesKit'
 import { fileIo, fileUri } from '@kit.CoreFileKit'
 import { statusBarManager } from '@kit.DeskTopExtensionKit'
 import { image } from '@kit.ImageKit'
-import { netQuality } from '@kit.NetworkBoostKit'
+import { netBoost, netQuality } from '@kit.NetworkBoostKit'
 import { connection } from '@kit.NetworkKit'
 import { notificationManager } from '@kit.NotificationKit'
 import { hiAppEvent } from '@kit.PerformanceAnalysisKit'
@@ -29,6 +28,7 @@ import { deleteTodo } from '../common/Datachange'
 import { write } from '../common/File'
 import openLink from '../common/Openlink'
 import { getFlushPreference, getTempPreference, setTempPreference } from '../common/Preference'
+import { selectDynamicIcon } from '../common/Selectdynamicicon'
 import { autoBackupTable, autoSyncTable } from '../common/Table'
 import { syncAllTeamCompleteTodo } from '../common/Teamutil'
 
@@ -47,6 +47,34 @@ interface EventData {
 
 export default class EntryAbility extends UIAbility {
   async appInit(want: Want) {
+    const iconMode = getFlushPreference(this.context, 'commonSetting', 'iconMode', 1)
+    const colorMode = getFlushPreference(this.context, 'commonSetting', 'colorMode', 0)
+    try {
+      if (iconMode === 0) {
+        if (colorMode === 0) {
+          const systemColorMode = uiAppearance.getDarkMode()
+          if (systemColorMode === 0) {
+            await appInfoManager.selectDynamicIcon('dark_' + deviceInfo.deviceType)
+          }
+          if (systemColorMode === 1) {
+            await appInfoManager.disableDynamicIcon()
+          }
+        }
+        if (colorMode === 1) {
+          await appInfoManager.disableDynamicIcon()
+        }
+        if (colorMode === 2) {
+          await appInfoManager.selectDynamicIcon('dark_' + deviceInfo.deviceType)
+        }
+      }
+      if (iconMode === 1) {
+        await appInfoManager.disableDynamicIcon()
+      }
+      if (iconMode === 2) {
+        await appInfoManager.selectDynamicIcon('dark_' + deviceInfo.deviceType)
+      }
+    } catch {
+    }
     await notificationManager.setBadgeNumber(0)
     if (want.parameters?.noticeUrl) {
       await openLink(this.context, want.parameters.noticeUrl as string)
@@ -310,6 +338,35 @@ export default class EntryAbility extends UIAbility {
               '\n最近一次的弱信号预测是否有效：' + isLastPredictionValid + '\n预计多长时间进入弱信号：' +
               data.weakSignalPrediction?.startTime + ' s\n预计在弱信号区域停留时长：' +
               data.weakSignalPrediction?.duration + ' s')
+        }
+      }
+    })
+    const entryLowPowerModeWhenLowBatteryLevel =
+      getFlushPreference(this.context, 'debugSetting', 'entryLowPowerModeWhenLowBatteryLevel', true) as boolean
+    if (entryLowPowerModeWhenLowBatteryLevel && batteryInfo.batteryCapacityLevel >= 4) {
+      netBoost.setLowPowerMode(true)
+      await promptAction.openToast({
+        message: '网络传输进入低功耗模式成功'
+      })
+    }
+    const subscriber = commonEventManager.createSubscriberSync({
+      events: ['usual.event.BATTERY_LOW', 'usual.event.BATTERY_OKAY']
+    })
+    await commonEventManager.subscribeToEvent(subscriber, async (data) => {
+      const entryLowPowerModeWhenLowBatteryLevel =
+        getFlushPreference(this.context, 'debugSetting', 'entryLowPowerModeWhenLowBatteryLevel', true) as boolean
+      if (entryLowPowerModeWhenLowBatteryLevel) {
+        if (data.event === 'usual.event.BATTERY_LOW') {
+          netBoost.setLowPowerMode(true)
+          await promptAction.openToast({
+            message: '网络传输进入低功耗模式成功'
+          })
+        }
+        if (data.event === 'usual.event.BATTERY_OKAY') {
+          netBoost.setLowPowerMode(false)
+          await promptAction.openToast({
+            message: '网络传输退出低功耗模式成功'
+          })
         }
       }
     })
@@ -580,7 +637,6 @@ export default class EntryAbility extends UIAbility {
           }
         })
       })
-    appRecovery.enableAppRecovery(appRecovery.RestartFlag.RESTART_WHEN_APP_FREEZE)
     const allowContinue = getFlushPreference(this.context, 'commonSetting', 'allowContinue', true)
     if (!allowContinue) {
       await this.context.setMissionContinueState(AbilityConstant.ContinueState.INACTIVE)
@@ -722,7 +778,7 @@ export default class EntryAbility extends UIAbility {
       try {
         await sensor.getSingleSensor(sensor.SensorId.AMBIENT_LIGHT)
         let lastUpdateTime = 0
-        sensor.on(sensor.SensorId.AMBIENT_LIGHT, (event) => {
+        sensor.on(sensor.SensorId.AMBIENT_LIGHT, async (event) => {
           const currentTime = Date.now()
           if (currentTime - lastUpdateTime >= 3000) {
             const currentColorMode = getFlushPreference(this.context, 'commonSetting', 'colorMode', 0)
@@ -732,10 +788,12 @@ export default class EntryAbility extends UIAbility {
               if (event.intensity >= 30 &&
                 this.context.config.colorMode === ConfigurationConstant.ColorMode.COLOR_MODE_DARK) {
                 applicationContext.setColorMode(ConfigurationConstant.ColorMode.COLOR_MODE_LIGHT)
+                await selectDynamicIcon(this.context)
               }
               if (event.intensity <= 20 &&
                 this.context.config.colorMode === ConfigurationConstant.ColorMode.COLOR_MODE_LIGHT) {
                 applicationContext.setColorMode(ConfigurationConstant.ColorMode.COLOR_MODE_DARK)
+                await selectDynamicIcon(this.context)
               }
             } else {
               sensor.off(sensor.SensorId.AMBIENT_LIGHT)
@@ -758,6 +816,10 @@ export default class EntryAbility extends UIAbility {
     }
   }
 
+  async onConfigurationUpdate() {
+    await selectDynamicIcon(this.context)
+  }
+
   async onPrepareToTerminateAsync() {
     const statusBarExist = getTempPreference(this.context, 'statusBar', 'exist', false) as boolean
     if (statusBarExist) {
@@ -776,7 +838,7 @@ export default class EntryAbility extends UIAbility {
   }
 
   async onContinue(wantParam: Record<string, Object>) {
-    if (wantParam.version !== 5) {
+    if (wantParam.version !== 6) {
       await promptAction.openToast({
         message: '接续失败，原因：目标端应用版本号与发起端不匹配'
       })

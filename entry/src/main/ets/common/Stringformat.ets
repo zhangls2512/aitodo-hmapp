@@ -58,3 +58,10 @@ export function stringSplit(str: string, sep: string, num: number) {
     return origin.slice(0, num - 1).concat(origin.slice(num - 1).join(sep))
   }
 }
+
+export function nextDayTimeStamp(timeStamp: number) {
+  const date = new Date(timeStamp)
+  date.setDate(date.getDate() + 1)
+  date.setHours(0, 0, 0, 0)
+  return date.getTime()
+}

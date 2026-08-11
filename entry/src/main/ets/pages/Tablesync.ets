@@ -10,7 +10,7 @@ import { write } from '../common/File'
 import { checkPermission } from '../common/Permission'
 import { getFlushPreference, setFlushPreference } from '../common/Preference'
 import { getSizeString } from '../common/Stringformat'
-import { syncTable, systemCalendarSyncTable } from '../common/Table'
+import { getSystemCalendarList, syncTable, systemCalendarSyncTable } from '../common/Table'
 
 interface Item {
   deviceId: string,
@@ -26,21 +26,18 @@ export function TablesyncBuilder() {
 
 @ComponentV2
 struct Tablesync {
+  @Local index: number = 0
+  @Local value: string = '始终'
+  @Local autoSync: boolean = false
+  @Local autoHuaweiCloudSync: boolean = false
+  @Local autoSystemCalendarSync: boolean = false
   @Local on: boolean = false
   @Local huaweiCloudSyncOn: boolean = false
   @Local autoSyncDevices: Item[] = []
   @Local availableDeviceArray: Item[] = []
   @Local huaweiCloudSyncProgressDetails: relationalStore.ProgressDetails | undefined = undefined
-  @Local hoverId: number | string = -1
   UIContext = this.getUIContext()
   context = this.UIContext.getHostContext() as common.UIAbilityContext
-  index = 0
-  value = '始终'
-  autoSync = false
-  autoHuaweiCloudSync = false
-  autoSystemCalendarSync = false
-  pauseAutoSyncWhenLowBatteryCapacityLevel = false
-  pauseAutoSyncWhenPowerSave = false
   deviceManager = distributedDeviceManager.createDeviceManager('com.zhangxm.aitodo')
   dialogControllerProgress = new CustomDialogController({
     builder: LoadingDialog({
@@ -64,10 +61,6 @@ struct Tablesync {
     this.autoHuaweiCloudSync = getFlushPreference(this.context, 'dataSetting', 'autoHuaweiCloudSync', false) as boolean
     this.autoSystemCalendarSync =
       getFlushPreference(this.context, 'dataSetting', 'autoSystemCalendarSync', false) as boolean
-    this.pauseAutoSyncWhenLowBatteryCapacityLevel =
-      getFlushPreference(this.context, 'dataSetting', 'pauseAutoSyncWhenLowBatteryCapacityLevel', false) as boolean
-    this.pauseAutoSyncWhenPowerSave =
-      getFlushPreference(this.context, 'dataSetting', 'pauseAutoSyncWhenPowerSave', false) as boolean
   }
 
   build() {
@@ -170,7 +163,7 @@ struct Tablesync {
           top: $r('sys.float.ohos_id_elements_margin_vertical_m')
         })
 
-        ForEach(this.autoSyncDevices, (item: Item, index) => {
+        ForEach(this.autoSyncDevices, (item: Item) => {
           ListItem() {
             Column() {
               Row() {
@@ -272,19 +265,13 @@ struct Tablesync {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor(this.hoverId === '0,' + index ? $r('sys.color.interactive_hover') :
-                    $r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                },
+                hovered: {
+                  .backgroundColor($r('sys.color.interactive_hover'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
-                }
-              })
-              .onHover(isHover => {
-                if (!isHover) {
-                  this.hoverId = -1
-                }
-                if (isHover) {
-                  this.hoverId = '0,' + index
                 }
               })
               .onClick(async () => {
@@ -336,7 +323,7 @@ struct Tablesync {
           top: $r('sys.float.ohos_id_elements_margin_vertical_m')
         })
 
-        ForEach(this.availableDeviceArray, (item: Item, index) => {
+        ForEach(this.availableDeviceArray, (item: Item) => {
           ListItem() {
             Column() {
               Row() {
@@ -439,19 +426,13 @@ struct Tablesync {
                 .padding(12)
                 .stateStyles({
                   normal: {
-                    .backgroundColor(this.hoverId === '1,' + index ? $r('sys.color.interactive_hover') :
-                      $r('sys.color.ohos_id_color_card_bg'))
+                    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                  },
+                  hovered: {
+                    .backgroundColor($r('sys.color.interactive_hover'))
                   },
                   pressed: {
                     .backgroundColor($r('sys.color.interactive_pressed'))
-                  }
-                })
-                .onHover(isHover => {
-                  if (!isHover) {
-                    this.hoverId = -1
-                  }
-                  if (isHover) {
-                    this.hoverId = '1,' + index
                   }
                 })
                 .onClick(async () => {
@@ -483,19 +464,13 @@ struct Tablesync {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor(this.hoverId === '2,' + index ? $r('sys.color.interactive_hover') :
-                    $r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                },
+                hovered: {
+                  .backgroundColor($r('sys.color.interactive_hover'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
-                }
-              })
-              .onHover(isHover => {
-                if (!isHover) {
-                  this.hoverId = -1
-                }
-                if (isHover) {
-                  this.hoverId = '2,' + index
                 }
               })
               .onClick(async () => {
@@ -531,19 +506,13 @@ struct Tablesync {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor(this.hoverId === '3,' + index ? $r('sys.color.interactive_hover') :
-                    $r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                },
+                hovered: {
+                  .backgroundColor($r('sys.color.interactive_hover'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
-                }
-              })
-              .onHover(isHover => {
-                if (!isHover) {
-                  this.hoverId = -1
-                }
-                if (isHover) {
-                  this.hoverId = '3,' + index
                 }
               })
               .onClick(async () => {
@@ -925,118 +894,61 @@ struct Tablesync {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor(this.hoverId === 2 ? $r('sys.color.interactive_hover') :
-                    $r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                },
+                hovered: {
+                  .backgroundColor($r('sys.color.interactive_hover'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
-              .onHover(isHover => {
-                if (!isHover) {
-                  this.hoverId = -1
-                }
-                if (isHover) {
-                  this.hoverId = 2
-                }
-              })
               .onClick(async () => {
-                const promptAction = this.UIContext.getPromptAction()
-                const data = await promptAction.showActionMenu({
-                  title: '选择同步模式',
-                  buttons: [
-                    {
-                      text: '推送 (本应用 > 系统日历)',
-                      color: $r('sys.color.font_primary')
-                    },
-                    {
-                      text: '拉取 (系统日历 > 本应用)',
-                      color: $r('sys.color.font_primary')
+                const systemCalendars = await getSystemCalendarList(this.context)
+                if (systemCalendars.length === 0) {
+                  await promptAction.openToast({
+                    message: '无系统日历'
+                  })
+                  return
+                }
+                this.UIContext.showTextPickerDialog({
+                  range: systemCalendars.map(item => item.displayName ? item.displayName : item.name),
+                  canLoop: false,
+                  onAccept: async (value) => {
+                    const promptAction = this.UIContext.getPromptAction()
+                    const data = await promptAction.showActionMenu({
+                      title: '选择同步模式',
+                      buttons: [
+                        {
+                          text: '推送 (本应用 > 系统日历)',
+                          color: $r('sys.color.font_primary')
+                        },
+                        {
+                          text: '拉取 (系统日历 > 本应用)',
+                          color: $r('sys.color.font_primary')
+                        }
+                      ]
+                    })
+                    let res = ''
+                    if (data.index === 0) {
+                      res = await systemCalendarSyncTable(this.context, 'push', systemCalendars[value.index as number])
                     }
-                  ]
+                    if (data.index === 1) {
+                      res = await systemCalendarSyncTable(this.context, 'pull', systemCalendars[value.index as number])
+                    }
+                    if (res === 'success') {
+                      await promptAction.openToast({
+                        message: '同步成功'
+                      })
+                    }
+                    if (res === 'fail') {
+                      await promptAction.openToast({
+                        message: '同步失败'
+                      })
+                    }
+                  }
                 })
-                let res = ''
-                if (data.index === 0) {
-                  res = await systemCalendarSyncTable(this.context, 'push')
-                }
-                if (data.index === 1) {
-                  res = await systemCalendarSyncTable(this.context, 'pull')
-                }
-                if (res === 'success') {
-                  await promptAction.openToast({
-                    message: '同步成功'
-                  })
-                }
-                if (res === 'fail') {
-                  await promptAction.openToast({
-                    message: '同步失败'
-                  })
-                }
               })
-            }
-            .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
-            .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
-            .padding($r('sys.float.ohos_id_corner_radius_mark'))
-          }
-          .alignItems(HorizontalAlign.Start)
-        }
-        .margin({
-          top: $r('sys.float.ohos_id_elements_margin_vertical_l')
-        })
-
-        ListItem() {
-          Column() {
-            Text('暂停自动同步')
-              .fontColor($r('sys.color.font_secondary'))
-              .fontSize($r('sys.float.ohos_id_text_size_body2'))
-              .fontWeight(FontWeight.Medium)
-              .margin({
-                bottom: 6,
-                left: 12,
-                right: 12
-              })
-            Column() {
-              Row() {
-                Text('电池电量低')
-                  .fontWeight(FontWeight.Medium)
-                  .layoutWeight(1)
-                  .margin({
-                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                  })
-                Toggle({
-                  type: ToggleType.Switch,
-                  isOn: this.pauseAutoSyncWhenLowBatteryCapacityLevel!!
-                })
-                  .onChange(isOn => {
-                    setFlushPreference(this.context, 'dataSetting', 'pauseAutoSyncWhenLowBatteryCapacityLevel',
-                      isOn)
-                  })
-              }
-              .borderRadius(12)
-              .padding(12)
-
-              Divider()
-                .padding({
-                  left: 12,
-                  right: 12
-                })
-              Row() {
-                Text('系统开启 (超级) 省电模式')
-                  .fontWeight(FontWeight.Medium)
-                  .layoutWeight(1)
-                  .margin({
-                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                  })
-                Toggle({
-                  type: ToggleType.Switch,
-                  isOn: this.pauseAutoSyncWhenPowerSave!!
-                })
-                  .onChange(isOn => {
-                    setFlushPreference(this.context, 'dataSetting', 'pauseAutoSyncWhenPowerSave', isOn)
-                  })
-              }
-              .borderRadius(12)
-              .padding(12)
             }
             .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
             .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
@@ -1076,19 +988,13 @@ struct Tablesync {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor(this.hoverId === 1 ? $r('sys.color.interactive_hover') :
-                    $r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                },
+                hovered: {
+                  .backgroundColor($r('sys.color.interactive_hover'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
-                }
-              })
-              .onHover(isHover => {
-                if (!isHover) {
-                  this.hoverId = -1
-                }
-                if (isHover) {
-                  this.hoverId = 1
                 }
               })
               .onClick(async () => {
@@ -1184,8 +1090,8 @@ struct Tablesync {
       if (res) {
         this.availableDeviceArray = await this.deviceManager.getAvailableDeviceList() as Item[]
       }
-      await checkPermission(this.context, this.UIContext, 'ohos.permission.READ_CALENDAR')
-      await checkPermission(this.context, this.UIContext, 'ohos.permission.WRITE_CALENDAR')
+      await checkPermission(this.context, this.UIContext, 'ohos.permission.READ_WHOLE_CALENDAR')
+      await checkPermission(this.context, this.UIContext, 'ohos.permission.WRITE_WHOLE_CALENDAR')
     })
     .onDisAppear(() => {
       distributedDeviceManager.releaseDeviceManager(this.deviceManager)

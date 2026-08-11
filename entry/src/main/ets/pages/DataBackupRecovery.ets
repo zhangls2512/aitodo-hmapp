@@ -30,18 +30,15 @@ struct DataBackupRecovery {
   @Local caldavAccountDataSyncEnabled: boolean = false
   @Local webdavAccountDataSync: boolean = false
   @Local caldavAccountDataSync: boolean = false
-  @Local hoverId: number = -1
+  @Local autoBackup: boolean = false
+  @Local encryptFileBackup: boolean = true
+  @Local autoFileBackup: boolean = false
+  @Local encryptWebdavBackup: boolean = true
+  @Local autoWebdavBackup: boolean = false
+  @Local autoCaldavBackup: boolean = false
   UIContext = this.getUIContext()
   context = this.UIContext.getHostContext() as common.UIAbilityContext
   pageInfos = new NavPathStack()
-  autoBackup = false
-  encryptFileBackup = true
-  autoFileBackup = false
-  encryptWebdavBackup = true
-  autoWebdavBackup = false
-  autoCaldavBackup = false
-  pauseAutoBackupWhenLowBatteryCapacityLevel = false
-  pauseAutoBackupWhenPowerSave = false
   dialogControllerProgress = new CustomDialogController({
     builder: LoadingDialog({
       content: '请求中...'
@@ -58,10 +55,6 @@ struct DataBackupRecovery {
     this.encryptWebdavBackup = getFlushPreference(this.context, 'dataSetting', 'encryptWebdavBackup', true) as boolean
     this.autoWebdavBackup = getFlushPreference(this.context, 'dataSetting', 'autoWebdavBackup', true) as boolean
     this.autoCaldavBackup = getFlushPreference(this.context, 'dataSetting', 'autoCaldavBackup', true) as boolean
-    this.pauseAutoBackupWhenLowBatteryCapacityLevel =
-      getFlushPreference(this.context, 'dataSetting', 'pauseAutoBackupWhenLowBatteryCapacityLevel', false) as boolean
-    this.pauseAutoBackupWhenPowerSave =
-      getFlushPreference(this.context, 'dataSetting', 'pauseAutoBackupWhenPowerSave', false) as boolean
     const res = await checkPermission(this.context, this.UIContext, 'ohos.permission.DISTRIBUTED_DATASYNC')
     this.webdavAccountDataSyncEnabled = res
     this.caldavAccountDataSyncEnabled = res
@@ -220,19 +213,13 @@ struct DataBackupRecovery {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor(this.hoverId === 0 ? $r('sys.color.interactive_hover') :
-                    $r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                },
+                hovered: {
+                  .backgroundColor($r('sys.color.interactive_hover'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
-                }
-              })
-              .onHover(isHover => {
-                if (!isHover) {
-                  this.hoverId = -1
-                }
-                if (isHover) {
-                  this.hoverId = 0
                 }
               })
               .onClick(async () => {
@@ -265,19 +252,13 @@ struct DataBackupRecovery {
                 .padding(12)
                 .stateStyles({
                   normal: {
-                    .backgroundColor(this.hoverId === 1 ? $r('sys.color.interactive_hover') :
-                      $r('sys.color.ohos_id_color_card_bg'))
+                    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                  },
+                  hovered: {
+                    .backgroundColor($r('sys.color.interactive_hover'))
                   },
                   pressed: {
                     .backgroundColor($r('sys.color.interactive_pressed'))
-                  }
-                })
-                .onHover(isHover => {
-                  if (!isHover) {
-                    this.hoverId = -1
-                  }
-                  if (isHover) {
-                    this.hoverId = 1
                   }
                 })
                 .onClick(async () => {
@@ -404,19 +385,13 @@ struct DataBackupRecovery {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor(this.hoverId === 2 ? $r('sys.color.interactive_hover') :
-                    $r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                },
+                hovered: {
+                  .backgroundColor($r('sys.color.interactive_hover'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
-                }
-              })
-              .onHover(isHover => {
-                if (!isHover) {
-                  this.hoverId = -1
-                }
-                if (isHover) {
-                  this.hoverId = 2
                 }
               })
               .onClick(async () => {
@@ -447,19 +422,13 @@ struct DataBackupRecovery {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor(this.hoverId === 3 ? $r('sys.color.interactive_hover') :
-                    $r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                },
+                hovered: {
+                  .backgroundColor($r('sys.color.interactive_hover'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
-                }
-              })
-              .onHover(isHover => {
-                if (!isHover) {
-                  this.hoverId = -1
-                }
-                if (isHover) {
-                  this.hoverId = 3
                 }
               })
               .onClick(async () => {
@@ -504,19 +473,13 @@ struct DataBackupRecovery {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor(this.hoverId === 4 ? $r('sys.color.interactive_hover') :
-                    $r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                },
+                hovered: {
+                  .backgroundColor($r('sys.color.interactive_hover'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
-                }
-              })
-              .onHover(isHover => {
-                if (!isHover) {
-                  this.hoverId = -1
-                }
-                if (isHover) {
-                  this.hoverId = 4
                 }
               })
               .onClick(async () => {
@@ -565,19 +528,13 @@ struct DataBackupRecovery {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor(this.hoverId === 5 ? $r('sys.color.interactive_hover') :
-                    $r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                },
+                hovered: {
+                  .backgroundColor($r('sys.color.interactive_hover'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
-                }
-              })
-              .onHover(isHover => {
-                if (!isHover) {
-                  this.hoverId = -1
-                }
-                if (isHover) {
-                  this.hoverId = 5
                 }
               })
               .onClick(async () => {
@@ -650,19 +607,13 @@ struct DataBackupRecovery {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor(this.hoverId === 6 ? $r('sys.color.interactive_hover') :
-                    $r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                },
+                hovered: {
+                  .backgroundColor($r('sys.color.interactive_hover'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
-                }
-              })
-              .onHover(isHover => {
-                if (!isHover) {
-                  this.hoverId = -1
-                }
-                if (isHover) {
-                  this.hoverId = 6
                 }
               })
               .onClick(() => {
@@ -802,19 +753,13 @@ struct DataBackupRecovery {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor(this.hoverId === 7 ? $r('sys.color.interactive_hover') :
-                    $r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                },
+                hovered: {
+                  .backgroundColor($r('sys.color.interactive_hover'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
-                }
-              })
-              .onHover(isHover => {
-                if (!isHover) {
-                  this.hoverId = -1
-                }
-                if (isHover) {
-                  this.hoverId = 7
                 }
               })
               .onClick(async () => {
@@ -856,19 +801,13 @@ struct DataBackupRecovery {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor(this.hoverId === 8 ? $r('sys.color.interactive_hover') :
-                    $r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                },
+                hovered: {
+                  .backgroundColor($r('sys.color.interactive_hover'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
-                }
-              })
-              .onHover(isHover => {
-                if (!isHover) {
-                  this.hoverId = -1
-                }
-                if (isHover) {
-                  this.hoverId = 8
                 }
               })
               .onClick(async () => {
@@ -917,19 +856,13 @@ struct DataBackupRecovery {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor(this.hoverId === 9 ? $r('sys.color.interactive_hover') :
-                    $r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                },
+                hovered: {
+                  .backgroundColor($r('sys.color.interactive_hover'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
-                }
-              })
-              .onHover(isHover => {
-                if (!isHover) {
-                  this.hoverId = -1
-                }
-                if (isHover) {
-                  this.hoverId = 9
                 }
               })
               .onClick(async () => {
@@ -1006,19 +939,13 @@ struct DataBackupRecovery {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor(this.hoverId === 10 ? $r('sys.color.interactive_hover') :
-                    $r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                },
+                hovered: {
+                  .backgroundColor($r('sys.color.interactive_hover'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
-                }
-              })
-              .onHover(isHover => {
-                if (!isHover) {
-                  this.hoverId = -1
-                }
-                if (isHover) {
-                  this.hoverId = 10
                 }
               })
               .onClick(() => {
@@ -1125,19 +1052,13 @@ struct DataBackupRecovery {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor(this.hoverId === 11 ? $r('sys.color.interactive_hover') :
-                    $r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                },
+                hovered: {
+                  .backgroundColor($r('sys.color.interactive_hover'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
-                }
-              })
-              .onHover(isHover => {
-                if (!isHover) {
-                  this.hoverId = -1
-                }
-                if (isHover) {
-                  this.hoverId = 11
                 }
               })
               .onClick(async () => {
@@ -1179,19 +1100,13 @@ struct DataBackupRecovery {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor(this.hoverId === 12 ? $r('sys.color.interactive_hover') :
-                    $r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                },
+                hovered: {
+                  .backgroundColor($r('sys.color.interactive_hover'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
-                }
-              })
-              .onHover(isHover => {
-                if (!isHover) {
-                  this.hoverId = -1
-                }
-                if (isHover) {
-                  this.hoverId = 12
                 }
               })
               .onClick(async () => {
@@ -1237,19 +1152,13 @@ struct DataBackupRecovery {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor(this.hoverId === 13 ? $r('sys.color.interactive_hover') :
-                    $r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                },
+                hovered: {
+                  .backgroundColor($r('sys.color.interactive_hover'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
-                }
-              })
-              .onHover(isHover => {
-                if (!isHover) {
-                  this.hoverId = -1
-                }
-                if (isHover) {
-                  this.hoverId = 13
                 }
               })
               .onClick(async () => {
@@ -1286,70 +1195,6 @@ struct DataBackupRecovery {
                   }
                 }
               })
-            }
-            .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
-            .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
-            .padding($r('sys.float.ohos_id_corner_radius_mark'))
-          }
-          .alignItems(HorizontalAlign.Start)
-        }
-        .margin({
-          top: $r('sys.float.ohos_id_elements_margin_vertical_l')
-        })
-
-        ListItem() {
-          Column() {
-            Text('暂停自动备份')
-              .fontColor($r('sys.color.font_secondary'))
-              .fontSize($r('sys.float.ohos_id_text_size_body2'))
-              .fontWeight(FontWeight.Medium)
-              .margin({
-                bottom: 6,
-                left: 12,
-                right: 12
-              })
-            Column() {
-              Row() {
-                Text('电池电量低')
-                  .fontWeight(FontWeight.Medium)
-                  .layoutWeight(1)
-                  .margin({
-                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                  })
-                Toggle({
-                  type: ToggleType.Switch,
-                  isOn: this.pauseAutoBackupWhenLowBatteryCapacityLevel!!
-                })
-                  .onChange(isOn => {
-                    setFlushPreference(this.context, 'dataSetting', 'pauseAutoBackupWhenLowBatteryCapacityLevel',
-                      isOn)
-                  })
-              }
-              .borderRadius(12)
-              .padding(12)
-
-              Divider()
-                .padding({
-                  left: 12,
-                  right: 12
-                })
-              Row() {
-                Text('系统开启 (超级) 省电模式')
-                  .fontWeight(FontWeight.Medium)
-                  .layoutWeight(1)
-                  .margin({
-                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                  })
-                Toggle({
-                  type: ToggleType.Switch,
-                  isOn: this.pauseAutoBackupWhenPowerSave!!
-                })
-                  .onChange(isOn => {
-                    setFlushPreference(this.context, 'dataSetting', 'pauseAutoBackupWhenPowerSave', isOn)
-                  })
-              }
-              .borderRadius(12)
-              .padding(12)
             }
             .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
             .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))

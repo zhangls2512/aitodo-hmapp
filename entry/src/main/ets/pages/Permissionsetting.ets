@@ -13,7 +13,6 @@ export function PermissionsettingBuilder() {
 @ComponentV2
 struct Permissionsetting {
   @Local writePasteBoard: boolean = false
-  @Local hoverId: number = -1
   context = this.getUIContext().getHostContext() as common.UIAbilityContext
   approximatelyLocation = getPermission('ohos.permission.APPROXIMATELY_LOCATION')
   dataSync = getPermission('ohos.permission.DISTRIBUTED_DATASYNC')
@@ -87,19 +86,13 @@ struct Permissionsetting {
             .padding(12)
             .stateStyles({
               normal: {
-                .backgroundColor(this.hoverId === 0 ? $r('sys.color.interactive_hover') :
-                  $r('sys.color.ohos_id_color_card_bg'))
+                .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+              },
+              hovered: {
+                .backgroundColor($r('sys.color.interactive_hover'))
               },
               pressed: {
                 .backgroundColor($r('sys.color.interactive_pressed'))
-              }
-            })
-            .onHover(isHover => {
-              if (!isHover) {
-                this.hoverId = -1
-              }
-              if (isHover) {
-                this.hoverId = 0
               }
             })
             .onClick(async () => {

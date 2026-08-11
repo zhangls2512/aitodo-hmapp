@@ -6,7 +6,8 @@
     "plugin:@previewer/all",
     "plugin:@cross-device-app-dev/all",
     "plugin:@hw-stylistic/all",
-    "plugin:@correctness/all"
+    "plugin:@correctness/all",
+    "plugin:@compatibility/all"
   ],
   "rules": {
     "@typescript-eslint/ban-types": "off",
@@ -35,6 +36,7 @@
     "@typescript-eslint/no-shadow": "off",
     "@typescript-eslint/no-unnecessary-condition": "off",
     "@typescript-eslint/no-unnecessary-type-assertion": "off",
+    "@typescript-eslint/no-unused-expressions": "off",
     "@typescript-eslint/prefer-for-of": "off",
     "@typescript-eslint/prefer-nullish-coalescing": "off",
     "@typescript-eslint/prefer-optional-chain": "off",
@@ -59,13 +61,16 @@
     "@performance/init-list-component": "off",
     "@performance/js-code-cache-by-precompile-check": "off",
     "@performance/reuse-date-instances-check": "off",
-    "@performance/state-variable-usage-in-ui-format-check": "off",
     "@cross-device-app-dev/color-contrast": "off",
     "@cross-device-app-dev/color-value": "off",
     "@cross-device-app-dev/immersive-effect-check": "off",
     "@cross-device-app-dev/one-multi-breakpoint-check": "off",
     "@hw-stylistic/max-len": "off",
+    "@correctness/accessibility-focus-redundancy-check": "off",
+    "@correctness/accessibility-label-check": "off",
+    "@correctness/accessibility-status-missing-check": "off",
     "@correctness/listen-default-network-change": "off",
-    "@correctness/listen-multi-network-concurrent": "off"
+    "@correctness/listen-multi-network-concurrent": "off",
+    "@compatibility/deprecate-api-check": "off"
   }
 }

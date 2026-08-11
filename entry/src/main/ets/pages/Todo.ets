@@ -2,7 +2,7 @@ import { common } from '@kit.AbilityKit'
 import { FunctionComponent } from '@kit.AgentFrameworkKit'
 import { uniformTypeDescriptor } from '@kit.ArkData'
 import { uri } from '@kit.ArkTS'
-import { LoadingDialog, promptAction } from '@kit.ArkUI'
+import { LoadingDialog, promptAction, uiMaterial } from '@kit.ArkUI'
 import { deviceInfo } from '@kit.BasicServicesKit'
 import { fileIo, fileUri } from '@kit.CoreFileKit'
 import { image } from '@kit.ImageKit'
@@ -10,7 +10,6 @@ import { netBoost } from '@kit.NetworkBoostKit'
 import { rcp } from '@kit.RemoteCommunicationKit'
 import { generateBarcode, scanCore } from '@kit.ScanKit'
 import { harmonyShare, systemShare } from '@kit.ShareKit'
-import { hdsEffect } from '@kit.UIDesignKit'
 import { getTeamAccountInfo, getTeamAccountList } from '../common/Account'
 import getCloudServiceStatus from '../common/Cloudservice'
 import { getKeyAlg } from '../common/Crypto'
@@ -56,8 +55,6 @@ export default struct TodoPage {
   @Local tags: string[] = []
   @Local multipleSelect: boolean = false
   @Local multipleSelectArray: Todo[] = []
-  @Local hoverId: number = -1
-  @Local buttonHoverId: number = -1
   @Local quickBarTodoIdArray: string[] = []
   @Local type: string = 'complete'
   @Local teamAdmin: boolean = false
@@ -413,15 +410,6 @@ export default struct TodoPage {
               })
           }
         }
-        MenuItem({
-          startIcon: $r('app.media.info'),
-          content: '详情'
-        })
-          .onClick(() => {
-            this.todoId = item.id
-            this.todoInfo = JSON.stringify(item)
-            this.isShowInfoSheet = true
-          })
         if (!this.teamId) {
           MenuItem({
             startIcon: $r('app.media.share'),
@@ -717,12 +705,13 @@ export default struct TodoPage {
                 .backgroundColor($r('sys.color.interactive_pressed'))
               }
             })
-            .visualEffect(new hdsEffect.HdsEffectBuilder()
-              .pointLight({
-                sourceType: hdsEffect.PointLightSourceType.SOFT,
-                illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
-              })
-              .buildEffect())
+            .systemMaterial(new uiMaterial.ImmersiveMaterial({
+              style: uiMaterial.ImmersiveStyle.REGULAR,
+              interactive: true,
+              lightEffect: {
+                color: Color.White
+              }
+            }))
             .width(40)
             .onClick(() => {
               this.multipleSelect = false
@@ -753,12 +742,13 @@ export default struct TodoPage {
                 .backgroundColor($r('sys.color.interactive_pressed'))
               }
             })
-            .visualEffect(new hdsEffect.HdsEffectBuilder()
-              .pointLight({
-                sourceType: hdsEffect.PointLightSourceType.SOFT,
-                illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
-              })
-              .buildEffect())
+            .systemMaterial(new uiMaterial.ImmersiveMaterial({
+              style: uiMaterial.ImmersiveStyle.REGULAR,
+              interactive: true,
+              lightEffect: {
+                color: Color.White
+              }
+            }))
             .width(40)
             .onClick(async () => {
               await this.shareTodo(this.multipleSelectArray)
@@ -784,12 +774,13 @@ export default struct TodoPage {
                 .backgroundColor($r('sys.color.interactive_pressed'))
               }
             })
-            .visualEffect(new hdsEffect.HdsEffectBuilder()
-              .pointLight({
-                sourceType: hdsEffect.PointLightSourceType.SOFT,
-                illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
-              })
-              .buildEffect())
+            .systemMaterial(new uiMaterial.ImmersiveMaterial({
+              style: uiMaterial.ImmersiveStyle.REGULAR,
+              interactive: true,
+              lightEffect: {
+                color: Color.White
+              }
+            }))
             .width(40)
             .onClick(async () => {
               const promptAction = this.UIContext.getPromptAction()
@@ -848,12 +839,13 @@ export default struct TodoPage {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
-              .visualEffect(new hdsEffect.HdsEffectBuilder()
-                .pointLight({
-                  sourceType: hdsEffect.PointLightSourceType.SOFT,
-                  illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
-                })
-                .buildEffect())
+              .systemMaterial(new uiMaterial.ImmersiveMaterial({
+                style: uiMaterial.ImmersiveStyle.REGULAR,
+                interactive: true,
+                lightEffect: {
+                  color: Color.White
+                }
+              }))
               .width(40)
               .onClick(async () => {
                 if (this.multipleSelectArray.length === 0) {
@@ -918,21 +910,16 @@ export default struct TodoPage {
             .padding(11)
             .stateStyles({
               normal: {
-                .backgroundColor(this.buttonHoverId === 0 ? '#0754EB' : $r('sys.color.background_emphasize'))
+                .backgroundColor($r('sys.color.background_emphasize'))
+              },
+              hovered: {
+                .backgroundColor('#0754EB')
               },
               pressed: {
                 .backgroundColor('#0A50DE')
               }
             })
             .width(40)
-            .onHover(isHover => {
-              if (!isHover) {
-                this.buttonHoverId = -1
-              }
-              if (isHover) {
-                this.buttonHoverId = 0
-              }
-            })
             .onClick(() => {
               this.isShowNewSheet = true
             })
@@ -994,12 +981,13 @@ export default struct TodoPage {
               .margin({
                 right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
               })
-              .visualEffect(new hdsEffect.HdsEffectBuilder()
-                .pointLight({
-                  sourceType: hdsEffect.PointLightSourceType.SOFT,
-                  illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
-                })
-                .buildEffect())
+              .systemMaterial(new uiMaterial.ImmersiveMaterial({
+                style: uiMaterial.ImmersiveStyle.REGULAR,
+                interactive: true,
+                lightEffect: {
+                  color: Color.White
+                }
+              }))
               .width(40)
             }
             Select(this.teamNameArray.map((item): SelectOption => {
@@ -1055,6 +1043,10 @@ export default struct TodoPage {
               top: $r('sys.float.ohos_id_elements_margin_vertical_m')
             })
             .searchButton('搜索')
+            .systemMaterial(new uiMaterial.ImmersiveMaterial({
+              style: uiMaterial.ImmersiveStyle.REGULAR,
+              interactive: true
+            }))
           Scroll() {
             Row() {
               ForEach(this.tags, (item: string, index) => {
@@ -1118,7 +1110,7 @@ export default struct TodoPage {
           refreshing: $$this.loading
         }) {
           List() {
-            ForEach(this.todoArray, (item: Todo, index) => {
+            ForEach(this.todoArray, (item: Todo) => {
               ListItem() {
                 Column() {
                   Row() {
@@ -1127,16 +1119,18 @@ export default struct TodoPage {
                         type: ToggleType.Checkbox,
                         isOn: this.multipleSelectArray.some(selectItem => selectItem.id === item.id)
                       })
+                        .hitTestBehavior(HitTestMode.Block)
                         .margin({
                           right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
                         })
                         .onChange(isOn => {
-                          if (!isOn) {
+                          const exist = this.multipleSelectArray.find(selectItem => selectItem.id === item.id)
+                          if (!isOn && exist) {
                             this.multipleSelectArray.splice(
                               this.multipleSelectArray.findIndex(selectItem => selectItem.id ===
                                 item.id), 1)
                           }
-                          if (isOn) {
+                          if (isOn && !exist) {
                             this.multipleSelectArray.push(item)
                           }
                         })
@@ -1341,20 +1335,31 @@ export default struct TodoPage {
                   .padding(12)
                   .stateStyles({
                     normal: {
-                      .backgroundColor(this.hoverId === index ? $r('sys.color.interactive_hover') :
-                        $r('sys.color.comp_background_primary'))
+                      .backgroundColor($r('sys.color.comp_background_primary'))
+                    },
+                    hovered: {
+                      .backgroundColor($r('sys.color.interactive_hover'))
                     },
                     pressed: {
-                      .backgroundColor($r('sys.color.comp_background_secondary'))
+                      .backgroundColor($r('sys.color.interactive_pressed'))
                     }
                   })
-                  .onHover(isHover => {
-                    if (!isHover) {
-                      this.hoverId = -1
+                  .onClick(() => {
+                    if (this.multipleSelect) {
+                      const exist = this.multipleSelectArray.find(selectItem => selectItem.id === item.id)
+                      if (exist) {
+                        this.multipleSelectArray.splice(
+                          this.multipleSelectArray.findIndex(selectItem => selectItem.id ===
+                            item.id), 1)
+                      }
+                      if (!exist) {
+                        this.multipleSelectArray.push(item)
+                      }
+                      return
                     }
-                    if (isHover) {
-                      this.hoverId = index
-                    }
+                    this.todoId = item.id
+                    this.todoInfo = JSON.stringify(item)
+                    this.isShowInfoSheet = true
                   })
                   .bindContextMenu(this.MenuBuilder(item), ResponseType.LongPress, {
                     hapticFeedbackMode: HapticFeedbackMode.AUTO
