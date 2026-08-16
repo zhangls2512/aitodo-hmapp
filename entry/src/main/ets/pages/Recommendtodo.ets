@@ -17,7 +17,7 @@ import TodoInfo from './Todoinfo'
 export default struct Recommendtodo {
   @Provider() isShowNewSheet: boolean = false
   @Local isShowInfoSheet: boolean = false
-  @Local preferType: number = 1
+  @Local preferType: SheetType = SheetType.CENTER
   @Local todoArray: Todo[] = []
   @Local loading: boolean = false
   UIContext = this.getUIContext()
@@ -289,7 +289,7 @@ export default struct Recommendtodo {
           .fontColor($r('sys.color.font_emphasize'))
           .fontSize($r('sys.float.ohos_id_text_size_body3'))
           .margin({
-            bottom: this.preferType === 0 ? 96 : $r('sys.float.ohos_id_default_padding_bottom_fixed'),
+            bottom: this.preferType === SheetType.BOTTOM ? 96 : $r('sys.float.ohos_id_default_padding_bottom_fixed'),
             top: $r('sys.float.ohos_id_elements_margin_vertical_l')
           })
           .onClick(async () => {
@@ -310,7 +310,7 @@ export default struct Recommendtodo {
     .padding({
       left: $r('sys.float.ohos_id_elements_margin_horizontal_l'),
       right: $r('sys.float.ohos_id_elements_margin_horizontal_l'),
-      top: this.preferType === 0 ? 0 : $r('sys.float.ohos_id_default_padding_top')
+      top: this.preferType === SheetType.BOTTOM ? 0 : $r('sys.float.ohos_id_default_padding_top')
     })
     .onAppear(async () => {
       this.preferType = getPreferType(this.UIContext)
