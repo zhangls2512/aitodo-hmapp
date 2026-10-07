@@ -2,7 +2,7 @@ import { common } from '@kit.AbilityKit'
 import { FunctionComponent } from '@kit.AgentFrameworkKit'
 import { uniformTypeDescriptor } from '@kit.ArkData'
 import { uri } from '@kit.ArkTS'
-import { LoadingDialog, promptAction, uiMaterial } from '@kit.ArkUI'
+import { LoadingDialog, promptAction } from '@kit.ArkUI'
 import { deviceInfo } from '@kit.BasicServicesKit'
 import { fileIo, fileUri } from '@kit.CoreFileKit'
 import { image } from '@kit.ImageKit'
@@ -10,6 +10,7 @@ import { netBoost } from '@kit.NetworkBoostKit'
 import { rcp } from '@kit.RemoteCommunicationKit'
 import { generateBarcode, scanCore } from '@kit.ScanKit'
 import { harmonyShare, systemShare } from '@kit.ShareKit'
+import { hdsEffect } from '@kit.UIDesignKit'
 import { getTeamAccountInfo, getTeamAccountList } from '../common/Account'
 import getCloudServiceStatus from '../common/Cloudservice'
 import { getKeyAlg } from '../common/Crypto'
@@ -706,13 +707,12 @@ export default struct TodoPage {
                 .backgroundColor($r('sys.color.interactive_pressed'))
               }
             })
-            .systemMaterial(new uiMaterial.ImmersiveMaterial({
-              style: uiMaterial.ImmersiveStyle.REGULAR,
-              interactive: true,
-              lightEffect: {
-                color: Color.White
-              }
-            }))
+            .visualEffect(new hdsEffect.HdsEffectBuilder()
+              .pointLight({
+                sourceType: hdsEffect.PointLightSourceType.SOFT,
+                illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
+              })
+              .buildEffect())
             .width(40)
             .onClick(() => {
               this.multipleSelect = false
@@ -744,13 +744,12 @@ export default struct TodoPage {
                 .backgroundColor($r('sys.color.interactive_pressed'))
               }
             })
-            .systemMaterial(new uiMaterial.ImmersiveMaterial({
-              style: uiMaterial.ImmersiveStyle.REGULAR,
-              interactive: true,
-              lightEffect: {
-                color: Color.White
-              }
-            }))
+            .visualEffect(new hdsEffect.HdsEffectBuilder()
+              .pointLight({
+                sourceType: hdsEffect.PointLightSourceType.SOFT,
+                illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
+              })
+              .buildEffect())
             .width(40)
             .onClick(async () => {
               await this.shareTodo(this.multipleSelectArray)
@@ -777,13 +776,12 @@ export default struct TodoPage {
                 .backgroundColor($r('sys.color.interactive_pressed'))
               }
             })
-            .systemMaterial(new uiMaterial.ImmersiveMaterial({
-              style: uiMaterial.ImmersiveStyle.REGULAR,
-              interactive: true,
-              lightEffect: {
-                color: Color.White
-              }
-            }))
+            .visualEffect(new hdsEffect.HdsEffectBuilder()
+              .pointLight({
+                sourceType: hdsEffect.PointLightSourceType.SOFT,
+                illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
+              })
+              .buildEffect())
             .width(40)
             .onClick(async () => {
               const promptAction = this.UIContext.getPromptAction()
@@ -843,13 +841,12 @@ export default struct TodoPage {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
-              .systemMaterial(new uiMaterial.ImmersiveMaterial({
-                style: uiMaterial.ImmersiveStyle.REGULAR,
-                interactive: true,
-                lightEffect: {
-                  color: Color.White
-                }
-              }))
+              .visualEffect(new hdsEffect.HdsEffectBuilder()
+                .pointLight({
+                  sourceType: hdsEffect.PointLightSourceType.SOFT,
+                  illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
+                })
+                .buildEffect())
               .width(40)
               .onClick(async () => {
                 if (this.multipleSelectArray.length === 0) {
@@ -987,13 +984,12 @@ export default struct TodoPage {
               .margin({
                 right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
               })
-              .systemMaterial(new uiMaterial.ImmersiveMaterial({
-                style: uiMaterial.ImmersiveStyle.REGULAR,
-                interactive: true,
-                lightEffect: {
-                  color: Color.White
-                }
-              }))
+              .visualEffect(new hdsEffect.HdsEffectBuilder()
+                .pointLight({
+                  sourceType: hdsEffect.PointLightSourceType.SOFT,
+                  illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
+                })
+                .buildEffect())
               .width(40)
             }
             Select(this.teamNameArray.map((item): SelectOption => {
@@ -1049,10 +1045,6 @@ export default struct TodoPage {
               top: $r('sys.float.ohos_id_elements_margin_vertical_m')
             })
             .searchButton('搜索')
-            .systemMaterial(new uiMaterial.ImmersiveMaterial({
-              style: uiMaterial.ImmersiveStyle.REGULAR,
-              interactive: true
-            }))
           Scroll() {
             Row() {
               ForEach(this.tags, (item: string, index) => {

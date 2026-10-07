@@ -10,6 +10,7 @@
     "plugin:@compatibility/all"
   ],
   "rules": {
+    "@typescript-eslint/await-thenable": "off",
     "@typescript-eslint/ban-types": "off",
     "@typescript-eslint/explicit-member-accessibility": "off",
     "@typescript-eslint/member-delimiter-style": [
