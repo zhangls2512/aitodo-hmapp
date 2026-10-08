@@ -422,8 +422,7 @@ export default struct Login {
               Span('《轩铭智能待办用户服务条款与条件》')
                 .fontColor($r('sys.color.font_emphasize'))
                 .onClick(async () => {
-                  await openLink(this.context, 'https://docs.qq.com/doc/p/02b7beac5bf4cd5a2a6170d9c5ebed5c953c84be')
-                  /*try {
+                  try {
                     const appPrivacyLink = privacyManager.getAppPrivacyMgmtInfo().privacyInfo
                       .find(item => item.type === privacyManager.AppPrivacyLinkType.USER_AGREEMENT_LINK)
                     await openLink(this.context, appPrivacyLink?.url as string)
@@ -431,22 +430,20 @@ export default struct Login {
                     await promptAction.openToast({
                       message: '发生错误，错误码：' + err.code + (err.message ? '，错误信息：' + err.message : '')
                     })
-                  }*/
+                  }
                 })
               Span('《关于轩铭智能待办与隐私的声明》')
                 .fontColor($r('sys.color.font_emphasize'))
                 .onClick(async () => {
-                  await openLink(this.context,
-                    'https://agreement-drcn.hispace.dbankcloud.cn/index.html?lang=zh&agreementId=2014139979969612288')
-                  /*try {
-                     const appPrivacyLink = privacyManager.getAppPrivacyMgmtInfo().privacyInfo
-                       .find(item => item.type === privacyManager.AppPrivacyLinkType.PRIVACY_STATEMENT_LINK)
-                     await openLink(this.context, appPrivacyLink?.url as string)
-                   } catch (err) {
-                     await promptAction.openToast({
-                       message: '发生错误，错误码：' + err.code + (err.message ? '，错误信息：' + err.message : '')
-                     })
-                   }*/
+                  try {
+                    const appPrivacyLink = privacyManager.getAppPrivacyMgmtInfo().privacyInfo
+                      .find(item => item.type === privacyManager.AppPrivacyLinkType.PRIVACY_STATEMENT_LINK)
+                    await openLink(this.context, appPrivacyLink?.url as string)
+                  } catch (err) {
+                    await promptAction.openToast({
+                      message: '发生错误，错误码：' + err.code + (err.message ? '，错误信息：' + err.message : '')
+                    })
+                  }
                 })
               Span('。如果使用华为账号登录，已阅读并同意')
               Span('《华为账号用户认证协议》')

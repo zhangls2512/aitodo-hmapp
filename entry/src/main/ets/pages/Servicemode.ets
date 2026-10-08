@@ -58,15 +58,8 @@ struct Servicemode {
               Span('关于轩铭智能待办与隐私的声明')
                 .fontColor($r('sys.color.font_emphasize'))
                 .fontWeight(FontWeight.Medium)
-                .onClick(() => {
-                  this.pageInfos.pushPath({
-                    name: 'Webview',
-                    param: {
-                      url: 'https://agreement-drcn.hispace.dbankcloud.cn/index.html?lang=zh&agreementId=2014139979969612288',
-                      trust: false
-                    } as Param
-                  })
-                  /*try {
+                .onClick(async () => {
+                  try {
                     const appPrivacyLink = privacyManager.getAppPrivacyMgmtInfo().privacyInfo
                       .find(item => item.type === privacyManager.AppPrivacyLinkType.PRIVACY_STATEMENT_LINK)
                     this.pageInfos.pushPath({
@@ -80,7 +73,7 @@ struct Servicemode {
                     await promptAction.openToast({
                       message: '发生错误，错误码：' + err.code + (err.message ? '，错误信息：' + err.message : '')
                     })
-                  }*/
+                  }
                 })
               Span('。开启开关，即表示您知悉并同意我们向您提供本应用服务。')
                 .fontColor($r('sys.color.font_secondary'))

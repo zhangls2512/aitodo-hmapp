@@ -42,7 +42,7 @@ export default struct Setting {
 
   async getSetting() {
     this.allService = getFlushPreference(this.context, 'commonSetting', 'allService', true) as boolean
-    /*try {
+    try {
       const appPrivacyResults: privacyManager.AppPrivacyResult[] = privacyManager.getAppPrivacyResult()
       this.agreedPrivacyAgreement =
         appPrivacyResults.find(item => item.type === privacyManager.AppPrivacyType.PRIVACY_AGREEMENT)?.result
@@ -50,7 +50,7 @@ export default struct Setting {
       await promptAction.openToast({
         message: '发生错误，错误码：' + err.code + (err.message ? '，错误信息：' + err.message : '')
       })
-    }*/
+    }
     const accountInfo = await getPersonalAccountInfo()
     this.email = accountInfo.email
     this.accessToken = await getPersonalAccountAccessToken()
@@ -1067,15 +1067,8 @@ export default struct Setting {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
-              .onClick(() => {
-                this.pageInfos.pushPath({
-                  name: 'Webview',
-                  param: {
-                    url: 'https://agreement-drcn.hispace.dbankcloud.cn/index.html?lang=zh&agreementId=2014139979969612288',
-                    trust: false
-                  } as Param
-                })
-                /*try {
+              .onClick(async () => {
+                try {
                   const appPrivacyLink = privacyManager.getAppPrivacyMgmtInfo().privacyInfo
                     .find(item => item.type === privacyManager.AppPrivacyLinkType.PRIVACY_STATEMENT_LINK)
                   this.pageInfos.pushPath({
@@ -1089,7 +1082,7 @@ export default struct Setting {
                   await promptAction.openToast({
                     message: '发生错误，错误码：' + err.code + (err.message ? '，错误信息：' + err.message : '')
                   })
-                }*/
+                }
               })
 
               Divider()

@@ -48,8 +48,7 @@ struct Agreements {
               }
             })
             .onClick(async () => {
-              await openLink(this.context, 'https://docs.qq.com/doc/p/02b7beac5bf4cd5a2a6170d9c5ebed5c953c84be')
-              /*try {
+              try {
                 const appPrivacyLink = privacyManager.getAppPrivacyMgmtInfo().privacyInfo
                   .find(item => item.type === privacyManager.AppPrivacyLinkType.USER_AGREEMENT_LINK)
                 await openLink(this.context, appPrivacyLink?.url as string)
@@ -57,7 +56,7 @@ struct Agreements {
                 await promptAction.openToast({
                   message: '发生错误，错误码：' + err.code + (err.message ? '，错误信息：' + err.message : '')
                 })
-              }*/
+              }
             })
           }
           .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
