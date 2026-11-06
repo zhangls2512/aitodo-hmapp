@@ -5,7 +5,7 @@ export async function clearNouseData(context: Context) {
   const tempFiles = await fileIo.listFile(tempDir)
   tempFiles.forEach(async (item) => {
     const path = tempDir + '/' + item
-    const isDirectory = fileIo.statSync(path)
+    const isDirectory = fileIo.statSync(path).isDirectory()
     if (!isDirectory) {
       await fileIo.unlink(path)
     }
