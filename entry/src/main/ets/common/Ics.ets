@@ -12,23 +12,23 @@ export function timeStampToIcsTimeString(timeStamp: number) {
 export function icsTimeStringToTimeStamp(icsTimeString: string, end = false) {
   let timeStamp = 0
   if (icsTimeString.length === 16) {
-    timeStamp = new Date(Date.UTC(Number(icsTimeString.substring(0, 4)), Number(icsTimeString.substring(4, 6)) - 1,
-      Number(icsTimeString.substring(6, 8)), Number(icsTimeString.substring(9, 11)),
-      Number(icsTimeString.substring(11, 13)), Number(icsTimeString.substring(13, 15)))).getTime()
+    timeStamp = new Date(Date.UTC(Number(icsTimeString.slice(0, 4)), Number(icsTimeString.slice(4, 6)) - 1,
+      Number(icsTimeString.slice(6, 8)), Number(icsTimeString.slice(9, 11)),
+      Number(icsTimeString.slice(11, 13)), Number(icsTimeString.slice(13, 15)))).getTime()
   }
   if (icsTimeString.length === 15) {
-    timeStamp = new Date(Number(icsTimeString.substring(0, 4)), Number(icsTimeString.substring(4, 6)) - 1,
-      Number(icsTimeString.substring(6, 8)), Number(icsTimeString.substring(9, 11)),
-      Number(icsTimeString.substring(11, 13)), Number(icsTimeString.substring(13, 15))).getTime()
+    timeStamp = new Date(Number(icsTimeString.slice(0, 4)), Number(icsTimeString.slice(4, 6)) - 1,
+      Number(icsTimeString.slice(6, 8)), Number(icsTimeString.slice(9, 11)),
+      Number(icsTimeString.slice(11, 13)), Number(icsTimeString.slice(13, 15))).getTime()
   }
   if (icsTimeString.length === 8) {
     if (!end) {
-      timeStamp = new Date(Number(icsTimeString.substring(0, 4)), Number(icsTimeString.substring(4, 6)) - 1,
-        Number(icsTimeString.substring(6, 8)), 0, 0, 0).getTime()
+      timeStamp = new Date(Number(icsTimeString.slice(0, 4)), Number(icsTimeString.slice(4, 6)) - 1,
+        Number(icsTimeString.slice(6, 8)), 0, 0, 0).getTime()
     }
     if (end) {
-      timeStamp = new Date(Number(icsTimeString.substring(0, 4)), Number(icsTimeString.substring(4, 6)) - 1,
-        Number(icsTimeString.substring(6, 8)), 23, 59, 59).getTime()
+      timeStamp = new Date(Number(icsTimeString.slice(0, 4)), Number(icsTimeString.slice(4, 6)) - 1,
+        Number(icsTimeString.slice(6, 8)), 23, 59, 59).getTime()
     }
   }
   if (!Number.isNaN(timeStamp)) {

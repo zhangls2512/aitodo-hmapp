@@ -488,7 +488,7 @@ export default struct Todoinfo {
                   }
                   if (canPreview) {
                     await filePreview.openPreview(this.context, {
-                      title: item.value.substring(item.value.lastIndexOf('/') + 1),
+                      title: item.value.slice(item.value.lastIndexOf('/') + 1),
                       uri: item.value,
                       mimeType: ''
                     })
