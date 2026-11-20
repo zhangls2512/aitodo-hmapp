@@ -318,6 +318,7 @@ export default struct Login {
                   message: '登录成功'
                 })
                 this.isShowLoginSheet = false
+                this.context.eventHub.emit('refreshMe')
               }
             })
           LoginWithHuaweiIDButton({

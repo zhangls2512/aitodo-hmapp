@@ -23,9 +23,9 @@ export function getCustomFreqFromName(context: Context, name: string) {
   }
   return kv.split(',').sort((a: string, b: string) => Number(a) - Number(b)).map((item: string) => {
     return {
-      year: Number(item.substring(0, 4)),
-      month: Number(item.substring(4, 6)),
-      day: Number(item.substring(6, 8))
+      year: Number(item.slice(0, 4)),
+      month: Number(item.slice(4, 6)),
+      day: Number(item.slice(6, 8))
     } as YMD
   })
 }
@@ -41,9 +41,9 @@ export function getCustomFreqList(context: Context) {
       name: key,
       list: kvsobject[key].split(',').sort((a: string, b: string) => Number(a) - Number(b)).map((item: string) => {
         return {
-          year: Number(item.substring(0, 4)),
-          month: Number(item.substring(4, 6)) - 1,
-          day: Number(item.substring(6, 8))
+          year: Number(item.slice(0, 4)),
+          month: Number(item.slice(4, 6)) - 1,
+          day: Number(item.slice(6, 8))
         } as YMD
       })
     } as CustomFreq
