@@ -62,10 +62,8 @@ export async function caldavGet() {
       Depth: '1'
     }))
     if (response.statusCode >= 200 && response.statusCode < 300) {
-      const icsPathArray = Array.from(String(response).matchAll(/<href>(.*?)<\/href>/g))
-        .map(item => item[1])
-        .filter(item => item.endsWith('.ics'))
-        .map(item => item.substring(item.lastIndexOf('/')))
+      const icsPathArray = Array.from(String(response).matchAll(/<href>(.*?)<\/href>/g)).map(item => item[1])
+        .filter(item => item.endsWith('.ics')).map(item => item.slice(item.lastIndexOf('/')))
       const todoArray: TodoItem[] = []
       for (let i = 0; i < icsPathArray.length; i++) {
         try {

@@ -1041,6 +1041,7 @@ export default struct TodoPage {
             placeholder: '请输入内容关键词',
             value: this.contentKeyword!!
           })
+            .enableAutoSpacing(true)
             .margin({
               top: $r('sys.float.ohos_id_elements_margin_vertical_m')
             })

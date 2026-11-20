@@ -31,7 +31,7 @@ struct Newpasskey {
 
   getNumber(data: number, start: number, end: number) {
     const binarystring = data.toString(2).padStart(8, '0')
-    const resultstring = binarystring.substring(start, end + 1)
+    const resultstring = binarystring.slice(start, end + 1)
     return parseInt(resultstring, 2)
   }
 
