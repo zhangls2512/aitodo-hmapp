@@ -18,8 +18,8 @@ struct Permissionsetting {
   dataSync = getPermission('ohos.permission.DISTRIBUTED_DATASYNC')
   location = getPermission('ohos.permission.LOCATION')
   microphone = getPermission('ohos.permission.MICROPHONE')
-  readCalendar = getPermission('ohos.permission.READ_CALENDAR')
-  writeCalendar = getPermission('ohos.permission.WRITE_CALENDAR')
+  readCalendar = getPermission('ohos.permission.READ_WHOLE_CALENDAR')
+  writeCalendar = getPermission('ohos.permission.WRITE_WHOLE_CALENDAR')
 
   build() {
     HdsNavDestination() {

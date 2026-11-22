@@ -17,10 +17,10 @@ struct Newpasskey {
   @Local mfa: string = ''
   @Local emailcode: string = ''
   @Local buttonEnabled: boolean = true
-  @Local credentialId: string = ''
-  @Local publicKey: string = ''
   @Local type: string = 'mfa'
   @Local buttonText: string = '获取验证码'
+  @Local attestationObject: string = ''
+  @Local clientDataJSON: string = ''
   context = this.getUIContext().getHostContext() as common.UIAbilityContext
   pageInfos = new NavPathStack()
   dialogControllerProgress = new CustomDialogController({
@@ -29,163 +29,6 @@ struct Newpasskey {
     })
   })
 
-  getNumber(data: number, start: number, end: number) {
-    const binarystring = data.toString(2).padStart(8, '0')
-    const resultstring = binarystring.slice(start, end + 1)
-    return parseInt(resultstring, 2)
-  }
-
-  getPublicKey(attestationObject: Uint8Array) {
-    let publicKey = ''
-    const data = Array.from(attestationObject)
-    let offset = 0
-    let pendingParseKeyCount = this.getNumber(data[offset], 3, 7)
-    while (pendingParseKeyCount > 0) {
-      offset++
-      offset += this.getNumber(data[offset], 3, 7)
-      offset++
-      const valueType = this.getNumber(data[offset], 0, 2)
-      if (valueType === 2) {
-        let valueValueLength = this.getNumber(data[offset], 3, 7)
-        if (valueValueLength === 24) {
-          offset++
-          valueValueLength = data[offset]
-        }
-        if (valueValueLength === 25) {
-          offset++
-          let lengthstring = data[offset].toString(2).padStart(8, '0')
-          offset++
-          lengthstring += data[offset].toString(2).padStart(8, '0')
-          valueValueLength = parseInt(lengthstring, 2)
-        }
-        if (valueValueLength === 26) {
-          let lengthstring = ''
-          for (let i = 0; i < 4; i++) {
-            offset++
-            lengthstring += data[offset].toString(2).padStart(8, '0')
-          }
-          valueValueLength = parseInt(lengthstring, 2)
-        }
-        if (valueValueLength === 27) {
-          let lengthstring = ''
-          for (let i = 0; i < 8; i++) {
-            offset++
-            lengthstring += data[offset].toString(2).padStart(8, '0')
-          }
-          valueValueLength = parseInt(lengthstring, 2)
-        }
-        const authData: number[] = []
-        for (let i = 1; i <= valueValueLength; i++) {
-          offset++
-          authData.push(data[offset])
-        }
-        const credentialIdLength =
-          parseInt(authData[53].toString(2).padStart(8, '0') + authData[54].toString(2).padStart(8, '0'), 2)
-        const cosePublicKey: number[] = []
-        for (let i = 55 + credentialIdLength; i < authData.length; i++) {
-          cosePublicKey.push(authData[i])
-        }
-        const publickeyx: number[] = []
-        for (let i = 10; i < 42; i++) {
-          publickeyx.push(cosePublicKey[i])
-        }
-        const publickeyy: number[] = []
-        for (let i = 45; i < 77; i++) {
-          publickeyy.push(cosePublicKey[i])
-        }
-        const derPublicKeyHeader =
-          [48, 89, 48, 19, 6, 7, 42, 134, 72, 206, 61, 2, 1, 6, 8, 42, 134, 72, 206, 61, 3, 1, 7, 3, 66, 0, 4]
-        publicKey = new util.Base64Helper().encodeToStringSync(new Uint8Array(derPublicKeyHeader.concat(publickeyx)
-          .concat(publickeyy)), util.Type.BASIC_URL_SAFE)
-      }
-      if (valueType === 3) {
-        offset += this.getNumber(data[offset], 3, 7)
-      }
-      if (valueType === 5) {
-        let pendingParseKeyCounta = this.getNumber(data[offset], 3, 7)
-        while (pendingParseKeyCounta > 0) {
-          offset++
-          offset += this.getNumber(data[offset], 3, 7)
-          offset++
-          const valueTypea = this.getNumber(data[offset], 0, 2)
-          if (valueTypea === 2) {
-            let valueValueLength = this.getNumber(data[offset], 3, 7)
-            if (valueValueLength === 24) {
-              offset++
-              valueValueLength = data[offset]
-            }
-            if (valueValueLength === 25) {
-              offset++
-              let lengthstring = data[offset].toString(2).padStart(8, '0')
-              offset++
-              lengthstring += data[offset].toString(2).padStart(8, '0')
-              valueValueLength = parseInt(lengthstring, 2)
-            }
-            if (valueValueLength === 26) {
-              let lengthstring = ''
-              for (let i = 0; i < 4; i++) {
-                offset++
-                lengthstring += data[offset].toString(2).padStart(8, '0')
-              }
-              valueValueLength = parseInt(lengthstring, 2)
-            }
-            if (valueValueLength === 27) {
-              let lengthstring = ''
-              for (let i = 0; i < 8; i++) {
-                offset++
-                lengthstring += data[offset].toString(2).padStart(8, '0')
-              }
-              valueValueLength = parseInt(lengthstring, 2)
-            }
-            offset += valueValueLength
-          }
-          if (valueTypea === 3) {
-            offset += this.getNumber(data[offset], 3, 7)
-          }
-          if (valueTypea === 4) {
-            let pendingParseItemCount = this.getNumber(data[offset], 3, 7)
-            while (pendingParseItemCount > 0) {
-              offset++
-              let itemLength = this.getNumber(data[offset], 3, 7)
-              if (itemLength === 24) {
-                offset++
-                itemLength = data[offset]
-              }
-              if (itemLength === 25) {
-                offset++
-                let lengthstring = data[offset].toString(2).padStart(8, '0')
-                offset++
-                lengthstring += data[offset].toString(2).padStart(8, '0')
-                itemLength = parseInt(lengthstring, 2)
-              }
-              if (itemLength === 26) {
-                let lengthstring = ''
-                for (let i = 0; i < 4; i++) {
-                  offset++
-                  lengthstring += data[offset].toString(2).padStart(8, '0')
-                }
-                itemLength = parseInt(lengthstring, 2)
-              }
-              if (itemLength === 27) {
-                let lengthstring = ''
-                for (let i = 0; i < 8; i++) {
-                  offset++
-                  lengthstring += data[offset].toString(2).padStart(8, '0')
-                }
-                itemLength = parseInt(lengthstring, 2)
-              }
-              offset += itemLength
-              pendingParseItemCount--
-            }
-          }
-          pendingParseKeyCounta--
-        }
-      }
-      pendingParseKeyCount--
-    }
-    return publicKey
-  }
-
   build() {
     HdsNavDestination() {
       List() {
@@ -193,7 +36,7 @@ struct Newpasskey {
           .margin({
             top: 64
           })
-        if (this.email && this.credentialId && this.publicKey) {
+        if (this.email && this.attestationObject && this.clientDataJSON) {
           ListItem() {
             Column() {
               Row() {
@@ -343,8 +186,8 @@ struct Newpasskey {
                     verifyType: this.type,
                     verifyCode: code,
                     platform: 'passkey',
-                    credentialId: this.credentialId,
-                    publicKey: this.publicKey
+                    attestationObject: this.attestationObject,
+                    clientDataJSON: this.clientDataJSON
                   })
                   this.dialogControllerProgress.close()
                   if (res !== 'fail') {
@@ -413,8 +256,8 @@ struct Newpasskey {
           const res = await fido2.register(this.context, {
             publicKey: {
               rp: {
-                id: 'www.zhangls2512.cn',
-                name: 'www.zhangls2512.cn'
+                id: 'zhangls2512.cn',
+                name: 'zhangls2512.cn'
               },
               user: {
                 id: new util.TextEncoder().encodeInto(accountInfo.uid),
@@ -433,8 +276,10 @@ struct Newpasskey {
               }
             }
           })
-          this.credentialId = new util.Base64Helper().encodeToStringSync(res.rawId, util.Type.BASIC_URL_SAFE)
-          this.publicKey = this.getPublicKey(res.response.attestationObject)
+          this.attestationObject =
+            new util.Base64Helper().encodeToStringSync(res.response.attestationObject, util.Type.BASIC_URL_SAFE)
+          this.clientDataJSON =
+            new util.Base64Helper().encodeToStringSync(res.response.clientDataJson, util.Type.BASIC_URL_SAFE)
         } catch (err) {
           if (err.code !== 1021300004) {
             await promptAction.openToast({

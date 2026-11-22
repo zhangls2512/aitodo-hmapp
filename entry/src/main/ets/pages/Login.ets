@@ -348,7 +348,7 @@ export default struct Login {
                   publicKey: {
                     challenge: new util.TextEncoder().encodeInto(String(Date.now()).slice(0, -5) + '00000'),
                     timeout: 100000,
-                    rpId: 'www.zhangls2512.cn'
+                    rpId: 'zhangls2512.cn'
                   }
                 })
                 this.dialogControllerProgress.open()
@@ -360,6 +360,7 @@ export default struct Login {
                   verifyType: 'passkey',
                   credentialId: new util.Base64Helper().encodeToStringSync(publicKeyAssertionCredential.rawId,
                     util.Type.BASIC_URL_SAFE),
+                  userHandle: new util.TextDecoder().decodeToString(publicKeyAssertionCredential.response.userHandle),
                   authenticatorData: new util.Base64Helper().encodeToStringSync(
                     publicKeyAssertionCredential.response.authenticatorData,
                     util.Type.BASIC_URL_SAFE),
