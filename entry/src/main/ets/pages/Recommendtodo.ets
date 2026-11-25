@@ -55,13 +55,16 @@ export default struct Recommendtodo {
   build() {
     Scroll() {
       Column() {
-        if (this.todoArray.length === 0 && !this.loading) {
-          Text('无数据')
-        }
         Refresh({
           refreshing: $$this.loading
         }) {
           List() {
+            if (this.todoArray.length === 0 && !this.loading) {
+              ListItem() {
+                Text('无数据')
+              }
+              .width('100%')
+            }
             ForEach(this.todoArray, (item: Todo, index) => {
               ListItem() {
                 Column() {
