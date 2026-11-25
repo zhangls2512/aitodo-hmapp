@@ -1468,6 +1468,10 @@ export default struct TodoPage {
           preferType: this.preferType,
           title: {
             title: '待办详情'
+          },
+          onDisappear: () => {
+            this.todoId = ''
+            this.todoInfo = ''
           }
         })
       }
@@ -1476,6 +1480,10 @@ export default struct TodoPage {
         preferType: this.preferType,
         title: {
           title: '审核待办'
+        },
+        onDisappear: () => {
+          this.todoId = ''
+          this.todoInfo = ''
         }
       })
     }
@@ -1531,6 +1539,10 @@ export default struct TodoPage {
       preferType: this.preferType,
       title: {
         title: '修改待办'
+      },
+      onDisappear: () => {
+        this.todoId = ''
+        this.todoInfo = ''
       },
       onWillDismiss: async (DismissSheetAction) => {
         const promptAction = this.UIContext.getPromptAction()

@@ -240,6 +240,9 @@ export default struct Recommendtodo {
                 title: {
                   title: '新增待办'
                 },
+                onDisappear: () => {
+                  this.todoId = ''
+                },
                 onWillDismiss: async (DismissSheetAction) => {
                   const promptAction = this.UIContext.getPromptAction()
                   const data = await promptAction.showDialog({
@@ -330,9 +333,7 @@ export default struct Recommendtodo {
           this.isShowInfoSheet = false
         }
         this.todoId = todoId
-        setTimeout(() => {
-          this.isShowInfoSheet = true
-        }, 100)
+        this.isShowInfoSheet = true
       })
       await checkPermission(this.context, this.UIContext, 'ohos.permission.APPROXIMATELY_LOCATION')
       await checkPermission(this.context, this.UIContext, 'ohos.permission.LOCATION')
@@ -348,6 +349,11 @@ export default struct Recommendtodo {
       preferType: this.preferType,
       title: {
         title: '待办详情'
+      },
+      onDisappear: () => {
+        this.todoId = ''
+        this.teamId = ''
+        this.todoInfo = ''
       }
     })
   }

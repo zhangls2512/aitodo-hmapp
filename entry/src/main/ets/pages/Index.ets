@@ -222,6 +222,10 @@ struct Index {
           preferType: this.preferType,
           title: {
             title: '上传故障日志'
+          },
+          onDisappear: () => {
+            this.errorType = ''
+            this.errorObject = ''
           }
         })
       }
@@ -287,6 +291,10 @@ struct Index {
           preferType: this.preferType,
           title: {
             title: '上传故障日志'
+          },
+          onDisappear: () => {
+            this.errorType = ''
+            this.errorObject = ''
           }
         })
       }
